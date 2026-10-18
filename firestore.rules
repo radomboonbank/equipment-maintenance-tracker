@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function member() { return request.auth != null && exists(/databases/$(database)/documents/members/$(request.auth.uid)); }
+  function editor() { return member() && get(/databases/$(database)/documents/members/$(request.auth.uid)).data.role in ['editor', 'admin']; }
+  function valid() {
+   let d = request.resource.data;
+   return d.code is string && d.equipment is string && d.station is string
+    && d.code.size() > 0 && d.code.size() <= 250 && d.equipment.size() <= 4000
+    && d.status in ['unreviewed', 'pending', 'repairing', 'resolved']
+    && d.priority in ['normal', 'urgent', 'critical'] && d.history is list
+    && d.revision is int && d.revision > 0;
+  }
+  match /equipment/{id} {
+   allow read: if member();
+   allow create: if editor() && valid() && request.resource.data.id == id && request.resource.data.revision == 1;
+   allow update: if editor() && valid() && request.resource.data.id == resource.data.id && request.resource.data.revision == resource.data.revision + 1;
+   allow delete: if false;
+  }
+  match /metadata/{id} { allow read: if member(); allow write: if editor() && id == 'source-notes'; }
+  match /members/{uid} { allow read: if request.auth != null && request.auth.uid == uid; allow write: if false; }
+ }
+}

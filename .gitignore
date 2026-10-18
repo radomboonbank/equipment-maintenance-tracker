@@ -1,0 +1,9 @@
+.firebase/
+.firebaserc
+node_modules/
+*import*.json
+*backup*.json
+*.xlsx
+*.zip
+service-account*.json
+.env*

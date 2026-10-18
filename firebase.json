@@ -1,0 +1,1 @@
+{"firestore":{"rules":"firestore.rules"},"hosting":{"public":".","ignore":["firebase.json","firestore.rules","README.md",".git/**",".github/**",".*","*.zip","*import*.json"],"headers":[{"source":"**","headers":[{"key":"X-Content-Type-Options","value":"nosniff"},{"key":"Referrer-Policy","value":"strict-origin-when-cross-origin"}]}]}}
