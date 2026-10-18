@@ -12,12 +12,14 @@ HTML / CSS / JavaScript ไม่ต้อง build รองรับ Firebase 
 
 ## ตั้งค่า Firebase
 
-1. สร้างโครงการที่ https://console.firebase.google.com แล้วเพิ่ม Web app คัดลอก firebaseConfig เป็น JSON
+โครงการที่สร้างแล้ว: `equipment-maintenance-tr-fdae3` (Spark), Firestore region `asia-southeast3` กรุงเทพฯ และ config ใน `firebase-config.js`
+
+1. เปิด https://console.firebase.google.com/project/equipment-maintenance-tr-fdae3/overview
 2. สร้าง Cloud Firestore Standard ในโหมด production เลือก region ให้ตรงข้อกำหนดองค์กร (เปลี่ยนภายหลังไม่ได้)
 3. ใน Firestore > Rules วางเนื้อหา `firestore.rules` แล้ว Publish
-4. Authentication > Sign-in method เปิด Email/Password จากนั้น Users > Add user สร้างบัญชีด้วยตนเองและคัดลอก UID
+4. Authentication > Sign-in method เปิด Google (ตั้งค่าไว้แล้ว) และ Settings > Authorized domains เพิ่มโดเมนเว็บ `radomboonbank.github.io` เข้าสู่ระบบด้วย Google ครั้งแรก แล้วคัดลอก UID จากแท็บ Users หากต้องการใช้ Email/Password ให้เปิด provider นี้และสร้างบัญชีด้วยตนเอง
 5. ใน Firestore สร้าง collection `members` และ document ID เท่ากับ UID เพิ่ม field `role` ชนิด string ค่า `admin` (หรือ `editor` / `viewer`)
-6. เปิดแอป > ตั้งค่า > วาง Firebase config แบบ JSON > เชื่อมต่อ > เข้าสู่ระบบด้วยบัญชีที่สร้าง
+6. เปิดแอป > ตั้งค่า > วาง Firebase config แบบ JSON > เชื่อมต่อ > เข้าสู่ระบบด้วย Google
 7. นำเข้า `equipment-import.json` ในโหมด Firebase ข้อมูลเดิมในเครื่องจะไม่ส่งขึ้นอัตโนมัติ
 
 Rules ปฏิเสธผู้ที่ไม่ได้เป็นสมาชิก การแก้ไขสมาชิกทำผ่าน Firebase console ของผู้ดูแลเท่านั้น ไม่มี public signup ในแอป และไม่มีการลบถาวร ประวัติเป็นบันทึกประกอบการทำงาน ไม่ใช่ immutable audit log
@@ -28,7 +30,7 @@ Rules ปฏิเสธผู้ที่ไม่ได้เป็นสม�
 
 ## GitHub Pages
 
-สร้าง repository `equipment-maintenance-tracker` อัปโหลดเฉพาะไฟล์ในโฟลเดอร์นี้ (รวม `.github/workflows/pages.yml`) ตั้ง default branch เป็น `main` และ Settings > Pages > Source เป็น GitHub Actions โค้ด workflow จะเผยแพร่เฉพาะ index.html, styles.css และ app.js
+สร้าง repository `equipment-maintenance-tracker` อัปโหลดเฉพาะไฟล์ในโฟลเดอร์นี้ (รวม `.github/workflows/pages.yml`) ตั้ง default branch เป็น `main` และ Settings > Pages > Source เป็น GitHub Actions โค้ด workflow จะเผยแพร่เฉพาะ index.html, styles.css และ app.js และ firebase-config.js
 
 **อย่าอัปโหลดไฟล์ Excel, equipment-import.json หรือไฟล์สำรองฐานข้อมูลเข้า repository สาธารณะ** ข้อมูลจริงส่งตรงไป Firestore หลังเข้าสู่ระบบเท่านั้น
 
@@ -49,3 +51,4 @@ GitHub Pages สำหรับ private repository อาจต้องมี�
 - https://firebase.google.com/docs/firestore/security/get-started
 
 Firebase SDK ใช้เวอร์ชัน 13.0.0 จาก CDN ของ Google จึงต้องมีอินเทอร์เน็ตเพื่อใช้งาน Firebase ฟอนต์ภายนอกมี Tahoma/system font สำรอง
+
