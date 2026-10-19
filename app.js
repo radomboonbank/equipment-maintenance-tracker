@@ -38,9 +38,10 @@ function edit(r){
  }).join('');
  $('#legacy-tracking').textContent=r?.tracking?'ข้อมูลติดตามเดิม: '+r.tracking:'';
  $('#followups').innerHTML=Array.from({length:3},(_,i)=>{const v=r?.followups?.[i]||{};return `<tr><td>${i+1}</td><td>${dateControl('follow-'+i,v.date)}<input type="time" step="60" name="follow-${i}-time" aria-label="เวลาติดตาม ลำดับ ${i+1}" value="${esc(v.time)}"></td>`+['informant','mobile','details','follower'].map((k,j)=>`<td>${k==='details'?`<textarea name="follow-${i}-${k}" maxlength="4000" aria-label="${['ชื่อผู้ให้ข้อมูล','เบอร์มือถือผู้ให้ข้อมูล','รายละเอียด','ชื่อผู้ตามข้อมูล'][j]} ลำดับ ${i+1}">${esc(v[k])}</textarea>`:`<input name="follow-${i}-${k}" ${k==='mobile'?'type="tel" inputmode="tel"':''} maxlength="250" aria-label="${['ชื่อผู้ให้ข้อมูล','เบอร์มือถือผู้ให้ข้อมูล','รายละเอียด','ชื่อผู้ตามข้อมูล'][j]} ลำดับ ${i+1}" value="${esc(v[k])}">`}</td>`).join('')+'</tr>'}).join('');
- $('#new-note').value='';$('#new-note').disabled=!canEdit();
+ const c=r?.closure||{};
+ $('#closure-fields').innerHTML=`<label>วันเวลาที่ปิดงาน (พ.ศ.)${dateControl('closure',c.date)}<input type="time" name="closure-time" aria-label="เวลาที่ปิดงาน" value="${esc(c.time)}"></label>`+[['reporter','ชื่อผู้แจ้งปิดงาน'],['mobile','เบอร์มือถือผู้แจ้งปิดงาน'],['details','รายละเอียด'],['follower','ชื่อผู้ตามข้อมูล']].map(([k,label])=>`<label class="${k==='details'?'wide':''}">${label}${k==='details'?`<textarea name="closure-${k}" aria-label="รายละเอียดปิดงาน" maxlength="4000">${esc(c[k])}</textarea>`:`<input name="closure-${k}" ${k==='mobile'?'type="tel" inputmode="tel"':''} value="${esc(c[k])}" maxlength="250">`}</label>`).join('');
  $('#history').innerHTML=(r?.history||[]).slice().reverse().map(h=>`<div class="history-item">${esc(String(h.note||'').replace(/แก้ปีวันที่ตามผู้ดูแล: 19\d{2}-\d{2}-\d{2} → พ.ศ. (25\d{2})-(\d{2})-(\d{2}) \(คงวันและเดือนเดิม\)/,'ตรวจแก้ปีวันที่เป็น $3/$2/$1 พ.ศ. (เก็บค่าต้นฉบับไว้แล้ว)'))}<small>${esc(dateText(h.at))} · ${esc(h.by)}</small></div>`).join('');
- document.querySelectorAll('#fields input,#fields textarea,#fields select,#followups input,#followups textarea,#followups select').forEach(el=>el.disabled=!canEdit());
+ document.querySelectorAll('#fields input,#fields textarea,#fields select,#followups input,#followups textarea,#followups select,#closure-fields input,#closure-fields textarea,#closure-fields select').forEach(el=>el.disabled=!canEdit());
  $('#save').hidden=!canEdit();$('#delete').hidden=role!=='admin'||!r;
  $('#editor').showModal();
 }
@@ -51,8 +52,13 @@ $('#record-form').onsubmit=async e=>{
   const f=new FormData(e.target),r=Object.fromEntries(Object.keys(fields).map(k=>[k,['date','due'].includes(k)?formDate(f,k):String(f.get(k)||'').trim()]));
   const followups=Array.from({length:3},(_,i)=>({date:formDate(f,'follow-'+i),...Object.fromEntries(['time','informant','mobile','details','follower'].map(k=>[k,String(f.get('follow-'+i+'-'+k)||'').trim()]))}));
   if(followups.some(v=>Object.values(v).some(Boolean)&&(!v.date||!v.time)))throw Error('กรุณาระบุวันและเวลาของลำดับที่มีข้อมูลติดตาม');
+  const closure={date:formDate(f,'closure'),...Object.fromEntries(['time','reporter','mobile','details','follower'].map(k=>[k,String(f.get('closure-'+k)||'').trim()]))};
+  const hasClosure=Object.values(closure).some(Boolean);
+  if(hasClosure&&Object.values(closure).some(v=>!v))throw Error('กรุณากรอกข้อมูลปิดงานให้ครบทุกช่อง');
+  if(hasClosure)r.status='resolved';
+  if(r.status==='resolved'&&!hasClosure)throw Error('กรุณากรอกข้อมูลปิดงานก่อนเลือกสถานะซ่อมแล้ว');
   const now=new Date(),at=now.toISOString(),code=editing?.code||stamp(now);
-  const next={...editing,...r,code,id:editing?.id||code,followups,history:[...(editing?.history||[]),{at,by:username,note:$('#new-note').value.trim()||(!editing?'สร้างรายการ':'บันทึกข้อมูล · '+statuses[r.status])}],updatedAt:at,revision:(editing?.revision||0)+1,...(!editing?{createdAt:at,dateNeedsReview:false}:{})};
+  const next={...editing,...r,code,id:editing?.id||code,followups,closure,history:[...(editing?.history||[]),{at,by:username,note:hasClosure?'บันทึกปิดงาน · '+closure.details:(!editing?'สร้างรายการ':'บันทึกข้อมูล · '+statuses[r.status])}],updatedAt:at,revision:(editing?.revision||0)+1,...(!editing?{createdAt:at,dateNeedsReview:false}:{})};
   if(editing?.time&&editing.time!==r.time&&!editing.originalTime)next.originalTime=editing.time;
   busy=true;$('#save').disabled=true;
   const ref=cloud.doc(cloud.db,'equipment',next.id),original=editing;

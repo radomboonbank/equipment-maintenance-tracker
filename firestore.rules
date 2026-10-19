@@ -18,7 +18,16 @@ service cloud.firestore {
     && d.priority in ['normal', 'urgent', 'critical'] && d.history is list
     && d.revision is int && d.revision > 0
     && d.followups is list && d.followups.size() == 3
-    && followup(d.followups[0]) && followup(d.followups[1]) && followup(d.followups[2]);
+    && followup(d.followups[0]) && followup(d.followups[1]) && followup(d.followups[2])
+    && closure(d);
+  }
+  function closure(d) {
+   let c = d.closure;
+   return c is map && c.keys().hasOnly(['date','time','reporter','mobile','details','follower'])
+    && c.date is string && c.time is string && c.reporter is string && c.mobile is string && c.details is string && c.follower is string
+    && c.date.size() <= 10 && c.time.size() <= 5 && c.reporter.size() <= 250 && c.mobile.size() <= 250 && c.details.size() <= 4000 && c.follower.size() <= 250
+    && ((d.status == 'resolved' && c.date.size() == 10 && c.time.size() == 5 && c.reporter.size() > 0 && c.mobile.size() > 0 && c.details.size() > 0 && c.follower.size() > 0)
+     || (d.status != 'resolved' && c.date == '' && c.time == '' && c.reporter == '' && c.mobile == '' && c.details == '' && c.follower == ''));
   }
   match /equipment/{id} {
    allow read: if true;
@@ -32,5 +41,6 @@ service cloud.firestore {
   }
   match /metadata/{id} { allow read: if editor(); allow write: if admin(); }
   match /members/{uid} { allow read, write: if false; }
+  match /telegramDeliveries/{id} { allow read, write: if false; }
  }
 }

@@ -29,3 +29,8 @@ GitHub Actions เผยแพร่เฉพาะ index.html, styles.css, app.
 เผยแพร่ firestore.rules ผ่าน Firebase console พร้อมตั้ง DatabaseLogin profiles ก่อนใช้งาน
 
 เอกสาร: https://firebase.google.com/docs/reference/rest/auth และ https://firebase.google.com/docs/firestore/solutions/role-based-access
+
+## ปิดงานและ Telegram
+ส่วนปิดงานเก็บ closure: date,time,reporter,mobile,details,follower กรอกครบแล้วบันทึกเปลี่ยนสถานะเป็น resolved อัตโนมัติ ผู้ชมอ่านอย่างเดียว ประวัติเดิมคงอยู่
+หากต้องการเปิดงานใหม่ ให้ล้างข้อมูลปิดงานทุกช่องและเลือกสถานะที่ยังไม่ปิดก่อนบันทึก
+Telegram backend เตรียมไว้แต่ยังไม่ deploy ดู TELEGRAM-SETUP.md สำหรับขั้นตอนเปิดใช้
