@@ -63,7 +63,15 @@ $('#record-form').onsubmit=async e=>{
   busy=true;$('#save').disabled=true;
   const ref=cloud.doc(cloud.db,'equipment',next.id),original=editing;
   await cloud.runTransaction(cloud.db,async t=>{const snap=await t.get(ref);if(original&&(!snap.exists()||snap.data().revision!==original.revision))throw Error('ข้อมูลเปลี่ยนแปลงแล้ว กรุณาปิดและเปิดรายการใหม่');if(!original&&snap.exists())throw Error('รหัสซ้ำ กรุณาบันทึกอีกครั้ง');t.set(ref,next);t.set(cloud.doc(cloud.db,'telegramOutbox',next.id+'__'+next.revision),{recordId:next.id,revision:next.revision,record:next,createdBy:user.uid,createdAt:cloud.serverTimestamp(),readyAt:cloud.serverTimestamp(),status:'pending',nextPart:0,attempts:0})});
-  $('#editor').close();toast('บันทึกข้อมูลและเข้าคิวแจ้งเตือนแล้ว');
+    $('#editor').close();toast('บันทึกข้อมูลแล้ว กำลังส่ง Telegram…');
+    try {
+      if(!window.GRID_TELEGRAM_URL)throw Error('ยังไม่ได้ตั้งค่าปลายทาง');
+      const idToken=await user.getIdToken(),key=next.id+'__'+next.revision;
+      await fetch(window.GRID_TELEGRAM_URL,{method:'POST',mode:'no-cors',credentials:'omit',redirect:'follow',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({key,idToken}),signal:AbortSignal.timeout(150000)});
+      const receipt=await cloud.getDocFromServer(cloud.doc(cloud.db,'telegramOutbox',key));
+      if(receipt.exists()&&receipt.data().status==='sent')toast('บันทึกข้อมูลและส่ง Telegram สำเร็จ');
+      else toast('บันทึกข้อมูลสำเร็จ แต่ Telegram ยังส่งไม่สำเร็จ — ไม่มีการส่งซ้ำอัตโนมัติ');
+    }catch(notificationError){toast('บันทึกข้อมูลสำเร็จ แต่ยังยืนยันการส่ง Telegram ไม่ได้ — ไม่มีการส่งซ้ำอัตโนมัติ')}
  }catch(err){toast('บันทึกไม่สำเร็จ: '+err.message)}finally{busy=false;$('#save').disabled=false}
 };
 $('#delete').onclick=async()=>{

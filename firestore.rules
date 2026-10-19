@@ -48,7 +48,8 @@ service cloud.firestore {
    return q.record == request.resource.data && q.createdBy == request.auth.uid && q.createdAt == request.time && q.status == 'pending';
   }
   match /telegramOutbox/{key} {
-   allow read, update, delete: if false;
+   allow get: if editor() && resource.data.createdBy == request.auth.uid;
+   allow list, update, delete: if false;
    allow create: if editor() && queueValid(key);
   }
   function queueValid(key) {

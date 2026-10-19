@@ -1,41 +1,52 @@
-# Telegram ด้วย Google Apps Script (ใช้ Firebase Spark เดิม)
+# Telegram: ส่งเฉพาะเมื่อกดบันทึก
 
-Apps Script: https://script.google.com/home/projects/1kvZcs4am3YrXlzmSxtSeiSQRm1JO4TgpcIy6icZGaQU5pWC_P97XozQs/edit
+เมื่อผู้ใช้ admin/editor กดบันทึกและ Firestore transaction สำเร็จ เว็บเรียก Apps Script Web App ครั้งเดียวสำหรับ revision นั้น ไม่มีตัวตั้งเวลา ไม่มีการตรวจคิวทุก 5 นาที ไม่มีการส่งเมื่อเปิดหน้า/เข้าสู่ระบบ/ดูข้อมูล และไม่มีการส่งซ้ำอัตโนมัติ
 
-โค้ด Cloud Functions ถูกถอดออกแล้ว ไม่ต้อง Blaze, service account key หรือ public web app endpoint
-ยังไม่มี Bot Token และ Chat ID จึงยังไม่เปิดส่งข้อความจริง
+telegramOutbox คงไว้เป็นหลักฐาน snapshot และสถานะส่ง เอกสารเก่าจะไม่ถูกกวาดส่ง ผู้ใช้ตรวจสถานะได้เฉพาะเอกสารที่ตนสร้างเท่านั้น
 
-## เตรียมบอทและกลุ่ม
-1. เปิด https://t.me/BotFather ส่ง `/newbot` ตั้งชื่อและ username ที่ลงท้าย bot
-2. สร้างกลุ่มสำหรับแจ้งเตือน เพิ่มบอท ให้ส่งข้อความได้
-3. ส่งข้อความ mention บอทในกลุ่ม แล้วหา Chat ID ผ่าน Bot API getUpdates จากเครื่องผู้ดูแล (ไม่เปิด URL ที่มี Token ใน browser)
-4. ใน Apps Script > การตั้งค่าโครงการ > พร็อพเพอร์ตี้ของสคริปต์ เพิ่ม `TELEGRAM_BOT_TOKEN` และ `TELEGRAM_CHAT_ID`
-5. เก็บ Token ใน Script Properties เท่านั้น ไม่ใส่โค้ด GitHub หรือ Firestore และอย่าแชร์สิทธิ์แก้ไข Apps Script ให้ผู้ที่ไม่ควรอ่าน Token
+## ตั้งค่า
+โครงการ: https://script.google.com/home/projects/1kvZcs4am3YrXlzmSxtSeiSQRm1JO4TgpcIy6icZGaQU5pWC_P97XozQs/edit
+1. ใช้ Code.gs และ Message.gs พร้อม manifest ใน apps-script/
+2. เก็บ TELEGRAM_BOT_TOKEN และ TELEGRAM_CHAT_ID ใน Script Properties เท่านั้น
+3. รัน removeTrigger แล้วตรวจว่ามี 0 ทริกเกอร์
+4. Deploy Web App: Execute as owner; access Anyone เพื่อให้ GitHub Pages ส่ง POST ได้
+5. บันทึก URL /exec ใน window.GRID_TELEGRAM_URL ของ firebase-config.js
+6. เผยแพร่ firestore.rules ที่ให้ editor อ่านสถานะรายการของตนได้
 
-## เปิดใช้
-1. ผู้ดูแล radomboon.t@gmail.com เปิด Apps Script ที่ลิงก์ด้านบน
-2. เรียก `checkConnection` และอนุญาต OAuth ที่จำเป็น ได้แก่ Firestore/Datastore, เชื่อมต่อบริการภายนอก, จัดการทริกเกอร์ สคริปต์ใช้สิทธิ์ IAM ของบัญชีเจ้าของ ไม่ใช้ Firebase password หรือ service account key
-3. ตรวจ log Firebase connection OK หากเจอ 403 ตรวจว่าเจ้าของมีสิทธิ์ Firestore และเปิด Cloud Firestore API ในโครงการที่ใช้ OAuth; อาจต้องเชื่อม Apps Script กับ standard GCP project เดิม โดยไม่เปิด billing
-4. ใส่ Script Properties แล้วเรียก `installTrigger` เพื่อสร้างทริกเกอร์ทุก 5 นาที (เรียกซ้ำไม่สร้างซ้ำ)
-5. บันทึกรายการทดสอบผ่านเว็บ ตรวจข้อความในกลุ่มและสถานะ sent ใน telegramOutbox แล้วลบข้อมูลทดสอบ
+URL เปิดรับ POST แต่ doPost ตรวจ Firebase ID token ผ่าน Firestore Security Rules ของ DatabaseLogin และตรวจ role admin/editor อีกชั้น อ่านข้อความจาก snapshot เท่านั้น ไม่รับข้อความหรือ Chat ID จากผู้เรียก ไม่เก็บหรือ log ID token
+ผู้เรียกต้องเป็นผู้บันทึก revision นั้น และเรียกภายใน 5 นาทีหลังบันทึก (อายุคำขอ ไม่ใช่ timer) ใช้ updateTime precondition ป้องกันคำขอซ้ำ ไม่ลองใหม่เมื่อ failed/sending/sent
 
-อย่ากด Deploy เป็นเว็บแอป ไม่ต้องเปิดให้ Anyone เข้าถึง สคริปต์ทำงานตามทริกเกอร์ของเจ้าของเท่านั้น
+## ข้อจำกัด
+- เว็บแสดงผลบันทึกแยกจากผลส่ง Telegram ส่งไม่สำเร็จข้อมูลยังบันทึกแล้ว
+- อย่าปิดหน้าขณะกำลังส่ง รอข้อความผลลัพธ์
+- ไม่มี background retry เมื่อเครือข่ายขาด/โควตาเต็ม/Telegram ปฏิเสธ
+- ข้อความยาวแบ่งหลายส่วน หากล้มเหลวอาจได้รับบางส่วน
+- Telegram รับแล้วแต่บันทึกผลล้มเหลว สถานะอาจไม่แน่นอน จะไม่ส่งซ้ำเอง
+- การลบไม่ส่งแจ้งเตือน
+- ไม่เปิด Cloud Functions, Cloud Run, Scheduler, paid Telegram broadcast หรือ Blaze
 
-## ข้อมูลและการส่ง
-- การบันทึกอุปกรณ์กับ telegramOutbox เกิดใน transaction เดียวกัน สำเร็จทั้งคู่หรือไม่เขียนทั้งคู่
-- ID คิว `<recordId>__<revision>` เก็บ snapshot ของแต่ละครั้ง ไม่อ่านทับด้วยข้อมูลล่าสุด
-- Rules บังคับ snapshot ตรงกับข้อมูลที่บันทึกและ revision ใหม่ บัญชีทั่วไป/ผู้ชมอ่านคิวหรือแก้สถานะการส่งไม่ได้
-- ส่งข้อมูลหลัก ข้อมูลติดตาม และปิดงาน รวมชื่อและโทรศัพท์ไปยังกลุ่มที่ตั้งค่าไว้
-- เริ่มตรวจคิวทุก 5 นาที เวลาส่งจริงขึ้นกับทริกเกอร์ เครือข่าย และโควตา ไม่ใช่แจ้งเตือนทันที
-- มี checkpoint แยกแต่ละส่วนของข้อความ และยืดเวลาลองใหม่เมื่อส่งผิดพลาด หากผิดพลาดถึง 20 ครั้งพักเป็น failed ให้ผู้ดูแลตรวจปัญหาแล้วตั้ง status=pending และ readyAt เป็น timestamp ปัจจุบัน (คง nextPart เพื่อส่งต่อจากส่วนที่สำเร็จ)
-- ถ้า Telegram รับข้อความแล้ว แต่บันทึก checkpoint ไม่สำเร็จ อาจมีข้อความซ้ำได้ เพราะ Telegram ไม่มี idempotency key
-- คิวและ Token ไม่เปิดสาธารณะ สถานะ sent และ failed เก็บไว้ตรวจสอบ ไม่ลบอัตโนมัติ
-- ก่อนเปิดบอท คิวสะสมจะรอไว้ เมื่อเปิดใช้งานจะส่งคิวที่ค้างด้วย ไม่มีการส่งย้อนหลังจาก 100 รายการเดิมที่ไม่ได้กดบันทึกใหม่
-- ฟรีภายในโควตา Apps Script, Firestore Spark และ Telegram; คิวเพิ่มการใช้พื้นที่และการอ่าน/เขียน หากเต็มโควตาอาจบันทึกหรือส่งไม่ได้จนโควตาคืน ควรตรวจ Usage และเก็บสำรอง/ล้างคิวที่ส่งแล้วเป็นระยะโดยผู้ดูแล
-- `removeTrigger` หยุดตรวจคิว โดยไม่ลบข้อมูล
+## ตรวจต้นทุน 19 ตุลาคม 2569
+Firebase console ยืนยัน Spark / Project cost: No-cost หน้าจอรายงาน reads ประมาณ 1.2K/50K ต่อวัน writes 20/20K deletes 10/20K (อาจล่าช้า)
 
-## ทดสอบโค้ดบนเครื่อง
-`node --test apps-script/worker.test.cjs`
-ไฟล์ Code.gs และ Message.gs รวมอยู่ใน รหัส.gs บน Apps Script; manifest ตรงกับ apps-script/appsscript.json
+| ส่วน | เงื่อนไขฟรี |
+|---|---|
+| GitHub Pages | public repository / github.io ไม่มีซื้อโดเมน |
+| GitHub Actions | standard ubuntu-latest สำหรับ Pages ไม่มี larger runner/cache/package |
+| Firebase Auth | Email/Password ไม่มี SMS/Phone Auth |
+| Firestore Spark | (default) ฐานเดียว: 1 GiB, reads 50,000/วัน, writes 20,000/วัน, deletes 20,000/วัน, egress 10 GiB/เดือน |
+| Apps Script | Gmail URL Fetch 20,000/วัน, รัน 6 นาที/ครั้ง |
+| Telegram | Bot API ปกติ ไม่เปิด allow_paid_broadcast |
+| Fonts / SDK | Google Fonts และ Firebase SDK สาธารณะ |
 
-เอกสาร: https://developers.google.com/apps-script/guides/services/quotas และ https://firebase.google.com/docs/firestore/use-rest-api
+ฟรีมีโควตา ไม่ใช่ไม่จำกัด Spark จำกัด/หยุดบริการเมื่อเต็ม ไม่อัปเกรดเอง อย่าผูก Billing/เปลี่ยน Blaze หรือเปิดบริการคิดเงินเพื่อคงต้นทุน 0 บาท ค่าสมาชิกส่วนตัวอื่นอยู่นอกขอบเขตเว็บนี้
+หนึ่งบันทึกข้อความส่วนเดียวใช้ประมาณ 5 document writes และ URL Fetch 6 ครั้ง รวม reads สิทธิ์/transaction; realtime listeners และผู้ชมหลายคนใช้ read quota ด้วย snapshot สะสมใช้พื้นที่ ต้องดูแลก่อนถึง 1 GiB ไม่มี TTL หรือ scheduled backup ที่เสียเงิน
+
+อ้างอิง:
+- https://firebase.google.com/docs/projects/billing/firebase-pricing-plans
+- https://firebase.google.com/docs/firestore/pricing
+- https://developers.google.com/apps-script/guides/services/quotas
+- https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages
+- https://docs.github.com/en/billing/concepts/product-billing/github-actions
+- https://core.telegram.org/bots
+
+ทดสอบ: node --test apps-script/worker.test.cjs

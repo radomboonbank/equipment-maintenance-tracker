@@ -1,4 +1,4 @@
-// GRID CARE: private scheduled worker. No web-app deployment or public endpoint.
+// GRID CARE: authenticated, on-save Telegram delivery. No scheduled jobs.
 var PROJECT_ID = 'equipment-maintenance-tr-fdae3';
 var DB_URL = 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID + '/databases/(default)/documents';
 var NEVER = '9999-12-31T00:00:00.000Z';
@@ -9,16 +9,46 @@ function checkConnection() {
   return result.length;
 }
 
-function installTrigger() {
-  config_();
-  checkConnection();
-  var existing=ScriptApp.getProjectTriggers().filter(function(t){return t.getHandlerFunction()==='processQueue'});
-  if(!existing.length)ScriptApp.newTrigger('processQueue').timeBased().everyMinutes(5).create();
-  console.log('Telegram queue trigger ready: every 5 minutes.');
-}
-
 function removeTrigger() {
   ScriptApp.getProjectTriggers().forEach(function(t){if(t.getHandlerFunction()==='processQueue')ScriptApp.deleteTrigger(t)});
+  console.log('Scheduled Telegram delivery disabled.');
+}
+
+// Only a signed-in editor can dispatch their own newly saved revision.
+// No timer, sweep, background retry, or sending on page load.
+function doPost(e) {
+  var result={ok:false};
+  try {
+    if(!e || !e.postData || e.postData.contents.length>10000)throw Error('Invalid request');
+    result=dispatch_(JSON.parse(e.postData.contents));
+  } catch(err) { result={ok:false,error:'Request rejected or delivery unavailable'}; }
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+function dispatch_(input) {
+  if(!input || !/^[A-Za-z0-9_-]{1,250}__[1-9][0-9]{0,9}$/.test(input.key||'') || typeof input.idToken!=='string' || input.idToken.length>8000)throw Error('Invalid request');
+  var uid=authenticate_(input.idToken);
+  var doc=firestore_('/telegramOutbox/'+input.key,null,'get');
+  var job=decode_({mapValue:{fields:doc.fields}});
+  if(job.createdBy!==uid)throw Error('Not owner');
+  if(job.status==='sent')return {ok:true,status:'sent'};
+  if(job.status!=='pending' || job.attempts!==0)return {ok:false,status:job.status};
+  // Historical pending records are never swept or dispatched on reload.
+  if(Date.now()-Date.parse(job.createdAt)>300000)throw Error('Save request expired');
+  return deliver_(doc,config_());
+}
+function authenticate_(token) {
+  var parts=token.split('.');
+  if(parts.length!==3)throw Error('Invalid identity');
+  // Decode only to select the profile path. Firestore validates the signature,
+  // project, expiry and uid through its existing self-only profile rules.
+  var claims=JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[1])).getDataAsString());
+  var uid=claims.sub;
+  if(typeof uid!=='string'||!/^[A-Za-z0-9_-]{1,128}$/.test(uid))throw Error('Invalid identity');
+  var response=UrlFetchApp.fetch(DB_URL+'/DatabaseLogin/'+uid,{headers:{Authorization:'Bearer '+token},muteHttpExceptions:true});
+  if(response.getResponseCode()!==200)throw Error('Invalid identity');
+  var profile=decode_({mapValue:{fields:JSON.parse(response.getContentText()).fields}});
+  if(['admin','editor'].indexOf(profile.role)<0)throw Error('Read only');
+  return uid;
 }
 
 function config_() {
@@ -29,38 +59,25 @@ function config_() {
   return {token:token,chat:chat};
 }
 
-function processQueue() {
-  var config=config_(),lock=LockService.getScriptLock();
-  if(!lock.tryLock(1000))return;
-  var started=Date.now();
-  try {
-    var rows=firestore_(':runQuery',{structuredQuery:{from:[{collectionId:'telegramOutbox'}],where:{fieldFilter:{field:{fieldPath:'readyAt'},op:'LESS_THAN_OR_EQUAL',value:{timestampValue:new Date().toISOString()}}},orderBy:[{field:{fieldPath:'readyAt'},direction:'ASCENDING'}],limit:5}});
-    for(var row of rows){
-      if(!row.document||Date.now()-started>18000)continue;
-      deliver_(row.document,config,started);
-    }
-  }finally{lock.releaseLock()}
-}
-
-function deliver_(doc,config,started) {
+function deliver_(doc,config) {
   var job=decode_({mapValue:{fields:doc.fields}});
-  if(job.status==='sent'||job.status==='failed')return;
-  // Update-time precondition prevents two separate workers from claiming the same job.
-  try{doc=patch_(doc,{readyAt:timestamp_(Date.now()+360000),attempts:{integerValue:String((job.attempts||0)+1)}})}catch(e){if(e.status===409||e.status===412)return;throw e}
+  if(job.status==='sent')return {ok:true,status:'sent'};
+  if(job.status!=='pending'||job.attempts!==0)return {ok:false,status:job.status};
+  // Atomic claim makes repeated POSTs and concurrent clicks a single attempt.
+  try{doc=patch_(doc,{status:{stringValue:'sending'},readyAt:{timestampValue:NEVER},attempts:{integerValue:'1'}})}catch(e){if(e.status===409||e.status===412)return {ok:false,status:'sending'};throw e}
   try {
-    var parts=messages(job.record,job.revision===1),next=job.nextPart||0;
-    for(var i=next;i<parts.length;i++){
-      if(Date.now()-started>18000){patch_(doc,{readyAt:timestamp_(Date.now()+300000)});return}
+    var parts=messages(job.record,job.revision===1);
+    if(parts.length>40)throw Error('Message too long');
+    for(var i=0;i<parts.length;i++){
       var messageId=telegram_(config,parts[i]);
       doc=patch_(doc,{nextPart:{integerValue:String(i+1)},lastMessageId:{integerValue:String(messageId)}});
-      Utilities.sleep(3100); // Respect group message limits across jobs and message chunks.
+      if(i+1<parts.length)Utilities.sleep(3100);
     }
-    patch_(doc,{status:{stringValue:'sent'},readyAt:{timestampValue:NEVER},sentAt:timestamp_(Date.now())});
+    patch_(doc,{status:{stringValue:'sent'},sentAt:timestamp_(Date.now())});
+    return {ok:true,status:'sent'};
   }catch(e){
-    var attempts=(job.attempts||0)+1,paused=attempts>=20;
-    patch_(doc,{status:{stringValue:paused?'failed':'pending'},readyAt:timestamp_(paused?NEVER:Date.now()+Math.min(3600000,Math.max(e.retryAfterMs||0,300000*Math.pow(2,Math.min(attempts-1,4))))),lastError:{stringValue:'Delivery failed; check configuration, permissions and Telegram availability.'}});
-    // Never log token, Telegram URL, contact details, or raw network errors.
-    console.warn('Queue delivery deferred. Attempt '+attempts+(paused?' (paused for review)':''));
+    patch_(doc,{status:{stringValue:'failed'},lastError:{stringValue:'Telegram delivery failed. No automatic retry.'}});
+    return {ok:false,status:'failed'};
   }
 }
 
@@ -74,7 +91,9 @@ function telegram_(config,text) {
 
 function firestore_(suffix,body,method) {
   var response;
-  try{response=UrlFetchApp.fetch(DB_URL+suffix,{method:method||'post',contentType:'application/json',headers:{Authorization:'Bearer '+ScriptApp.getOAuthToken()},payload:JSON.stringify(body),muteHttpExceptions:true})}catch(e){throw new Error('Firestore network failure')}
+  var options={method:method||'post',contentType:'application/json',headers:{Authorization:'Bearer '+ScriptApp.getOAuthToken()},muteHttpExceptions:true};
+  if(body!==null && body!==undefined)options.payload=JSON.stringify(body);
+  try{response=UrlFetchApp.fetch(DB_URL+suffix,options)}catch(e){throw new Error('Firestore network failure')}
   var code=response.getResponseCode();
   if(code<200||code>=300){var error=new Error('Firestore request failed ('+code+'). Check owner permissions and API access.');error.status=code;throw error}
   return JSON.parse(response.getContentText());
