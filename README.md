@@ -1,60 +1,31 @@
-# GRID CARE — ระบบติดตามอุปกรณ์ชำรุด
+# GRID CARE
 
-HTML / CSS / JavaScript ไม่ต้อง build รองรับ Firebase Authentication และ Cloud Firestore
+เว็บติดตามอุปกรณ์ชำรุดภาษาไทย: https://radomboonbank.github.io/equipment-maintenance-tracker/
 
-เว็บออนไลน์: https://radomboonbank.github.io/equipment-maintenance-tracker/
+## บัญชีและสิทธิ์
+- หน้าแรกกรอก username/password หรือเลือกผู้ชมทั่วไป
+- Admin สร้าง แก้ไข และลบรายการได้; editor สร้างและแก้ไขได้; ผู้ชมอ่านได้อย่างเดียว
+- Firebase Authentication เก็บ credential ส่วนบัญชีและ role อยู่ใน collection `DatabaseLogin/{Firebase Auth UID}` ใน Firestore default database โครงการ `equipment-maintenance-tr-fdae3`
+- Profile มี `username` (ตัวพิมพ์เล็ก), `role` (`admin` หรือ `editor`) สร้างผ่าน Firebase console เท่านั้น ผู้ใช้ยกระดับสิทธิ์ตนเองไม่ได้
+- Username แมปเป็น `<username>@equipment-maintenance-tr-fdae3.firebaseapp.com` สำหรับ Firebase Auth เท่านั้น ไม่ใช่อีเมลรับข้อความ
+- Credential protocol v1: SHA-256 UTF-8 ของ `GRID-CARE:v1:<username>:<password>` ส่งเข้า Firebase Email/Password Auth เพื่อรองรับ PIN เดิมที่สั้นกว่า 6 ตัว ไม่มีรหัสผ่านหรือ hash อยู่ใน Firestore/ซอร์สโค้ด วิธีนี้ไม่ได้เพิ่มความยากในการเดา PIN สั้น หากเปลี่ยนรหัสผ่านต้องใช้ protocol เดียวกัน
+- ต้องเปิด Email/Password provider ก่อนสร้างบัญชี ไม่มี public signup UI; ผู้สมัครผ่าน API เองไม่ได้รับสิทธิ์เขียนเพราะไม่มี DatabaseLogin profile
+- Rules อนุญาตให้อ่านเอกสาร equipment สาธารณะตามโหมดผู้ชม รวมข้อมูลติดตามและข้อมูลติดต่อ บัญชีอ่านได้เฉพาะของตน
+- เข้าสู่ระบบแล้วโหลดข้อมูล realtime อัตโนมัติ ไม่เก็บรหัสผ่านใน localStorage เปิดหน้าใหม่ต้องเข้าสู่ระบบใหม่
 
-เว็บเชื่อมต่อ Firebase อัตโนมัติเมื่อเปิดครั้งแรก กด **ตั้งค่า / เข้าสู่ระบบ → เข้าสู่ระบบด้วย Google** เพื่อใช้งาน บัญชีที่ยังไม่อยู่ใน members จะอ่านข้อมูลไม่ได้ หากต้องการโหมดบนเครื่องให้เลือก **กลับไปใช้ข้อมูลบนเครื่อง** ในหน้าตั้งค่า
+## ข้อมูล
+- 100 รายการเดิมและ 9 หมายเหตุเก็บใน Firebase; ห้ามอัปโหลดไฟล์ข้อมูลหรือสำรองเข้า repo
+- วันเวลาที่แสดงใช้ พ.ศ. / Asia/Bangkok วันที่ภายในเก็บ ISO ค.ศ. เพื่อคำนวณอย่างถูกต้อง
+- รหัสใหม่ `DDMMBBBB_HHmmssSSS` (BBBB = ปี พ.ศ., SSS = มิลลิวินาที) เกิดตอนบันทึก รหัสเดิมคงไว้เพราะไม่มีเวลาสร้างเดิมที่ยืนยันได้
+- เลือกวัน/เดือน/ปี พ.ศ. และใช้ native time picker
+- `followups` มี 3 รายการ: date,time,informant,mobile,details,follower; ข้อความ tracking เดิมยังเก็บไว้ให้อ่าน
+- Transaction + revision ป้องกันเขียนทับข้อมูลที่เปลี่ยนโดยผู้ใช้อื่น
+- ลบถาวรได้เฉพาะ Admin มีคำยืนยันใน UI ควรสำรองผ่าน Firebase ก่อนลบ
+- ไม่มีคำสั่งนำเข้า/ส่งออกในแอป
 
-ข้อมูลจาก Excel ถูกนำเข้า Firestore แล้ว 100 รายการ พร้อมหมายเหตุ 9 แถว ตรวจส่งออกเทียบต้นฉบับแล้วตรงกันทุกฟิลด์ ไม่ต้องนำเข้าซ้ำ
+## พัฒนาและเผยแพร่
+รัน `python -m http.server 8080` จากโฟลเดอร์นี้ แล้วเปิด http://localhost:8080 (ต้องออนไลน์สำหรับ Firebase)
+GitHub Actions เผยแพร่เฉพาะ index.html, styles.css, app.js, utils.js, firebase-config.js
+เผยแพร่ firestore.rules ผ่าน Firebase console พร้อมตั้ง DatabaseLogin profiles ก่อนใช้งาน
 
-## ใช้งานบนเครื่อง
-
-เปิด `index.html` หรือรัน `python -m http.server 8080` ในโฟลเดอร์นี้ แล้วเปิด http://localhost:8080
-
-นำเข้าไฟล์ `equipment-import.json` ที่ส่งแยกต่างหากผ่านปุ่ม **นำเข้าข้อมูล**: ข้อมูลจาก Excel 100 รายการและหมายเหตุ 9 แถว ข้อมูลถูกเก็บใน localStorage ของเบราว์เซอร์นี้เท่านั้น จนกว่าจะเชื่อมต่อ Firebase และนำเข้าอีกครั้งในโหมด Firebase สำรองด้วยปุ่มส่งออก JSON ก่อนย้ายเครื่องหรือล้างเบราว์เซอร์
-
-วันที่ต้นฉบับเก็บปี 1950–1969 จึงติดธงให้ตรวจสอบ ไม่แปลงปีโดยคาดเดา และไม่มีสถานะซ่อมในไฟล์ จึงตั้งสถานะเริ่มต้นเป็นรอตรวจสอบ ความเร่งด่วนเริ่มต้นเป็นปกติ ไม่ใช่ผลการประเมินทางวิศวกรรม
-
-## ตั้งค่า Firebase
-
-โครงการที่สร้างแล้ว: `equipment-maintenance-tr-fdae3` (Spark), Firestore region `asia-southeast3` กรุงเทพฯ และ config ใน `firebase-config.js`
-
-1. เปิด https://console.firebase.google.com/project/equipment-maintenance-tr-fdae3/overview
-2. สร้าง Cloud Firestore Standard ในโหมด production เลือก region ให้ตรงข้อกำหนดองค์กร (เปลี่ยนภายหลังไม่ได้)
-3. ใน Firestore > Rules วางเนื้อหา `firestore.rules` แล้ว Publish
-4. Authentication > Sign-in method เปิด Google (ตั้งค่าไว้แล้ว) และ Settings > Authorized domains เพิ่มโดเมนเว็บ `radomboonbank.github.io` เข้าสู่ระบบด้วย Google ครั้งแรก แล้วคัดลอก UID จากแท็บ Users หากต้องการใช้ Email/Password ให้เปิด provider นี้และสร้างบัญชีด้วยตนเอง
-5. ใน Firestore สร้าง collection `members` และ document ID เท่ากับ UID เพิ่ม field `role` ชนิด string ค่า `admin` (หรือ `editor` / `viewer`)
-6. เปิดแอป > ตั้งค่า > วาง Firebase config แบบ JSON > เชื่อมต่อ > เข้าสู่ระบบด้วย Google
-7. นำเข้า `equipment-import.json` ในโหมด Firebase ข้อมูลเดิมในเครื่องจะไม่ส่งขึ้นอัตโนมัติ
-
-Rules ปฏิเสธผู้ที่ไม่ได้เป็นสมาชิก การแก้ไขสมาชิกทำผ่าน Firebase console ของผู้ดูแลเท่านั้น ไม่มี public signup ในแอป และไม่มีการลบถาวร ประวัติเป็นบันทึกประกอบการทำงาน ไม่ใช่ immutable audit log
-
-ผู้ใช้ `viewer` อ่านได้ แต่บันทึก/นำเข้าจะถูก Rules ปฏิเสธ การอัปเดตใช้ transaction + revision เพื่อป้องกันการเขียนทับงานของคนอื่น ไม่เปิด offline queue ในโหมด cloud การนำเข้าทีละ 100 รายการอาจสำเร็จบางส่วนได้เมื่อเครือข่ายขัดข้อง ให้นำเข้าไฟล์เดิมซ้ำเพื่อเติมรายการที่เหลือ (ข้าม ID/รหัสที่มีอยู่)
-
-แอปเก็บ config ในเบราว์เซอร์แต่ละเครื่อง ไม่เก็บรหัสผ่านเอง Config สำหรับเว็บไม่ใช่ service account/private key การควบคุมสิทธิ์อยู่ที่ Authentication และ Firestore Rules
-
-## GitHub Pages
-
-สร้าง repository `equipment-maintenance-tracker` อัปโหลดเฉพาะไฟล์ในโฟลเดอร์นี้ (รวม `.github/workflows/pages.yml`) ตั้ง default branch เป็น `main` และ Settings > Pages > Source เป็น GitHub Actions โค้ด workflow จะเผยแพร่เฉพาะ index.html, styles.css และ app.js และ firebase-config.js
-
-**อย่าอัปโหลดไฟล์ Excel, equipment-import.json หรือไฟล์สำรองฐานข้อมูลเข้า repository สาธารณะ** ข้อมูลจริงส่งตรงไป Firestore หลังเข้าสู่ระบบเท่านั้น
-
-GitHub Pages สำหรับ private repository อาจต้องมีแผนที่รองรับ หากใช้ repository สาธารณะให้มีเฉพาะซอร์สโค้ดซึ่งไม่มีข้อมูลอุปกรณ์จริง
-
-## โครงสร้างข้อมูล
-
-- `equipment/{id}`: ข้อมูลเดิม 15 คอลัมน์, status, priority, due, dateNeedsReview, history, revision, updatedAt
-- `metadata/source-notes`: หมายเหตุนอกตารางที่ไม่ใช่รายการอุปกรณ์
-- `members/{uid}`: role สำหรับควบคุมสิทธิ์
-
-ข้อมูลหมายเหตุเก็บในไฟล์สำรองและ Firestore metadata ไม่มีการตีความเป็นคำสั่งหรือรายการอุปกรณ์
-
-## เอกสารทางการ
-
-- https://firebase.google.com/docs/web/alt-setup
-- https://firebase.google.com/docs/auth/web/password-auth
-- https://firebase.google.com/docs/firestore/security/get-started
-
-Firebase SDK ใช้เวอร์ชัน 13.0.0 จาก CDN ของ Google จึงต้องมีอินเทอร์เน็ตเพื่อใช้งาน Firebase ฟอนต์ภายนอกมี Tahoma/system font สำรอง
-
+เอกสาร: https://firebase.google.com/docs/reference/rest/auth และ https://firebase.google.com/docs/firestore/solutions/role-based-access
