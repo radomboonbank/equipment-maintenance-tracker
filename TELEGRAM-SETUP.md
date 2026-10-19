@@ -1,43 +1,41 @@
-# เปิดแจ้งเตือน Telegram
+# Telegram ด้วย Google Apps Script (ใช้ Firebase Spark เดิม)
 
-สถานะ: เตรียมโค้ดแล้ว ยังไม่ได้เปิดใช้จริง ต้องมีบอท ห้องปลายทาง และ Firebase Blaze ก่อน deploy
+Apps Script: https://script.google.com/home/projects/1kvZcs4am3YrXlzmSxtSeiSQRm1JO4TgpcIy6icZGaQU5pWC_P97XozQs/edit
 
-## เตรียมใน Telegram
-1. เปิดบอททางการ https://t.me/BotFather แล้วส่ง `/newbot` ตั้งชื่อและ username ที่ลงท้าย `bot`
-2. เก็บ Bot Token ไว้ส่วนตัว อย่าส่งเข้า GitHub หรือใส่ใน JavaScript หน้าเว็บ
-3. สร้างกลุ่มสำหรับแจ้งเตือน เพิ่มบอทเข้ากลุ่มและอนุญาตให้ส่งข้อความ ไม่จำเป็นต้องให้สิทธิ์ดูแลทุกอย่าง
-4. ส่งข้อความในกลุ่มโดย mention บอท เพื่อให้ระบุ Chat ID ได้ผ่าน Bot API `getUpdates` จากเครื่องผู้ดูแล (ไม่ควรเปิด URL ที่มี token ใน browser เพราะติดประวัติ)
-5. กำหนดกลุ่มผู้รับให้ถูกต้อง: ข้อความที่จะส่งมีข้อมูลอุปกรณ์ ผู้บันทึก ข้อมูลติดตาม และชื่อ/มือถือผู้แจ้งปิดงาน
+โค้ด Cloud Functions ถูกถอดออกแล้ว ไม่ต้อง Blaze, service account key หรือ public web app endpoint
+ยังไม่มี Bot Token และ Chat ID จึงยังไม่เปิดส่งข้อความจริง
 
-## Firebase
-Cloud Functions ต้องใช้ Blaze และ billing account ผู้ดูแลต้องเปิดแผนด้วยตัวเองก่อน ไม่ได้เปิดหรือผูกบัตรอัตโนมัติ
-เมื่อพร้อม ใช้ Firebase CLI ที่ลงชื่อเข้าใช้เป็นผู้ดูแลโครงการจากโฟลเดอร์นี้:
+## เตรียมบอทและกลุ่ม
+1. เปิด https://t.me/BotFather ส่ง `/newbot` ตั้งชื่อและ username ที่ลงท้าย bot
+2. สร้างกลุ่มสำหรับแจ้งเตือน เพิ่มบอท ให้ส่งข้อความได้
+3. ส่งข้อความ mention บอทในกลุ่ม แล้วหา Chat ID ผ่าน Bot API getUpdates จากเครื่องผู้ดูแล (ไม่เปิด URL ที่มี Token ใน browser)
+4. ใน Apps Script > การตั้งค่าโครงการ > พร็อพเพอร์ตี้ของสคริปต์ เพิ่ม `TELEGRAM_BOT_TOKEN` และ `TELEGRAM_CHAT_ID`
+5. เก็บ Token ใน Script Properties เท่านั้น ไม่ใส่โค้ด GitHub หรือ Firestore และอย่าแชร์สิทธิ์แก้ไข Apps Script ให้ผู้ที่ไม่ควรอ่าน Token
 
-```powershell
-firebase functions:secrets:set TELEGRAM_BOT_TOKEN --project equipment-maintenance-tr-fdae3
-firebase functions:secrets:set TELEGRAM_CHAT_ID --project equipment-maintenance-tr-fdae3
-npm --prefix functions install
-npm --prefix functions test
-firebase deploy --only functions:notifyEquipmentSave --project equipment-maintenance-tr-fdae3
-```
+## เปิดใช้
+1. ผู้ดูแล radomboon.t@gmail.com เปิด Apps Script ที่ลิงก์ด้านบน
+2. เรียก `checkConnection` และอนุญาต OAuth ที่จำเป็น ได้แก่ Firestore/Datastore, เชื่อมต่อบริการภายนอก, จัดการทริกเกอร์ สคริปต์ใช้สิทธิ์ IAM ของบัญชีเจ้าของ ไม่ใช้ Firebase password หรือ service account key
+3. ตรวจ log Firebase connection OK หากเจอ 403 ตรวจว่าเจ้าของมีสิทธิ์ Firestore และเปิด Cloud Firestore API ในโครงการที่ใช้ OAuth; อาจต้องเชื่อม Apps Script กับ standard GCP project เดิม โดยไม่เปิด billing
+4. ใส่ Script Properties แล้วเรียก `installTrigger` เพื่อสร้างทริกเกอร์ทุก 5 นาที (เรียกซ้ำไม่สร้างซ้ำ)
+5. บันทึกรายการทดสอบผ่านเว็บ ตรวจข้อความในกลุ่มและสถานะ sent ใน telegramOutbox แล้วลบข้อมูลทดสอบ
 
-คำสั่ง secrets:set จะให้กรอกค่าลับแบบ interactive ไม่ใส่ token ลง command line หรือไฟล์ repo
-Function ใช้ region asia-southeast1 ซึ่งรับ trigger จาก Firestore ใน asia-southeast3 ได้; ตรวจ role/permission ที่ CLI ขอระหว่าง deploy ก่อนอนุมัติ
+อย่ากด Deploy เป็นเว็บแอป ไม่ต้องเปิดให้ Anyone เข้าถึง สคริปต์ทำงานตามทริกเกอร์ของเจ้าของเท่านั้น
 
-## การทำงาน
-- ส่งเมื่อเอกสาร equipment สร้าง/อัปเดตสำเร็จ รวมทุกครั้งที่กดบันทึก เพราะ revision เพิ่มทุกครั้ง
-- การบันทึกผิดพลาด การเปิดดู และการลบ ไม่ส่งข้อความ
-- ทำงานฝั่งเซิร์ฟเวอร์ แม้ปิดหน้าเว็บหลังบันทึก ไม่ต้องเรียก Telegram จาก browser
-- ส่งรายละเอียดหลัก ข้อมูลติดตาม 3 ลำดับ และข้อมูลปิดงาน พร้อมรหัส revision; วันที่ พ.ศ. เขต Asia/Bangkok
-- ข้อความยาวแบ่งเป็นหลายส่วนไม่เกินขนาด Telegram ไม่ตัดข้อมูลกลางทาง
-- Secret Manager เก็บ Bot Token และ Chat ID, `telegramDeliveries` เก็บสถานะส่งแบบ private เฉพาะ backend อ่านเขียนได้
-- Event retry เปิดไว้ และ event ID ป้องกันส่งซ้ำเมื่อส่งสำเร็จแล้ว แต่ถ้า Telegram รับข้อความสำเร็จและเครือข่ายขาดก่อนบันทึกสถานะ อาจส่งซ้ำได้ (Telegram ไม่มี idempotency key)
-- ไม่รับประกันลำดับข้อความของการบันทึกพร้อมกัน ให้ดูรหัส/ครั้งที่บันทึกในข้อความ
-- หากกลุ่มลบบอท token ผิด หรือ API ล่ม จะ retry ตามช่วงเวลาของ Cloud Functions; หลังหมดช่วง retry ต้องให้ผู้ดูแลตรวจ failed delivery และดำเนินการใหม่ ข้อมูลอุปกรณ์ยังบันทึกสำเร็จตามปกติ
-- เอกสารเดิมไม่ส่งย้อนหลังอัตโนมัติ การแจ้งเตือนเริ่มหลัง deploy เท่านั้น
+## ข้อมูลและการส่ง
+- การบันทึกอุปกรณ์กับ telegramOutbox เกิดใน transaction เดียวกัน สำเร็จทั้งคู่หรือไม่เขียนทั้งคู่
+- ID คิว `<recordId>__<revision>` เก็บ snapshot ของแต่ละครั้ง ไม่อ่านทับด้วยข้อมูลล่าสุด
+- Rules บังคับ snapshot ตรงกับข้อมูลที่บันทึกและ revision ใหม่ บัญชีทั่วไป/ผู้ชมอ่านคิวหรือแก้สถานะการส่งไม่ได้
+- ส่งข้อมูลหลัก ข้อมูลติดตาม และปิดงาน รวมชื่อและโทรศัพท์ไปยังกลุ่มที่ตั้งค่าไว้
+- เริ่มตรวจคิวทุก 5 นาที เวลาส่งจริงขึ้นกับทริกเกอร์ เครือข่าย และโควตา ไม่ใช่แจ้งเตือนทันที
+- มี checkpoint แยกแต่ละส่วนของข้อความ และยืดเวลาลองใหม่เมื่อส่งผิดพลาด หากผิดพลาดถึง 20 ครั้งพักเป็น failed ให้ผู้ดูแลตรวจปัญหาแล้วตั้ง status=pending และ readyAt เป็น timestamp ปัจจุบัน (คง nextPart เพื่อส่งต่อจากส่วนที่สำเร็จ)
+- ถ้า Telegram รับข้อความแล้ว แต่บันทึก checkpoint ไม่สำเร็จ อาจมีข้อความซ้ำได้ เพราะ Telegram ไม่มี idempotency key
+- คิวและ Token ไม่เปิดสาธารณะ สถานะ sent และ failed เก็บไว้ตรวจสอบ ไม่ลบอัตโนมัติ
+- ก่อนเปิดบอท คิวสะสมจะรอไว้ เมื่อเปิดใช้งานจะส่งคิวที่ค้างด้วย ไม่มีการส่งย้อนหลังจาก 100 รายการเดิมที่ไม่ได้กดบันทึกใหม่
+- ฟรีภายในโควตา Apps Script, Firestore Spark และ Telegram; คิวเพิ่มการใช้พื้นที่และการอ่าน/เขียน หากเต็มโควตาอาจบันทึกหรือส่งไม่ได้จนโควตาคืน ควรตรวจ Usage และเก็บสำรอง/ล้างคิวที่ส่งแล้วเป็นระยะโดยผู้ดูแล
+- `removeTrigger` หยุดตรวจคิว โดยไม่ลบข้อมูล
 
-## ตรวจหลังเปิดใช้
-สร้างรายการทดสอบหนึ่งรายการ ตรวจข้อความในกลุ่มให้ตรงทั้งรหัส/สถานะ/วันที่ จากนั้นแก้ไขข้อมูลติดตามและปิดงาน ตรวจว่าทุก revision ส่งและสถานะ `telegramDeliveries` เป็น `sent` แล้วลบรายการทดสอบ
-ทดสอบนี้ยังไม่ได้ทำกับ Telegram จริง เพราะยังไม่มีบอทหรือกลุ่ม
+## ทดสอบโค้ดบนเครื่อง
+`node --test apps-script/worker.test.cjs`
+ไฟล์ Code.gs และ Message.gs รวมอยู่ใน รหัส.gs บน Apps Script; manifest ตรงกับ apps-script/appsscript.json
 
-เอกสาร: https://firebase.google.com/docs/functions/get-started และ https://core.telegram.org/bots/api#sendmessage
+เอกสาร: https://developers.google.com/apps-script/guides/services/quotas และ https://firebase.google.com/docs/firestore/use-rest-api

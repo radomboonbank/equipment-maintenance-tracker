@@ -62,8 +62,8 @@ $('#record-form').onsubmit=async e=>{
   if(editing?.time&&editing.time!==r.time&&!editing.originalTime)next.originalTime=editing.time;
   busy=true;$('#save').disabled=true;
   const ref=cloud.doc(cloud.db,'equipment',next.id),original=editing;
-  await cloud.runTransaction(cloud.db,async t=>{const snap=await t.get(ref);if(original&&(!snap.exists()||snap.data().revision!==original.revision))throw Error('ข้อมูลเปลี่ยนแปลงแล้ว กรุณาปิดและเปิดรายการใหม่');if(!original&&snap.exists())throw Error('รหัสซ้ำ กรุณาบันทึกอีกครั้ง');t.set(ref,next)});
-  $('#editor').close();toast('บันทึกข้อมูลแล้ว');
+  await cloud.runTransaction(cloud.db,async t=>{const snap=await t.get(ref);if(original&&(!snap.exists()||snap.data().revision!==original.revision))throw Error('ข้อมูลเปลี่ยนแปลงแล้ว กรุณาปิดและเปิดรายการใหม่');if(!original&&snap.exists())throw Error('รหัสซ้ำ กรุณาบันทึกอีกครั้ง');t.set(ref,next);t.set(cloud.doc(cloud.db,'telegramOutbox',next.id+'__'+next.revision),{recordId:next.id,revision:next.revision,record:next,createdBy:user.uid,createdAt:cloud.serverTimestamp(),readyAt:cloud.serverTimestamp(),status:'pending',nextPart:0,attempts:0})});
+  $('#editor').close();toast('บันทึกข้อมูลและเข้าคิวแจ้งเตือนแล้ว');
  }catch(err){toast('บันทึกไม่สำเร็จ: '+err.message)}finally{busy=false;$('#save').disabled=false}
 };
 $('#delete').onclick=async()=>{

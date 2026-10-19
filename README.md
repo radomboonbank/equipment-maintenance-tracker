@@ -33,4 +33,4 @@ GitHub Actions เผยแพร่เฉพาะ index.html, styles.css, app.
 ## ปิดงานและ Telegram
 ส่วนปิดงานเก็บ closure: date,time,reporter,mobile,details,follower กรอกครบแล้วบันทึกเปลี่ยนสถานะเป็น resolved อัตโนมัติ ผู้ชมอ่านอย่างเดียว ประวัติเดิมคงอยู่
 หากต้องการเปิดงานใหม่ ให้ล้างข้อมูลปิดงานทุกช่องและเลือกสถานะที่ยังไม่ปิดก่อนบันทึก
-Telegram backend เตรียมไว้แต่ยังไม่ deploy ดู TELEGRAM-SETUP.md สำหรับขั้นตอนเปิดใช้
+Telegram ใช้ Google Apps Script + Firestore telegramOutbox แทน Cloud Functions บันทึกข้อมูลและคิวใน transaction เดียวกัน ยังต้องตั้ง Bot Token/Chat ID และเปิดทริกเกอร์ ดู TELEGRAM-SETUP.md สำหรับขั้นตอนเปิดใช้

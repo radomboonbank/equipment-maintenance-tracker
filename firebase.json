@@ -14,7 +14,8 @@
       "*.zip",
       "*import*.json",
       "functions/**",
-      "TELEGRAM-SETUP.md"
+      "TELEGRAM-SETUP.md",
+      "apps-script/**"
     ],
     "headers": [
       {
@@ -31,17 +32,5 @@
         ]
       }
     ]
-  },
-  "functions": [
-    {
-      "source": "functions",
-      "codebase": "telegram",
-      "ignore": [
-        "node_modules",
-        ".git",
-        "*.test.js",
-        ".env*"
-      ]
-    }
-  ]
+  }
 }
