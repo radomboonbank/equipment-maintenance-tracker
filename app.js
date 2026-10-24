@@ -1,3 +1,4 @@
+import {rotateLogins,loginEntries,loginTime} from './login-history.js';
 'use strict';
 import {dateParts,dateText,stamp,credential,loginEmail,readDate,normalizeTime} from './utils.js';
 const $=s=>document.querySelector(s), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -5,6 +6,30 @@ const statuses={unreviewed:'รอตรวจสอบ',pending:'รอดำ�
 const fields={code:'รหัสชำรุด',date:'วันที่ (พ.ศ.)',time:'เวลา',station:'สถานี',category:'ชนิดอุปกรณ์',equipment:'อุปกรณ์ที่ชำรุด หรือ ปลด',breaker:'Bkr. ที่ปลด / อุปกรณ์ OFF',cause:'สาเหตุ',solution:'แนวทางแก้ไข',impact:'ผลกระทบต่อระบบไฟฟ้า',mitigation:'มาตรการรองรับ',owner:'ผู้รับผิดชอบ',reporter:'ผู้แจ้ง',receiver:'ศูนย์ที่รับเรื่อง',due:'กำหนดเสร็จ (พ.ศ.)',status:'สถานะ',priority:'ความเร่งด่วน'};
 let data=[],notes=[],page=1,view='all',editing=null,cloud=null,unsubscribe=null,user=null,cloudReady=false,busy=false;
 let role='guest',username='',generation=0;
+
+let unsubscribeLogins=null;
+function renderLogins(value,message='') {
+ const entries=loginEntries(value);
+ $('#last-logins-list').innerHTML=message?`<li class="login-empty">${esc(message)}</li>`:entries.length?entries.map((entry,i)=>`<li><span class="login-rank">0${i+1}</span><div class="login-entry"><strong>${esc(entry.username)}</strong><time>${esc(loginTime(entry.at))}</time></div></li>`).join(''):'<li class="login-empty">ยังไม่มีประวัติการเข้าสู่ระบบ</li>';
+}
+async function recordLogin() {
+ const ref=cloud.doc(cloud.db,'loginHistory','recent');
+ await cloud.runTransaction(cloud.db,async transaction=>{
+  const previous=await transaction.get(ref);
+  transaction.set(ref,rotateLogins(previous.exists()?previous.data():null,{uid:user.uid,username,at:cloud.serverTimestamp()}));
+ });
+}
+function watchLogins() {
+ unsubscribeLogins?.();unsubscribeLogins=null;
+ $('#last-logins-scope').textContent='รวมทุกเครื่อง · เวลาไทย (พ.ศ.)';
+ if(role==='guest'){renderLogins(null,'เข้าสู่ระบบเพื่อดูประวัติ Login');return}
+ renderLogins(null,'กำลังโหลดประวัติ…');
+ const gen=generation;
+ unsubscribeLogins=cloud.onSnapshot(cloud.doc(cloud.db,'loginHistory','recent'),snapshot=>{if(gen===generation)renderLogins(snapshot.exists()?snapshot.data():null)},error=>{
+  if(gen===generation){$('#last-logins-list').replaceChildren();console.warn('Login history unavailable:',error.code)}
+ });
+}
+
 const canEdit=()=>cloudReady&&['admin','editor'].includes(role);
 function toast(message){$('#toast').textContent=message;$('#toast').classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('#toast').classList.remove('show'),6000)}
 function dateLabel(r){return dateText(r.date)||'ไม่ระบุวันที่'}
@@ -80,8 +105,9 @@ $('#delete').onclick=async()=>{
  busy=true;$('#delete').disabled=true;
  try{const original=editing;await cloud.runTransaction(cloud.db,async t=>{const ref=cloud.doc(cloud.db,'equipment',original.id),snap=await t.get(ref);if(!snap.exists()||snap.data().revision!==original.revision)throw Error('ข้อมูลเปลี่ยนแปลง กรุณาเปิดใหม่');t.delete(ref)});$('#editor').close();toast('ลบรายการแล้ว')}catch(err){toast('ลบไม่สำเร็จ: '+err.message)}finally{busy=false;$('#delete').disabled=false}
 };
-function resetSession(){generation++;unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
+function resetSession(){generation++;unsubscribeLogins?.();unsubscribeLogins=null;renderLogins(null);unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
 function showWorkspace(){
+ watchLogins();
  $('#workspace').hidden=false;$('#login-screen').hidden=true;
  $('#identity').textContent=username+' · '+({admin:'Admin',editor:'ผู้ใช้งานทั่วไป',guest:'ดูอย่างเดียว'}[role]);
  const gen=generation;
@@ -94,7 +120,7 @@ $('#login').onsubmit=async e=>{
   const result=await cloud.signInWithEmailAndPassword(cloud.auth,loginEmail(name),await credential(name,password));
   const profile=await cloud.getDoc(cloud.doc(cloud.db,'DatabaseLogin',result.user.uid));
   if(!profile.exists()||!['admin','editor'].includes(profile.data().role)||profile.data().username!==name)throw Error('บัญชีนี้ยังไม่ได้รับสิทธิ์ใช้งาน');
-  resetSession();user=result.user;role=profile.data().role;username=name;$('#password').value='';$('#login-status').textContent='';showWorkspace();
+  resetSession();user=result.user;role=profile.data().role;username=name;$('#password').value='';$('#login-status').textContent='';try{await recordLogin()}catch(historyError){console.warn('Login history unavailable')}showWorkspace();
  }catch(err){await cloud.signOut(cloud.auth);$('#login-status').textContent=err.code?.startsWith('auth/')?'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง หรือยังไม่เปิดใช้งานบัญชี':err.message}
  finally{busy=false;$('#login-submit').disabled=false;$('#guest').disabled=false}
 };

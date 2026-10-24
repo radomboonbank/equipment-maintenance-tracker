@@ -39,6 +39,24 @@ service cloud.firestore {
    allow get: if request.auth != null && request.auth.uid == uid;
    allow list, create, update, delete: if false;
   }
+  match /loginHistory/{id} {
+   allow get: if editor() && id == 'recent';
+   allow list, delete: if false;
+   allow create: if editor() && id == 'recent' && validLogin()
+    && request.resource.data.second == null && request.resource.data.third == null;
+   allow update: if editor() && id == 'recent' && validLogin()
+    && request.resource.data.second == resource.data.first
+    && request.resource.data.third == resource.data.second;
+  }
+  function validLogin() {
+   let d = request.resource.data;
+   return d.keys().hasAll(['first','second','third']) && d.keys().hasOnly(['first','second','third'])
+    && d.first is map && d.first.keys().hasAll(['uid','username','at']) && d.first.keys().hasOnly(['uid','username','at'])
+    && d.first.uid == request.auth.uid
+    && d.first.username == get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.username
+    && d.first.at == request.time;
+  }
+
   match /metadata/{id} { allow read: if editor(); allow write: if admin(); }
   match /members/{uid} { allow read, write: if false; }
   match /telegramDeliveries/{id} { allow read, write: if false; }
