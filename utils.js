@@ -9,3 +9,9 @@ export const loginEmail=username=>`${username.toLowerCase()}@equipment-maintenan
 // Versioned credential encoding supports legacy short PINs. Firebase Auth hashes
 // the resulting credential server-side. No passwords or hashes are stored in Firestore.
 export async function credential(username,password){const bytes=new TextEncoder().encode('GRID-CARE:v1:'+username.toLowerCase()+':'+password);return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('')}
+
+export function mergedEquipment(record={}) {
+ const equipment=String(record.equipment||'').trim(),off=String(record.breaker||'').trim();
+ if(!off||equipment===off||equipment.split('\n').some(line=>line.trim()===off))return equipment||off;
+ return [equipment,off].filter(Boolean).join('\n');
+}

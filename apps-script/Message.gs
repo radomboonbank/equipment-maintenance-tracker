@@ -4,10 +4,21 @@ function date(value){if(!value)return '—';const d=new Date(value.length===10?v
 function messages(record,isNew){
  const v=x=>String(x??'').trim()||'—';
  const lines=[`GRID CARE · ${isNew?'สร้างรายการ':'บันทึกข้อมูล'}`,`รหัส: ${v(record.code)} · ครั้งที่ ${v(record.revision)}`,`บันทึกเมื่อ: ${date(record.updatedAt)}`,`ผู้บันทึก: ${v(record.history?.at(-1)?.by)}`];
- const fields={station:'สถานี',equipment:'อุปกรณ์',category:'ชนิดอุปกรณ์',breaker:'อุปกรณ์ OFF',cause:'สาเหตุ',solution:'แนวทางแก้ไข',impact:'ผลกระทบ',mitigation:'มาตรการรองรับ',owner:'ผู้รับผิดชอบ',reporter:'ผู้แจ้ง',receiver:'ศูนย์ที่รับเรื่อง'};
+ const fields={station:'สถานี',equipment:'อุปกรณ์ที่ชำรุด (อุปกรณ์ที่ OFF)',category:'ชนิดอุปกรณ์',cause:'สาเหตุ ที่ ปลด (OFF)',owner:'ผู้รับผิดชอบ',reporter:'ผู้แจ้ง',receiver:'ศูนย์ที่รับเรื่อง'};
  lines.push(`สถานะ: ${statuses[record.status]||v(record.status)}`,`ความเร่งด่วน: ${{normal:'ปกติ',urgent:'เร่งด่วน',critical:'วิกฤต'}[record.priority]||v(record.priority)}`,`วันที่ชำรุด: ${date(record.date)} ${v(record.time)}`,`กำหนดเสร็จ: ${date(record.due)}`);
- for(const [key,label] of Object.entries(fields))lines.push(`${label}: ${v(record[key])}`);
+ const equipment=String(record.equipment||'').trim(),off=String(record.breaker||'').trim();
+ const combined=!off||equipment===off||equipment.split('\n').some(line=>line.trim()===off)?equipment||off:[equipment,off].filter(Boolean).join('\n');
+ for(const [key,label] of Object.entries(fields))lines.push(`${label}: ${v(key==='equipment'?combined:record[key])}`);
  for(const [i,f] of (record.followups||[]).entries())if(Object.values(f).some(Boolean))lines.push(`\nติดตาม ${i+1}: ${date(f.date)} ${v(f.time)}`,`ผู้ให้ข้อมูล: ${v(f.informant)} · โทร ${v(f.mobile)}`,`รายละเอียด: ${v(f.details)}`,`ผู้ตามข้อมูล: ${v(f.follower)}`);
+ lines.push(`ระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า: ${{high:'สูง',medium:'ปานกลาง',low:'ต่ำ'}[record.criticality]||'ยังไม่ประเมิน'}`);
+ const assessment=record.criticalityAssessment||{};
+ for(const [key,label] of Object.entries({scope:'ขอบเขตผลกระทบ',replacement:'ระบบหรืออุปกรณ์ทดแทน',effect:'ผลต่อระบบ',measures:'มาตรการรองรับเหตุการณ์'}))if(assessment[key])lines.push(`${label}: ${v(assessment[key])}`);
+ const plan=record.repairPlan||{};
+ if(Object.values(plan).some(Boolean)){
+  lines.push('\nแผนงานซ่อมแซมแก้ไข');
+  for(const [key,label] of Object.entries({approach:'แนวทาง การแก้ไข',responsible:'ผู้รับผิดชอบ การแก้ไข (ชื่อ และเบอร์มือถือ)',schedule:'แผนดำเนินการแก้ไข'}))if(plan[key])lines.push(`${label}: ${v(plan[key])}`);
+  if(plan.expectedDate)lines.push(`วันที่คาดว่าจะแก้ไขเสร็จ: ${date(plan.expectedDate)}`);
+ }
  const c=record.closure;if(c?.date)lines.push(`\nปิดงาน: ${date(c.date)} ${v(c.time)}`,`ผู้แจ้งปิดงาน: ${v(c.reporter)}`,`มือถือ: ${v(c.mobile)}`,`รายละเอียด: ${v(c.details)}`,`ผู้ตามข้อมูล: ${v(c.follower)}`);
  lines.push('\nhttps://radomboonbank.github.io/equipment-maintenance-tracker/');
  // Plain text only: user-entered markup cannot change Telegram formatting.
