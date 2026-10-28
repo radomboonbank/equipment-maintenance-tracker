@@ -174,9 +174,9 @@ function resetSession(){generation++;unsubscribeLogins?.();unsubscribeLogins=nul
 function showWorkspace(){
  watchLogins();
  $('#workspace').hidden=false;$('#login-screen').hidden=true;
- $('#identity').textContent=username+' · '+({admin:'Admin',editor:'ผู้ใช้งานทั่วไป',guest:'ดูอย่างเดียว'}[role]);
+ $('#identity').textContent=username+' · '+({admin:'super admin',editor:'cac term',viewer:'user · ดูอย่างเดียว',guest:'ดูอย่างเดียว'}[role]);
  const gen=generation;
- unsubscribe=cloud.onSnapshot(cloud.collection(cloud.db,'equipment'),snap=>{if(gen!==generation)return;data=snap.docs.map(d=>({...d.data(),id:d.id}));cloudReady=true;$('#mode').textContent='Firebase · เชื่อมต่อแล้ว';$('#notice').textContent='ซิงก์ข้อมูลอัตโนมัติ · '+(role==='guest'?'โหมดดูอย่างเดียว':'บันทึกความคืบหน้าได้ทันที');render()},err=>{if(gen!==generation)return;cloudReady=false;data=[];render();$('#notice').textContent='โหลดข้อมูลไม่สำเร็จ กรุณาตรวจการเชื่อมต่อและสิทธิ์';toast(err.code==='permission-denied'?'ยังไม่ได้รับสิทธิ์อ่านฐานข้อมูล':err.message)});
+ unsubscribe=cloud.onSnapshot(cloud.collection(cloud.db,'equipment'),snap=>{if(gen!==generation)return;data=snap.docs.map(d=>({...d.data(),id:d.id}));cloudReady=true;$('#mode').textContent='Firebase · เชื่อมต่อแล้ว';$('#notice').textContent='ซิงก์ข้อมูลอัตโนมัติ · '+(['guest','viewer'].includes(role)?'โหมดดูอย่างเดียว':'บันทึกความคืบหน้าได้ทันที');render()},err=>{if(gen!==generation)return;cloudReady=false;data=[];render();$('#notice').textContent='โหลดข้อมูลไม่สำเร็จ กรุณาตรวจการเชื่อมต่อและสิทธิ์';toast(err.code==='permission-denied'?'ยังไม่ได้รับสิทธิ์อ่านฐานข้อมูล':err.message)});
 }
 $('#login').onsubmit=async e=>{
  e.preventDefault();if(!cloud||busy)return;busy=true;$('#login-submit').disabled=true;$('#guest').disabled=true;
@@ -184,9 +184,9 @@ $('#login').onsubmit=async e=>{
   const name=$('#username').value.trim().toLowerCase(),password=$('#password').value;
   const result=await cloud.signInWithEmailAndPassword(cloud.auth,loginEmail(name),await credential(name,password));
   const profile=await cloud.getDoc(cloud.doc(cloud.db,'DatabaseLogin',result.user.uid));
-  if(!profile.exists()||!['admin','editor'].includes(profile.data().role)||profile.data().username!==name)throw Error('บัญชีนี้ยังไม่ได้รับสิทธิ์ใช้งาน');
+  if(!profile.exists()||!['admin','editor','viewer'].includes(profile.data().role)||profile.data().username!==name)throw Error('บัญชีนี้ยังไม่ได้รับสิทธิ์ใช้งาน');
   resetSession();user=result.user;role=profile.data().role;username=name;$('#password').value='';$('#login-status').textContent='';try{await recordLogin()}catch(historyError){console.warn('Login history unavailable')}showWorkspace();
- }catch(err){await cloud.signOut(cloud.auth);$('#login-status').textContent=err.code?.startsWith('auth/')?'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง หรือยังไม่เปิดใช้งานบัญชี':err.message}
+ }catch(err){await cloud.signOut(cloud.auth);$('#login-status').textContent=err.code?.startsWith('auth/')?'รหัสพนักงานหรือรหัสผ่านไม่ถูกต้อง หรือยังไม่เปิดใช้งานบัญชี':err.message}
  finally{busy=false;$('#login-submit').disabled=false;$('#guest').disabled=false}
 };
 $('#guest').onclick=async()=>{if(!cloud||busy)return;try{await cloud.signOut(cloud.auth);resetSession();user=null;username='ผู้ชมทั่วไป';showWorkspace()}catch(err){toast(err.message)}};

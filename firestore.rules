@@ -59,11 +59,11 @@ service cloud.firestore {
    allow list, create, update, delete: if false;
   }
   match /loginHistory/{id} {
-   allow get: if editor() && id == 'recent';
+   allow get: if account() && role() in ['admin','editor','viewer'] && id == 'recent';
    allow list, delete: if false;
-   allow create: if editor() && id == 'recent' && validLogin()
+   allow create: if account() && role() in ['admin','editor','viewer'] && id == 'recent' && validLogin()
     && request.resource.data.second == null && request.resource.data.third == null;
-   allow update: if editor() && id == 'recent' && validLogin()
+   allow update: if account() && role() in ['admin','editor','viewer'] && id == 'recent' && validLogin()
     && request.resource.data.second == resource.data.first
     && request.resource.data.third == resource.data.second;
   }
