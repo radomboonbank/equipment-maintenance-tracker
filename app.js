@@ -6,18 +6,18 @@ const $=s=>document.querySelector(s), esc=s=>String(s??'').replace(/[&<>"']/g,c=
 const statuses={unreviewed:'รอตรวจสอบ',pending:'รอดำเนินการ',repairing:'กำลังซ่อม',resolved:'ซ่อมแล้ว'}, priorities={normal:'ปกติ',urgent:'เร่งด่วน',critical:'วิกฤต'};
 const fields={code:'รหัสชำรุด',date:'วันที่ (พ.ศ.)',time:'เวลา',station:'สถานีไฟฟ้าแรงสูง',category:'ชนิดอุปกรณ์',equipment:'อุปกรณ์ที่ชำรุด (อุปกรณ์ที่ OFF)',cause:'สาเหตุ ที่ ปลด (OFF)',criticality:'ระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า',owner:'ผู้รับผิดชอบ',reporter:'ผู้แจ้ง',receiver:'ศูนย์ที่รับเรื่อง',due:'กำหนดเสร็จ (พ.ศ.)',status:'สถานะ',priority:'ความเร่งด่วน'};
 let data=[],notes=[],page=1,view='all',editing=null,cloud=null,unsubscribe=null,user=null,cloudReady=false,busy=false;
-let role='guest',username='',generation=0;
+let role='guest',username='',displayName='',generation=0;
 
 let unsubscribeLogins=null;
 function renderLogins(value,message='') {
  const entries=loginEntries(value);
- $('#last-logins-list').innerHTML=message?`<li class="login-empty">${esc(message)}</li>`:entries.length?entries.map((entry,i)=>`<li><span class="login-rank">0${i+1}</span><div class="login-entry"><strong>${esc(entry.username)}</strong><time>${esc(loginTime(entry.at))}</time></div></li>`).join(''):'<li class="login-empty">ยังไม่มีประวัติการเข้าสู่ระบบ</li>';
+ $('#last-logins-list').innerHTML=message?`<li class="login-empty">${esc(message)}</li>`:entries.length?entries.map((entry,i)=>`<li><span class="login-rank">0${i+1}</span><div class="login-entry"><strong>${esc(entry.displayName || entry.username)}</strong><time>${esc(loginTime(entry.at))}</time></div></li>`).join(''):'<li class="login-empty">ยังไม่มีประวัติการเข้าสู่ระบบ</li>';
 }
 async function recordLogin() {
  const ref=cloud.doc(cloud.db,'loginHistory','recent');
  await cloud.runTransaction(cloud.db,async transaction=>{
   const previous=await transaction.get(ref);
-  transaction.set(ref,rotateLogins(previous.exists()?previous.data():null,{uid:user.uid,username,at:cloud.serverTimestamp()}));
+  transaction.set(ref,rotateLogins(previous.exists()?previous.data():null,{uid:user.uid,username,displayName,at:cloud.serverTimestamp()}));
  });
 }
 function watchLogins() {
@@ -170,7 +170,7 @@ $('#delete').onclick=async()=>{
  busy=true;$('#delete').disabled=true;
  try{const original=editing;await cloud.runTransaction(cloud.db,async t=>{const ref=cloud.doc(cloud.db,'equipment',original.id),snap=await t.get(ref);if(!snap.exists()||snap.data().revision!==original.revision)throw Error('ข้อมูลเปลี่ยนแปลง กรุณาเปิดใหม่');t.delete(ref)});$('#editor').close();toast('ลบรายการแล้ว')}catch(err){toast('ลบไม่สำเร็จ: '+err.message)}finally{busy=false;$('#delete').disabled=false}
 };
-function resetSession(){generation++;unsubscribeLogins?.();unsubscribeLogins=null;renderLogins(null);unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
+function resetSession(){generation++;unsubscribeLogins?.();unsubscribeLogins=null;renderLogins(null);unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';displayName='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
 function showWorkspace(){
  watchLogins();
  $('#workspace').hidden=false;$('#login-screen').hidden=true;
@@ -185,7 +185,7 @@ $('#login').onsubmit=async e=>{
   const result=await cloud.signInWithEmailAndPassword(cloud.auth,loginEmail(name),await credential(name,password));
   const profile=await cloud.getDoc(cloud.doc(cloud.db,'DatabaseLogin',result.user.uid));
   if(!profile.exists()||!['admin','editor','viewer'].includes(profile.data().role)||profile.data().username!==name)throw Error('บัญชีนี้ยังไม่ได้รับสิทธิ์ใช้งาน');
-  resetSession();user=result.user;role=profile.data().role;username=name;$('#password').value='';$('#login-status').textContent='';try{await recordLogin()}catch(historyError){console.warn('Login history unavailable')}showWorkspace();
+  resetSession();user=result.user;role=profile.data().role;username=name;displayName=profile.data().displayName||name;$('#password').value='';$('#login-status').textContent='';try{await recordLogin()}catch(historyError){console.warn('Login history unavailable')}showWorkspace();
  }catch(err){await cloud.signOut(cloud.auth);$('#login-status').textContent=err.code?.startsWith('auth/')?'รหัสพนักงานหรือรหัสผ่านไม่ถูกต้อง หรือยังไม่เปิดใช้งานบัญชี':err.message}
  finally{busy=false;$('#login-submit').disabled=false;$('#guest').disabled=false}
 };
