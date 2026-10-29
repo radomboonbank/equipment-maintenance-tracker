@@ -1,3 +1,4 @@
+import {createMembersPage} from './members.js';
 import {matchesListFilters} from './table-filters.js';
 import {stationControl,setupStation,readStation} from './station-control.js';
 import {dashboardHtml,systemStatuses} from './dashboard.js';
@@ -12,6 +13,8 @@ const fields={code:'รหัสชำรุด',date:'วันที่ได�
 let data=[],notes=[],page=1,view='all',editing=null,cloud=null,unsubscribe=null,user=null,cloudReady=false,busy=false;
 let systemAssessment=null,unsubscribeSystem=null;
 let role='guest',username='',displayName='',generation=0;
+let memberDuty='';
+const membersPage=createMembersPage({session:()=>({cloud,user,role,duty:memberDuty}),endpoint:()=>window.GRID_TELEGRAM_URL});
 
 let unsubscribeLogins=null;
 function renderLogins(value,message='') {
@@ -196,8 +199,9 @@ $('#delete').onclick=async()=>{
  busy=true;$('#delete').disabled=true;
  try{const original=editing;await cloud.runTransaction(cloud.db,async t=>{const ref=cloud.doc(cloud.db,'equipment',original.id),snap=await t.get(ref);if(!snap.exists()||snap.data().revision!==original.revision)throw Error('ข้อมูลเปลี่ยนแปลง กรุณาเปิดใหม่');t.delete(ref)});$('#editor').close();toast('ลบรายการแล้ว')}catch(err){toast('ลบไม่สำเร็จ: '+err.message)}finally{busy=false;$('#delete').disabled=false}
 };
-function resetSession(){generation++;unsubscribeSystem?.();unsubscribeSystem=null;systemAssessment=null;unsubscribeLogins?.();unsubscribeLogins=null;renderLogins(null);unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';displayName='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
+function resetSession(){membersPage.reset();memberDuty="";generation++;unsubscribeSystem?.();unsubscribeSystem=null;systemAssessment=null;unsubscribeLogins?.();unsubscribeLogins=null;renderLogins(null);unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';displayName='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
 function showWorkspace(){
+ membersPage.setAccess(role==='admin'&&memberDuty==='super admin');
  watchLogins();
  watchSystemAssessment();
  $('#workspace').hidden=false;$('#login-screen').hidden=true;
@@ -212,7 +216,7 @@ $('#login').onsubmit=async e=>{
   const result=await cloud.signInWithEmailAndPassword(cloud.auth,loginEmail(name),await credential(name,password));
   const profile=await cloud.getDoc(cloud.doc(cloud.db,'DatabaseLogin',result.user.uid));
   if(!profile.exists()||!['admin','editor','viewer'].includes(profile.data().role)||profile.data().username!==name)throw Error('บัญชีนี้ยังไม่ได้รับสิทธิ์ใช้งาน');
-  resetSession();user=result.user;role=profile.data().role;username=name;displayName=profile.data().displayName||name;$('#password').value='';$('#login-status').textContent='';try{await recordLogin()}catch(historyError){console.warn('Login history unavailable')}showWorkspace();
+  resetSession();user=result.user;role=profile.data().role;memberDuty=profile.data().duty||'';username=name;displayName=profile.data().displayName||name;$('#password').value='';$('#login-status').textContent='';try{await recordLogin()}catch(historyError){console.warn('Login history unavailable')}showWorkspace();
  }catch(err){await cloud.signOut(cloud.auth);$('#login-status').textContent=err.code?.startsWith('auth/')?'รหัสพนักงานหรือรหัสผ่านไม่ถูกต้อง หรือยังไม่เปิดใช้งานบัญชี':err.message}
  finally{busy=false;$('#login-submit').disabled=false;$('#guest').disabled=false}
 };

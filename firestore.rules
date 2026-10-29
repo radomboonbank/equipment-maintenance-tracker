@@ -5,6 +5,7 @@ service cloud.firestore {
   function role() { return get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.role; }
   function editor() { return account() && role() in ['admin', 'editor']; }
   function admin() { return account() && role() == 'admin'; }
+  function superAdmin() { return admin() && get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.get('duty', '') == 'super admin'; }
   function followup(v) {
    return v is map && v.keys().hasOnly(['date','time','informant','mobile','details','follower'])
     && v.date is string && v.time is string && v.informant is string && v.mobile is string && v.details is string && v.follower is string
@@ -56,8 +57,9 @@ service cloud.firestore {
    allow delete: if admin();
   }
   match /DatabaseLogin/{uid} {
-   allow get: if request.auth != null && request.auth.uid == uid;
-   allow list, create, update, delete: if false;
+   allow get: if (request.auth != null && request.auth.uid == uid) || superAdmin();
+   allow list: if superAdmin();
+   allow create, update, delete: if false;
   }
 
   // Public projection contains only names and login times, never employee IDs or UIDs.
@@ -98,6 +100,10 @@ service cloud.firestore {
 
   match /metadata/systemAssessment { allow get: if account(); }
   match /metadata/{id} { allow read: if editor(); allow write: if admin(); }
+  match /memberOperations/{id} {
+   allow get: if superAdmin() && resource.data.actor == request.auth.uid;
+   allow list, create, update, delete: if false;
+  }
   match /members/{uid} { allow read, write: if false; }
   match /telegramDeliveries/{id} { allow read, write: if false; }
   function queued(id) {

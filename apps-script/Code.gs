@@ -20,7 +20,8 @@ function doPost(e) {
   var result={ok:false};
   try {
     if(!e || !e.postData || e.postData.contents.length>10000)throw Error('Invalid request');
-    result=dispatch_(JSON.parse(e.postData.contents));
+    var input=JSON.parse(e.postData.contents);
+    result=input.service==='members'?manageMember_(input):dispatch_(input);
   } catch(err) { result={ok:false,error:'Request rejected or delivery unavailable'}; }
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
