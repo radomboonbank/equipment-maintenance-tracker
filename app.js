@@ -1,4 +1,4 @@
-import {createMembersPage} from './members.js?v=20261029-members2';
+import {createMembersPage} from './members.js?v=20261029-members3';
 import {matchesListFilters} from './table-filters.js';
 import {stationControl,setupStation,readStation} from './station-control.js';
 import {dashboardHtml,systemStatuses} from './dashboard.js';

@@ -39,7 +39,7 @@ function applyMember_(action,m,actor,requestId){
  if(action==='delete'&&m.uid===actor)memberFail_('ไม่อนุญาตลบบัญชีตนเอง');
  var roles={'super admin':'admin','cac term':'editor','user':'viewer'};
  if(action!=='delete'){
-  if(typeof m.employeeId!=='string'||!/^[a-z0-9_-]{1,64}$/.test(m.employeeId)||typeof m.displayName!=='string'||!m.displayName.trim()||m.displayName.length>250||typeof m.department!=='string'||m.department.length>250||!Object.prototype.hasOwnProperty.call(roles,m.duty))memberFail_('ข้อมูลสมาชิกไม่ถูกต้อง');
+  if(typeof m.employeeId!=='string'||!/^[a-z0-9_-]{1,64}$/.test(m.employeeId)||typeof m.displayName!=='string'||!m.displayName.trim()||m.displayName.length>250||typeof m.department!=='string'||m.department.length>250||!(Object.prototype.hasOwnProperty.call(roles,m.duty)||(current&&!old.duty&&m.duty===''&&['admin','editor','viewer'].indexOf(old.role)>=0)))memberFail_('ข้อมูลสมาชิกไม่ถูกต้อง');
   if(m.passwordHash!==undefined && !/^[a-f0-9]{64}$/.test(m.passwordHash))throw Error('Invalid password');
   if(action==='create'&&!m.passwordHash)memberFail_('กรุณากรอกรหัสผ่าน');
   if(current&&old.username!==m.employeeId)memberFail_('ไม่สามารถเปลี่ยนรหัสพนักงานของบัญชีเดิม');
@@ -56,7 +56,7 @@ function applyMember_(action,m,actor,requestId){
   try{authAdmin_('delete',{localId:m.uid})}catch(e){memberFail_('ปิดสิทธิ์สมาชิกแล้ว แต่ลบบัญชี Authentication ไม่สำเร็จ ให้ผู้ดูแลตรวจบัญชีที่ถูกระงับใน Firebase')}
   return;
  }
- var values={employeeId:m.employeeId,username:m.employeeId,displayName:m.displayName.trim(),department:m.department.trim(),duty:m.duty,role:roles[m.duty],memberVersion:requestId};
+ var values={employeeId:m.employeeId,username:m.employeeId,displayName:m.displayName.trim(),department:m.department.trim(),duty:m.duty,role:roles[m.duty]||old.role,memberVersion:requestId};
  if(action==='create'){
   var auth=authAdmin_('create',{email:m.employeeId+'@'+PROJECT_ID+'.firebaseapp.com',password:m.passwordHash,displayName:values.displayName,disabled:true});
   var uid=auth.localId;
