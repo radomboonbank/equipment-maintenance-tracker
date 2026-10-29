@@ -100,6 +100,21 @@ service cloud.firestore {
 
   match /metadata/systemAssessment { allow get: if account(); }
   match /metadata/{id} { allow read: if editor(); allow write: if admin(); }
+  // Presence is visible only to signed-in members; each session owns its write.
+  match /onlineSessions/{id} {
+   allow read: if account() && role() in ['admin','editor','viewer'];
+   allow create: if validPresence() && id.matches(request.auth.uid + '_.*');
+   allow update: if validPresence() && resource.data.uid == request.auth.uid;
+   allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+  }
+  function validPresence() {
+   let d=request.resource.data;
+   return account() && role() in ['admin','editor','viewer']
+    && d.keys().hasAll(['uid','displayName','lastSeen']) && d.keys().hasOnly(['uid','displayName','lastSeen'])
+    && d.uid == request.auth.uid
+    && d.displayName == get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.get('displayName', get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.username)
+    && d.lastSeen == request.time;
+  }
   match /memberOperations/{id} {
    allow get: if superAdmin() && resource.data.actor == request.auth.uid;
    allow list, create, update, delete: if false;
