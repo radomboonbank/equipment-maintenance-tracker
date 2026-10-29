@@ -1,11 +1,12 @@
+import {stationControl,setupStation,readStation} from './station-control.js';
 import {dashboardHtml,systemStatuses} from './dashboard.js';
-import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js';
+import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261029-stations';
 import {rotateLogins,loginEntries,loginTime,publicLoginEntries,rotatePublicLogins} from './login-history.js?v=20261029-ten';
 'use strict';
 import {dateParts,dateText,stamp,credential,loginEmail,readDate,normalizeTime,mergedEquipment} from './utils.js?v=20261027-merged';
 const $=s=>document.querySelector(s), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const statuses={unreviewed:'รอตรวจสอบ',pending:'รอดำเนินการ',repairing:'กำลังซ่อม',resolved:'ซ่อมแล้ว'}, priorities={normal:'ปกติ',urgent:'เร่งด่วน',critical:'วิกฤต'};
-const fields={code:'รหัสชำรุด',date:'วันที่ (พ.ศ.)',time:'เวลา',station:'สถานีไฟฟ้าแรงสูง',eventType:'ประเภทเหตุการณ์',category:'ชนิดอุปกรณ์',equipment:'อุปกรณ์ที่ชำรุด (อุปกรณ์ที่ OFF)',cause:'สาเหตุ ที่ ปลด (OFF)',criticality:'ระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า',owner:'ผู้รับผิดชอบ',reporter:'ผู้แจ้ง',receiver:'ศูนย์ที่รับเรื่อง',due:'กำหนดเสร็จ (พ.ศ.)',status:'สถานะ',priority:'ความเร่งด่วน'};
+const fields={code:'รหัสชำรุด',date:'วันที่ได้รับแจ้งอุปกรณ์ชำรุด (พ.ศ.)',time:'เวลาที่ได้รับแจ้งอุปกรณ์ชำรุด',station:'สถานีไฟฟ้าแรงสูง',eventType:'ประเภทเหตุการณ์',category:'ชนิดอุปกรณ์',equipment:'อุปกรณ์ที่ชำรุด (อุปกรณ์ที่ OFF)',cause:'สาเหตุ ที่ ปลด (OFF)',criticality:'ระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า',owner:'ผู้รับผิดชอบแก้ไข',reporter:'ผู้แจ้ง',receiver:'พนักงานศูนย์ ผู้รับเรื่อง',due:'คาดการณ์กำหนดการแก้ไข (พ.ศ.)',status:'สถานะ',priority:'ความเร่งด่วน'};
 let data=[],notes=[],page=1,view='all',editing=null,cloud=null,unsubscribe=null,user=null,cloudReady=false,busy=false;
 let systemAssessment=null,unsubscribeSystem=null;
 let role='guest',username='',displayName='',generation=0;
@@ -127,6 +128,7 @@ function edit(r){
  $('#editor-title').textContent=r?'รายละเอียด #'+r.code:'แจ้งอุปกรณ์ชำรุด';
  $('#fields').innerHTML=Object.entries(fields).map(([k,l])=>{
   const val=(k==='equipment'?mergedEquipment(r||{}):r?.[k])||(k==='status'?'pending':k==='priority'?'normal':'');
+  if(k==='station')return stationControl(r||{});
   if(k==='eventType')return eventTypeControl(val);
   if(k==='category')return categoryControl(val);
   if(k==='criticality')return criticalityControl(val)+assessmentControl(r?.criticalityAssessment)+repairPlanControl(r||{});
@@ -142,6 +144,7 @@ function edit(r){
  $('#closure-fields').innerHTML=`<label>วันเวลาที่ปิดงาน (พ.ศ.)${dateControl('closure',c.date)}<input type="time" name="closure-time" aria-label="เวลาที่ปิดงาน" value="${esc(c.time)}"></label>`+[['reporter','ชื่อผู้แจ้งปิดงาน'],['mobile','เบอร์มือถือผู้แจ้งปิดงาน'],['details','รายละเอียด'],['follower','ชื่อผู้ตามข้อมูล']].map(([k,label])=>`<label class="${k==='details'?'wide':''}">${label}${k==='details'?`<textarea name="closure-${k}" aria-label="รายละเอียดปิดงาน" maxlength="4000">${esc(c[k])}</textarea>`:`<input name="closure-${k}" ${k==='mobile'?'type="tel" inputmode="tel"':''} value="${esc(c[k])}" maxlength="250">`}</label>`).join('');
  $('#history').innerHTML=(r?.history||[]).slice().reverse().map(h=>`<div class="history-item">${esc(String(h.note||'').replace(/แก้ปีวันที่ตามผู้ดูแล: 19\d{2}-\d{2}-\d{2} → พ.ศ. (25\d{2})-(\d{2})-(\d{2}) \(คงวันและเดือนเดิม\)/,'ตรวจแก้ปีวันที่เป็น $3/$2/$1 พ.ศ. (เก็บค่าต้นฉบับไว้แล้ว)'))}<small>${esc(dateText(h.at))} · ${esc(h.by)}</small></div>`).join('');
  document.querySelectorAll('#fields input,#fields textarea,#fields select,#followups input,#followups textarea,#followups select,#closure-fields input,#closure-fields textarea,#closure-fields select').forEach(el=>el.disabled=!canEdit());
+ setupStation($('#fields .station-control'),canEdit());
  $('#save').hidden=!canEdit();$('#delete').hidden=role!=='admin'||!r;
  $('#editor').showModal();
 }
@@ -150,6 +153,7 @@ $('#record-form').onsubmit=async e=>{
  e.preventDefault();if(busy||!canEdit())return;
  try{
   const f=new FormData(e.target),r=Object.fromEntries(Object.keys(fields).map(k=>[k,['date','due'].includes(k)?formDate(f,k):String(f.get(k)||'').trim()]));
+  Object.assign(r,readStation(f));
   if(!eventTypes.includes(r.eventType))throw Error('กรุณาเลือกประเภทเหตุการณ์');
   if(!Object.hasOwn(criticalities,r.criticality))throw Error('กรุณาเลือกระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า');
   const criticalityAssessment=Object.fromEntries(Object.keys(assessmentFields).map(key=>[key,String(f.get('assessment-'+key)||'').trim()]));

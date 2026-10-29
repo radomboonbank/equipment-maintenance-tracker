@@ -1,6 +1,6 @@
 export const equipmentTypes = [
  {name:'หม้อแปลงไฟฟ้า',subtypes:['Tie TX','Loading TX','Station Service'],voltages:['500/230 kV','230/115 kV','115/69 kV','115/22 kV']},
- {name:'สายส่งไฟฟ้า',subtypes:['ภายใน อปก.','โรงไฟฟ้า','ลูกค้าตรง'],voltages:['500 kV','230 kV','115 kV','69 kV']},
+ {name:'สายส่งไฟฟ้า',subtypes:['ภายใน อปก.','โรงไฟฟ้า','ลูกค้าตรง','สายส่ง Tie Line'],voltages:['500 kV','230 kV','115 kV','69 kV']},
  {name:'เซอร์กิตเบรกเกอร์',subtypes:[],voltages:['500 kV','230 kV','115 kV','69 kV','22 kV']},
  {name:'Disconnecting SW',subtypes:['ใบมีด','ใบมีด Ground','Power Fuse'],voltages:['500 kV','230 kV','115 kV','69 kV','22 kV']},
  {name:'คาปาซิเตอร์แบงค์',subtypes:[],voltages:['230 kV','115 kV','69 kV','22 kV']},
