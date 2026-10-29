@@ -1,11 +1,13 @@
+import {dashboardHtml,systemStatuses} from './dashboard.js';
 import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js';
-import {rotateLogins,loginEntries,loginTime} from './login-history.js';
+import {rotateLogins,loginEntries,loginTime,publicLoginEntries,rotatePublicLogins} from './login-history.js?v=20261029-ten';
 'use strict';
 import {dateParts,dateText,stamp,credential,loginEmail,readDate,normalizeTime,mergedEquipment} from './utils.js?v=20261027-merged';
 const $=s=>document.querySelector(s), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const statuses={unreviewed:'รอตรวจสอบ',pending:'รอดำเนินการ',repairing:'กำลังซ่อม',resolved:'ซ่อมแล้ว'}, priorities={normal:'ปกติ',urgent:'เร่งด่วน',critical:'วิกฤต'};
-const fields={code:'รหัสชำรุด',date:'วันที่ (พ.ศ.)',time:'เวลา',station:'สถานีไฟฟ้าแรงสูง',category:'ชนิดอุปกรณ์',equipment:'อุปกรณ์ที่ชำรุด (อุปกรณ์ที่ OFF)',cause:'สาเหตุ ที่ ปลด (OFF)',criticality:'ระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า',owner:'ผู้รับผิดชอบ',reporter:'ผู้แจ้ง',receiver:'ศูนย์ที่รับเรื่อง',due:'กำหนดเสร็จ (พ.ศ.)',status:'สถานะ',priority:'ความเร่งด่วน'};
+const fields={code:'รหัสชำรุด',date:'วันที่ (พ.ศ.)',time:'เวลา',station:'สถานีไฟฟ้าแรงสูง',eventType:'ประเภทเหตุการณ์',category:'ชนิดอุปกรณ์',equipment:'อุปกรณ์ที่ชำรุด (อุปกรณ์ที่ OFF)',cause:'สาเหตุ ที่ ปลด (OFF)',criticality:'ระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า',owner:'ผู้รับผิดชอบ',reporter:'ผู้แจ้ง',receiver:'ศูนย์ที่รับเรื่อง',due:'กำหนดเสร็จ (พ.ศ.)',status:'สถานะ',priority:'ความเร่งด่วน'};
 let data=[],notes=[],page=1,view='all',editing=null,cloud=null,unsubscribe=null,user=null,cloudReady=false,busy=false;
+let systemAssessment=null,unsubscribeSystem=null;
 let role='guest',username='',displayName='',generation=0;
 
 let unsubscribeLogins=null;
@@ -15,10 +17,21 @@ function renderLogins(value,message='') {
 }
 async function recordLogin() {
  const ref=cloud.doc(cloud.db,'loginHistory','recent');
+ const publicRef=cloud.doc(cloud.db,'publicLoginHistory','recent');
  await cloud.runTransaction(cloud.db,async transaction=>{
   const previous=await transaction.get(ref);
+  const publicPrevious=await transaction.get(publicRef);
+  transaction.set(publicRef,rotatePublicLogins(publicPrevious.exists()?publicPrevious.data():null,{displayName:displayName||username,at:cloud.serverTimestamp()}));
   transaction.set(ref,rotateLogins(previous.exists()?previous.data():null,{uid:user.uid,username,displayName,at:cloud.serverTimestamp()}));
  });
+}
+
+function watchPublicLogins(){
+ const list=$('#public-logins-list');
+ cloud.onSnapshot(cloud.doc(cloud.db,'publicLoginHistory','recent'),snapshot=>{
+  const entries=publicLoginEntries(snapshot.exists()?snapshot.data():null);
+  list.innerHTML=entries.length?entries.map((entry,i)=>`<li><span class="login-rank">${String(i+1).padStart(2,'0')}</span><div class="login-entry"><strong>${esc(entry.displayName)}</strong><time>${esc(loginTime(entry.at))}</time></div></li>`).join(''):'<li class="login-empty">ยังไม่มีประวัติการเข้าสู่ระบบ</li>';
+ },error=>{list.innerHTML='<li class="login-empty">ยังโหลดประวัติไม่ได้ กรุณาลองเปิดหน้าใหม่ภายหลัง</li>';console.warn('Public login history unavailable:',error.code)});
 }
 function watchLogins() {
  unsubscribeLogins?.();unsubscribeLogins=null;
@@ -38,7 +51,7 @@ function options(map,selected=''){return Object.entries(map).map(([v,l])=>`<opti
 $('#status').innerHTML='<option value="">ทุกสถานะ</option>'+options(statuses);
 $('#today').textContent=new Date().toLocaleDateString('th-TH-u-ca-buddhist',{timeZone:'Asia/Bangkok',day:'numeric',month:'long',year:'numeric'});
 function filtered(){const q=$('#search').value.toLowerCase().trim();return data.filter(r=>(view==='all'||(view==='open'?r.status!=='resolved':r.status==='resolved'))&&(!$('#status').value||r.status===$('#status').value)&&(!$('#station').value||r.station===$('#station').value)&&(!$('#priority').value||r.priority===$('#priority').value)&&(!q||Object.keys(fields).some(k=>String(k==='equipment'?mergedEquipment(r):r[k]||'').toLowerCase().includes(q)))).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))||String(a.code).localeCompare(String(b.code),'th',{numeric:true}))}
-function render(){$('#export-pdf').disabled=!cloudReady||!data.length;$('#add').hidden=!canEdit();const station=$('#station').value;$('#station').innerHTML='<option value="">ทุกสถานี</option>'+[...new Set(data.map(r=>r.station).filter(Boolean))].sort().map(s=>`<option ${s===station?'selected':''}>${esc(s)}</option>`).join('');const counts=Object.fromEntries(Object.keys(statuses).map(k=>[k,data.filter(r=>r.status===k).length]));const open=data.filter(r=>r.status!=='resolved');$('#stats').innerHTML=[['อุปกรณ์ทั้งหมด',data.length,'รายการในทะเบียน'],['งานที่ยังไม่ปิด',open.length,'รวมรายการรอตรวจสอบ'],['งานเร่งด่วน / วิกฤต',open.filter(r=>r.priority!=='normal').length,'เฉพาะรายการที่ยังไม่ปิด'],['ซ่อมแล้ว',counts.resolved,'รายการที่ยืนยันการแก้ไข']].map(([l,n,s])=>`<article class="stat"><div class="label">${l}</div><strong>${n.toLocaleString('th-TH')}</strong><small>${s}</small></article>`).join('');const bars=(entries,total)=>entries.map(([l,n])=>`<div class="bar-row"><span>${esc(l)}</span><div class="bar-bg"><div class="bar-fill" style="width:${total?n/total*100:0}%"></div></div><b>${n}</b></div>`).join('');$('#status-bars').innerHTML=bars(Object.keys(statuses).map(k=>[statuses[k],counts[k]]),data.length);const groups={};open.forEach(r=>{const s=r.station||'ไม่ระบุ';groups[s]=(groups[s]||0)+1});$('#station-bars').innerHTML=bars(Object.entries(groups).sort((a,b)=>b[1]-a[1]).slice(0,5),open.length)||'<p>ยังไม่มีงานค้างในทะเบียน</p>';const rows=filtered();page=Math.max(1,Math.min(page,Math.ceil(rows.length/12)||1));$('#count').textContent=rows.length;$('#rows').innerHTML=rows.slice((page-1)*12,page*12).map(r=>`<tr><td><strong>#${esc(r.code)}</strong><small class="${r.dateNeedsReview?'warning':''}">${esc(dateLabel(r))}</small></td><td><strong>${esc(mergedEquipment(r))}</strong><small title="${esc(r.cause)}">${esc(r.cause||r.category||'—')}</small></td><td><span class="station-tag">${esc(r.station||'—')}</span></td><td>${esc(r.owner||'ยังไม่ระบุ')}</td><td><span class="badge ${r.status}">${statuses[r.status]}</span></td><td><span class="badge ${r.priority}">${priorities[r.priority]}</span></td><td><button data-edit="${esc(r.id)}" aria-label="เปิดรายการ ${esc(r.code)}">เปิด →</button></td></tr>`).join('');$('#empty').hidden=rows.length>0;$('#range').textContent=rows.length?`${(page-1)*12+1}–${Math.min(page*12,rows.length)} จาก ${rows.length} รายการ`:'0 รายการ';$('#prev').disabled=page<=1;$('#next').disabled=page*12>=rows.length;
+function render(){ $('#dashboard').innerHTML=cloudReady?dashboardHtml(data,systemAssessment):'<p>กำลังโหลดข้อมูล Dashboard…</p>';$('#export-pdf').disabled=!cloudReady||!data.length;$('#add').hidden=!canEdit();const station=$('#station').value;$('#station').innerHTML='<option value="">ทุกสถานี</option>'+[...new Set(data.map(r=>r.station).filter(Boolean))].sort().map(s=>`<option ${s===station?'selected':''}>${esc(s)}</option>`).join('');const counts=Object.fromEntries(Object.keys(statuses).map(k=>[k,data.filter(r=>r.status===k).length]));const open=data.filter(r=>r.status!=='resolved');$('#stats').innerHTML=[['อุปกรณ์ทั้งหมด',data.length,'รายการในทะเบียน'],['งานที่ยังไม่ปิด',open.length,'รวมรายการรอตรวจสอบ'],['งานเร่งด่วน / วิกฤต',open.filter(r=>r.priority!=='normal').length,'เฉพาะรายการที่ยังไม่ปิด'],['ซ่อมแล้ว',counts.resolved,'รายการที่ยืนยันการแก้ไข']].map(([l,n,s])=>`<article class="stat"><div class="label">${l}</div><strong>${n.toLocaleString('th-TH')}</strong><small>${s}</small></article>`).join('');const bars=(entries,total)=>entries.map(([l,n])=>`<div class="bar-row"><span>${esc(l)}</span><div class="bar-bg"><div class="bar-fill" style="width:${total?n/total*100:0}%"></div></div><b>${n}</b></div>`).join('');$('#status-bars').innerHTML=bars(Object.keys(statuses).map(k=>[statuses[k],counts[k]]),data.length);const groups={};open.forEach(r=>{const s=r.station||'ไม่ระบุ';groups[s]=(groups[s]||0)+1});$('#station-bars').innerHTML=bars(Object.entries(groups).sort((a,b)=>b[1]-a[1]).slice(0,5),open.length)||'<p>ยังไม่มีงานค้างในทะเบียน</p>';const rows=filtered();page=Math.max(1,Math.min(page,Math.ceil(rows.length/12)||1));$('#count').textContent=rows.length;$('#rows').innerHTML=rows.slice((page-1)*12,page*12).map(r=>`<tr><td><strong>#${esc(r.code)}</strong><small class="${r.dateNeedsReview?'warning':''}">${esc(dateLabel(r))}</small></td><td><strong>${esc(mergedEquipment(r))}</strong><small title="${esc(r.cause)}">${esc(r.cause||r.category||'—')}</small></td><td><span class="station-tag">${esc(r.station||'—')}</span></td><td>${esc(r.owner||'ยังไม่ระบุ')}</td><td><span class="badge ${r.status}">${statuses[r.status]}</span></td><td><span class="badge ${r.priority}">${priorities[r.priority]}</span></td><td><button data-edit="${esc(r.id)}" aria-label="เปิดรายการ ${esc(r.code)}">เปิด →</button></td></tr>`).join('');$('#empty').hidden=rows.length>0;$('#range').textContent=rows.length?`${(page-1)*12+1}–${Math.min(page*12,rows.length)} จาก ${rows.length} รายการ`:'0 รายการ';$('#prev').disabled=page<=1;$('#next').disabled=page*12>=rows.length;
 if(cloud&&!cloudReady){document.querySelectorAll('.stat strong').forEach(el=>el.textContent='—');$('#empty').innerHTML='<strong>ยังไม่สามารถแสดงข้อมูลจาก Firebase</strong><p>กำลังเชื่อมต่อ หรือยังไม่ได้รับสิทธิ์เข้าถึงข้อมูล</p>';}else{$('#empty').innerHTML='<strong>ยังไม่มีรายการในมุมมองนี้</strong><p>ยังไม่มีข้อมูลที่ตรงกับตัวกรอง</p>';}}
 
 for(const sel of ['#search','#status','#station','#priority'])$(sel).addEventListener(sel==='#search'?'input':'change',()=>{page=1;render()});
@@ -52,6 +65,10 @@ function dateControl(name,value=''){
  return `<div class="date-control"><select name="${name}-day" aria-label="วัน ${name}">${opts(Array.from({length:31},(_,i)=>[i+1,i+1]),d)}</select><select name="${name}-month" aria-label="เดือน ${name}">${opts(['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'].map((v,i)=>[i+1,v]),m)}</select><select name="${name}-year" aria-label="ปี พ.ศ. ${name}">${opts(years.map(v=>[v,v]),y+543)}</select></div>`;
 }
 function formDate(f,name){return readDate(f.get(name+'-day'),f.get(name+'-month'),f.get(name+'-year'))}
+const eventTypes=['อุปกรณ์ขัดข้อง','Abnormal Alarm','โครงการก่อสร้าง','งานบำรุงรักษาเกินกำหนด','Power Flow Control'];
+function eventTypeControl(value='') {
+ return `<fieldset class="event-type-field wide"><legend>ประเภทเหตุการณ์</legend><div class="event-type-options">${eventTypes.map(label=>`<label><input type="radio" name="eventType" value="${esc(label)}" ${value===label?'checked':''} required><span>${esc(label)}</span></label>`).join('')}</div></fieldset>`;
+}
 function categoryControl(value='') {
  const current=parseEquipmentCategory(value);
  const choices=equipmentTypes.map(type=>[type.name,type.name]);
@@ -110,6 +127,7 @@ function edit(r){
  $('#editor-title').textContent=r?'รายละเอียด #'+r.code:'แจ้งอุปกรณ์ชำรุด';
  $('#fields').innerHTML=Object.entries(fields).map(([k,l])=>{
   const val=(k==='equipment'?mergedEquipment(r||{}):r?.[k])||(k==='status'?'pending':k==='priority'?'normal':'');
+  if(k==='eventType')return eventTypeControl(val);
   if(k==='category')return categoryControl(val);
   if(k==='criticality')return criticalityControl(val)+assessmentControl(r?.criticalityAssessment)+repairPlanControl(r||{});
   const long=['equipment','cause'].includes(k);
@@ -132,6 +150,7 @@ $('#record-form').onsubmit=async e=>{
  e.preventDefault();if(busy||!canEdit())return;
  try{
   const f=new FormData(e.target),r=Object.fromEntries(Object.keys(fields).map(k=>[k,['date','due'].includes(k)?formDate(f,k):String(f.get(k)||'').trim()]));
+  if(!eventTypes.includes(r.eventType))throw Error('กรุณาเลือกประเภทเหตุการณ์');
   if(!Object.hasOwn(criticalities,r.criticality))throw Error('กรุณาเลือกระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า');
   const criticalityAssessment=Object.fromEntries(Object.keys(assessmentFields).map(key=>[key,String(f.get('assessment-'+key)||'').trim()]));
   if(r.criticality==='high'&&Object.values(criticalityAssessment).some(value=>!value))throw Error('ระดับสูง: กรุณากรอกผลประเมินระดับความสำคัญให้ครบทั้ง 4 ข้อ');
@@ -146,7 +165,7 @@ $('#record-form').onsubmit=async e=>{
   if(hasClosure)r.status='resolved';
   if(r.status==='resolved'&&!hasClosure)throw Error('กรุณากรอกข้อมูลปิดงานก่อนเลือกสถานะซ่อมแล้ว');
   const now=new Date(),at=now.toISOString(),code=editing?.code||stamp(now);
-  const next={...editing,...r,code,id:editing?.id||code,criticalityAssessment,repairPlan,followups,closure,history:[...(editing?.history||[]),{at,by:username,note:hasClosure?'บันทึกปิดงาน · '+closure.details:(!editing?'สร้างรายการ':'บันทึกข้อมูล · '+statuses[r.status])}],updatedAt:at,revision:(editing?.revision||0)+1,...(!editing?{createdAt:at,dateNeedsReview:false}:{})};
+  const next={...editing,...r,code,id:editing?.id||code,criticalityAssessment,repairPlan,followups,closure,history:[...(editing?.history||[]),{at,by:username,displayName:displayName||username,note:hasClosure?'บันทึกปิดงาน · '+closure.details:(!editing?'สร้างรายการ':'บันทึกข้อมูล · '+statuses[r.status])}],updatedAt:at,revision:(editing?.revision||0)+1,...(!editing?{createdAt:at,dateNeedsReview:false}:{})};
   if(editing?.breaker){next.originalBreaker=editing.originalBreaker||editing.breaker;next.breaker='';}
   if(r.equipment.length>4000)throw Error('ข้อมูลอุปกรณ์ยาวเกิน 4,000 ตัวอักษร กรุณาปรับข้อความก่อนบันทึก');
   if(editing?.time&&editing.time!==r.time&&!editing.originalTime)next.originalTime=editing.time;
@@ -170,9 +189,10 @@ $('#delete').onclick=async()=>{
  busy=true;$('#delete').disabled=true;
  try{const original=editing;await cloud.runTransaction(cloud.db,async t=>{const ref=cloud.doc(cloud.db,'equipment',original.id),snap=await t.get(ref);if(!snap.exists()||snap.data().revision!==original.revision)throw Error('ข้อมูลเปลี่ยนแปลง กรุณาเปิดใหม่');t.delete(ref)});$('#editor').close();toast('ลบรายการแล้ว')}catch(err){toast('ลบไม่สำเร็จ: '+err.message)}finally{busy=false;$('#delete').disabled=false}
 };
-function resetSession(){generation++;unsubscribeLogins?.();unsubscribeLogins=null;renderLogins(null);unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';displayName='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
+function resetSession(){generation++;unsubscribeSystem?.();unsubscribeSystem=null;systemAssessment=null;unsubscribeLogins?.();unsubscribeLogins=null;renderLogins(null);unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';displayName='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
 function showWorkspace(){
  watchLogins();
+ watchSystemAssessment();
  $('#workspace').hidden=false;$('#login-screen').hidden=true;
  $('#identity').textContent=username+' · '+({admin:'super admin',editor:'cac term',viewer:'user · ดูอย่างเดียว',guest:'ดูอย่างเดียว'}[role]);
  const gen=generation;
@@ -194,7 +214,7 @@ $('#logout').onclick=async()=>{if(busy)return;resetSession();user=null;$('#passw
 async function init(){
  const base='https://www.gstatic.com/firebasejs/13.0.0/';
  try{const [app,auth,fs]=await Promise.all([import(base+'firebase-app.js'),import(base+'firebase-auth.js'),import(base+'firebase-firestore.js')]);
- const instance=app.initializeApp(window.GRID_FIREBASE_CONFIG),a=auth.getAuth(instance);cloud={...auth,...fs,db:fs.getFirestore(instance),auth:a};
+ const instance=app.initializeApp(window.GRID_FIREBASE_CONFIG),a=auth.getAuth(instance);cloud={...auth,...fs,db:fs.getFirestore(instance),auth:a};watchPublicLogins();
  await auth.setPersistence(a,auth.inMemoryPersistence);await auth.signOut(a);
  // Retire the old offline database cache; records now come exclusively from Firebase.
  localStorage.removeItem('grid-care-v1');localStorage.removeItem('grid-care-mode');localStorage.removeItem('grid-care-config');
@@ -221,4 +241,18 @@ $('#export-pdf').onclick=()=>{
  frame.onload=()=>{frame.contentDocument.getElementById('print-report').onclick=()=>{frame.contentWindow.focus();frame.contentWindow.print()}};
  frame.srcdoc=reportHtml(data);preview.append(close,frame);document.body.append(preview);
  preview.addEventListener('close',()=>preview.remove(),{once:true});preview.showModal();
+};
+
+function watchSystemAssessment(){
+ unsubscribeSystem?.();systemAssessment=null;
+ $('#system-assessment-form').hidden=role!=='admin';
+ if(role==='guest'){render();return}
+ const gen=generation;
+ unsubscribeSystem=cloud.onSnapshot(cloud.doc(cloud.db,'metadata','systemAssessment'),snap=>{if(gen!==generation)return;systemAssessment=snap.exists()?snap.data():null;render()},()=>{if(gen!==generation)return;systemAssessment=null;render();$('#system-assessment-message').textContent='ยังโหลดผลประเมินไม่ได้ กรุณาตรวจสิทธิ์และการเชื่อมต่อ'});
+}
+$('#system-assessment-form').onsubmit=async e=>{
+ e.preventDefault();if(role!=='admin'||!user||busy)return;
+ const f=new FormData(e.target),status=f.get('systemStatus'),reason=String(f.get('systemReason')||'').trim();if(!systemStatuses[status]||!reason)return;
+ const button=e.target.querySelector('button');button.disabled=true;busy=true;
+ try{await cloud.setDoc(cloud.doc(cloud.db,'metadata','systemAssessment'),{status,reason,assessedBy:displayName||username,assessedUid:user.uid,confirmedAt:cloud.serverTimestamp()});$('#system-assessment-message').textContent='บันทึกผลประเมินแล้ว'}catch(err){$('#system-assessment-message').textContent='บันทึกไม่สำเร็จ กรุณาลองใหม่'}finally{busy=false;button.disabled=false}
 };

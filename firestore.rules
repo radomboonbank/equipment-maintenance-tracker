@@ -19,6 +19,7 @@ service cloud.firestore {
     && d.revision is int && d.revision > 0
     && d.followups is list && d.followups.size() == 3
     && followup(d.followups[0]) && followup(d.followups[1]) && followup(d.followups[2])
+    && (!('eventType' in d) || d.eventType in ['อุปกรณ์ขัดข้อง','Abnormal Alarm','โครงการก่อสร้าง','งานบำรุงรักษาเกินกำหนด','Power Flow Control'])
     && closure(d) && criticalityValid(d) && (!('repairPlan' in d) || repairPlanValid(d.repairPlan));
   }
   function repairPlanValid(p) {
@@ -58,6 +59,24 @@ service cloud.firestore {
    allow get: if request.auth != null && request.auth.uid == uid;
    allow list, create, update, delete: if false;
   }
+
+  // Public projection contains only names and login times, never employee IDs or UIDs.
+  match /publicLoginHistory/{id} {
+   allow get: if id == 'recent';
+   allow list, delete: if false;
+   allow create: if id == 'recent' && validPublicLogin()
+    && request.resource.data.second == null && request.resource.data.third == null && request.resource.data.fourth == null && request.resource.data.fifth == null && request.resource.data.sixth == null && request.resource.data.seventh == null && request.resource.data.eighth == null && request.resource.data.ninth == null && request.resource.data.tenth == null;
+   allow update: if id == 'recent' && validPublicLogin()
+    && request.resource.data.second == resource.data.first && request.resource.data.third == resource.data.second && request.resource.data.fourth == resource.data.third && request.resource.data.fifth == resource.data.fourth && request.resource.data.sixth == resource.data.fifth && request.resource.data.seventh == resource.data.sixth && request.resource.data.eighth == resource.data.seventh && request.resource.data.ninth == resource.data.eighth && request.resource.data.tenth == resource.data.ninth;
+  }
+  function validPublicLogin() {
+   let d=request.resource.data;
+   return account() && role() in ['admin','editor','viewer']
+    && d.keys().hasAll(['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth']) && d.keys().hasOnly(['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth'])
+    && d.first is map && d.first.keys().hasAll(['displayName','at']) && d.first.keys().hasOnly(['displayName','at'])
+    && d.first.displayName == get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.get('displayName', get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.username)
+    && d.first.at == request.time;
+  }
   match /loginHistory/{id} {
    allow get: if account() && role() in ['admin','editor','viewer'] && id == 'recent';
    allow list, delete: if false;
@@ -77,6 +96,7 @@ service cloud.firestore {
     && d.first.at == request.time;
   }
 
+  match /metadata/systemAssessment { allow get: if account(); }
   match /metadata/{id} { allow read: if editor(); allow write: if admin(); }
   match /members/{uid} { allow read, write: if false; }
   match /telegramDeliveries/{id} { allow read, write: if false; }
