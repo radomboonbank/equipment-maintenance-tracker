@@ -40,3 +40,13 @@ aside .brand{font-size:16px;letter-spacing:.3px;gap:9px}aside .brand>span{min-wi
 #member-dialog{width:min(850px,94vw)}#members-page .panel{padding:24px}#members-page .panel-title label{min-width:280px}#member-message{min-height:28px;color:#087f83}#member-form-message{color:#a33232}#member-form small{display:block;margin-top:8px;color:#68818d}#member-rows td:last-child{white-space:nowrap}
 
 #members-nav:not([hidden]){display:block}@media(max-width:720px){#members-nav{order:3;width:100%;margin:10px 0 0}#members-page .panel-title label{min-width:0;width:100%}}
+
+/* Equipment list: event type and assessed system criticality. */
+.list-panel th.criticality-column{white-space:normal;min-width:150px;max-width:190px;line-height:1.6}
+.list-panel .event-type-badge{white-space:normal;min-width:100px;max-width:170px;line-height:1.6;background:#eaf3fa;color:#285a7a}
+.criticality-badge{font-weight:600;line-height:1.6;border:1px solid transparent}
+.criticality-badge>span{margin-right:4px}
+.criticality-badge.criticality-high{background:#fff0f1;color:#b42338;border-color:#f5c2c9}
+.criticality-badge.criticality-medium{background:#fff4df;color:#925700;border-color:#f1d49a}
+.criticality-badge.criticality-low{background:#e7f6ee;color:#176a48;border-color:#b3dfc6}
+.criticality-badge.criticality-unassessed{background:#edf1f4;color:#536674;border-color:#d7e0e5}
