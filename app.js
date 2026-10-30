@@ -74,7 +74,7 @@ function dateControl(name,value=''){
  const years=Array.from({length:current+11-2400},(_,i)=>current+10-i);if(y&& !years.includes(y+543))years.push(y+543);
  return `<div class="date-control"><select name="${name}-day" aria-label="วัน ${name}">${opts(Array.from({length:31},(_,i)=>[i+1,i+1]),d)}</select><select name="${name}-month" aria-label="เดือน ${name}">${opts(['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'].map((v,i)=>[i+1,v]),m)}</select><select name="${name}-year" aria-label="ปี พ.ศ. ${name}">${opts(years.map(v=>[v,v]),y+543)}</select></div>`;
 }
-function formDate(f,name){return readDate(f.get(name+'-day'),f.get(name+'-month'),f.get(name+'-year'))}
+function formDate(f,name){try{return readDate(f.get(name+'-day'),f.get(name+'-month'),f.get(name+'-year'))}catch(error){const label=name==='closure'?'วันที่ปิดงาน':name==='repair-expected'?'วันที่คาดว่าจะแก้ไขเสร็จ':name.startsWith('follow-')?'วันที่ติดตามลำดับ '+(Number(name.slice(7))+1):fields[name]||name;throw Error(label+': '+error.message)}}
 function eventTypeControl(value='') {
  if(value==='Power Flow Control')value='ข้อจำกัด ระบบส่ง';
  return `<fieldset class="event-type-field wide"><legend>ประเภทเหตุการณ์</legend><div class="event-type-options">${eventTypes.map(label=>`<label><input type="radio" name="eventType" value="${esc(label)}" ${value===label?'checked':''} required><span>${esc(label)}</span></label>`).join('')}</div></fieldset>`;
@@ -141,6 +141,7 @@ function setupRepairPlan(){
 function edit(r){
  if(!cloudReady)return toast('รอโหลดข้อมูลก่อน');if(!r&&!canEdit())return;
  editing=r?structuredClone(r):null;
+ $('#save-error').hidden=true;$('#save-error').textContent='';
  $('#editor-title').textContent=r?'รายละเอียด #'+r.code:'แจ้งอุปกรณ์ชำรุด';
  $('#fields').innerHTML=Object.entries(fields).map(([k,l])=>{
   const val=(k==='equipment'?mergedEquipment(r||{}):r?.[k])||(k==='status'?'pending':k==='priority'?'normal':'');
@@ -166,8 +167,15 @@ function edit(r){
  $('#editor').showModal();
 }
 $('#add').onclick=()=>edit();document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$('#'+b.dataset.close).close());
+function showSaveError(message){const box=$('#save-error');box.textContent=message;box.hidden=false;box.focus();}
+$('#record-form').noValidate=true;
 $('#record-form').onsubmit=async e=>{
- e.preventDefault();if(busy||!canEdit())return;
+ e.preventDefault();
+ if(busy){showSaveError('กำลังบันทึกข้อมูล กรุณารอสักครู่');return}
+ if(!canEdit()){showSaveError('ยังบันทึกไม่ได้ กรุณาตรวจการเชื่อมต่อและสิทธิ์ของบัญชี');return}
+ $('#save-error').hidden=true;
+ const invalid=Array.from(e.target.elements).find(el=>el.willValidate&&!el.validity.valid);
+ if(invalid){const label=invalid.getAttribute('aria-label')||invalid.closest('label')?.textContent?.trim().slice(0,120)||invalid.name||'ช่องข้อมูล';showSaveError('กรุณาตรวจสอบ '+label+' — '+invalid.validationMessage);invalid.scrollIntoView({block:'center'});invalid.focus();invalid.reportValidity();return}
  try{
   const f=new FormData(e.target),r=Object.fromEntries(Object.keys(fields).map(k=>[k,['date','due'].includes(k)?formDate(f,k):String(f.get(k)||'').trim()]));
   Object.assign(r,readStation(f));
@@ -182,7 +190,10 @@ $('#record-form').onsubmit=async e=>{
   if(followups.some(v=>Object.values(v).some(Boolean)&&(!v.date||!v.time)))throw Error('กรุณาระบุวันและเวลาของลำดับที่มีข้อมูลติดตาม');
   const closure={date:formDate(f,'closure'),...Object.fromEntries(['time','reporter','mobile','details','follower'].map(k=>[k,String(f.get('closure-'+k)||'').trim()]))};
   const hasClosure=Object.values(closure).some(Boolean);
-  if(hasClosure&&Object.values(closure).some(v=>!v))throw Error('กรุณากรอกข้อมูลปิดงานให้ครบทุกช่อง');
+  closure.time=normalizeTime(closure.time);
+  const closureLabels={date:'วันที่ปิดงาน',time:'เวลาปิดงาน',reporter:'ชื่อผู้แจ้งปิดงาน',mobile:'เบอร์มือถือผู้แจ้งปิดงาน',details:'รายละเอียด',follower:'ชื่อผู้ตามข้อมูล'};
+  const missing=Object.keys(closureLabels).filter(key=>!closure[key]);
+  if(hasClosure&&missing.length)throw Error('ข้อมูลปิดงานยังไม่ครบ: '+missing.map(key=>closureLabels[key]).join(', '));
   if(hasClosure)r.status='resolved';
   if(r.status==='resolved'&&!hasClosure)throw Error('กรุณากรอกข้อมูลปิดงานก่อนเลือกสถานะซ่อมแล้ว');
   const now=new Date(),at=now.toISOString(),code=editing?.code||stamp(now);
@@ -190,20 +201,22 @@ $('#record-form').onsubmit=async e=>{
   if(editing?.breaker){next.originalBreaker=editing.originalBreaker||editing.breaker;next.breaker='';}
   if(r.equipment.length>4000)throw Error('ข้อมูลอุปกรณ์ยาวเกิน 4,000 ตัวอักษร กรุณาปรับข้อความก่อนบันทึก');
   if(editing?.time&&editing.time!==r.time&&!editing.originalTime)next.originalTime=editing.time;
-  busy=true;$('#save').disabled=true;
+  busy=true;$('#save').disabled=true;$('#save').textContent='กำลังบันทึก…';
   const ref=cloud.doc(cloud.db,'equipment',next.id),original=editing;
   await cloud.runTransaction(cloud.db,async t=>{const snap=await t.get(ref);if(original&&(!snap.exists()||snap.data().revision!==original.revision))throw Error('ข้อมูลเปลี่ยนแปลงแล้ว กรุณาปิดและเปิดรายการใหม่');if(!original&&snap.exists())throw Error('รหัสซ้ำ กรุณาบันทึกอีกครั้ง');t.set(ref,next);t.set(cloud.doc(cloud.db,'telegramOutbox',next.id+'__'+next.revision),{recordId:next.id,revision:next.revision,record:next,createdBy:user.uid,createdAt:cloud.serverTimestamp(),readyAt:cloud.serverTimestamp(),status:'pending',nextPart:0,attempts:0})});
     $('#editor').close();toast('บันทึกข้อมูลแล้ว กำลังส่ง Telegram…');
-    try {
-      if(!window.GRID_TELEGRAM_URL)throw Error('ยังไม่ได้ตั้งค่าปลายทาง');
-      const idToken=await user.getIdToken(),key=next.id+'__'+next.revision;
-      await fetch(window.GRID_TELEGRAM_URL,{method:'POST',mode:'no-cors',credentials:'omit',redirect:'follow',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({key,idToken}),signal:AbortSignal.timeout(150000)});
-      const receipt=await cloud.getDocFromServer(cloud.doc(cloud.db,'telegramOutbox',key));
-      if(receipt.exists()&&receipt.data().status==='sent')toast('บันทึกข้อมูลและส่ง Telegram สำเร็จ');
-      else toast('บันทึกข้อมูลสำเร็จ แต่ Telegram ยังส่งไม่สำเร็จ — ไม่มีการส่งซ้ำอัตโนมัติ');
-    }catch(notificationError){toast('บันทึกข้อมูลสำเร็จ แต่ยังยืนยันการส่ง Telegram ไม่ได้ — ไม่มีการส่งซ้ำอัตโนมัติ')}
- }catch(err){toast('บันทึกไม่สำเร็จ: '+err.message)}finally{busy=false;$('#save').disabled=false}
+    void sendRecordNotification(next);
+ }catch(err){const explanation=err.code==='permission-denied'?'Firebase ไม่อนุญาตให้บันทึก กรุณาตรวจสิทธิ์บัญชีหรือรูปแบบข้อมูล':err.code==='unavailable'?'เชื่อมต่อ Firebase ไม่ได้ กรุณาตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง':err.message;showSaveError('บันทึกไม่สำเร็จ: '+explanation+' (ข้อมูลที่กรอกยังอยู่ในฟอร์ม)');console.warn('Record save failed',{code:err.code||'validation',recordId:editing?.id||null});}finally{busy=false;$('#save').disabled=false;$('#save').textContent='บันทึกข้อมูล'}
 };
+async function sendRecordNotification(next){
+ try {
+  if(!window.GRID_TELEGRAM_URL)throw Error('ยังไม่ได้ตั้งค่าปลายทาง');
+  const idToken=await user.getIdToken(),key=next.id+'__'+next.revision;
+  await fetch(window.GRID_TELEGRAM_URL,{method:'POST',mode:'no-cors',credentials:'omit',redirect:'follow',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({key,idToken}),signal:AbortSignal.timeout(150000)});
+  const receipt=await cloud.getDocFromServer(cloud.doc(cloud.db,'telegramOutbox',key));
+  toast(receipt.exists()&&receipt.data().status==='sent'?'บันทึกข้อมูลและส่ง Telegram สำเร็จ':'บันทึกข้อมูลสำเร็จ แต่ Telegram ยังส่งไม่สำเร็จ — ไม่มีการส่งซ้ำอัตโนมัติ');
+ }catch{toast('บันทึกข้อมูลสำเร็จ แต่ยังยืนยันการส่ง Telegram ไม่ได้ — ไม่มีการส่งซ้ำอัตโนมัติ')}
+}
 $('#delete').onclick=async()=>{
  if(busy||role!=='admin'||!editing)return;
  if(!confirm('ลบรายการ #'+editing.code+' ถาวรหรือไม่?'))return;
