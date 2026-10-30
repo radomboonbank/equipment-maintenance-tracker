@@ -1,3 +1,4 @@
+import {repairPlanControl,setupRepairPlan,readRepairPlan} from './repair-plan.js';
 import {createPresence} from './presence.js?v=20261029-presence';
 import {createMembersPage} from './members.js?v=20261029-members3';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
@@ -127,11 +128,6 @@ function setupAssessment() {
  };
  document.querySelectorAll('#fields [name="criticality"]').forEach(el=>el.addEventListener('change',update));update();
 }
-function repairPlanControl(record={}) {
- const plan=record.repairPlan||{};
- const values={approach:plan.approach??record.solution??'',responsible:plan.responsible??record.owner??'',schedule:plan.schedule??'',expectedDate:plan.expectedDate??record.due??''};
- return `<fieldset class="repair-plan-field wide"><legend>แผนงานซ่อมแซมแก้ไข</legend><div class="form-grid">${[['approach','1. แนวทาง การแก้ไข'],['responsible','2. ผู้รับผิดชอบ การแก้ไข (ชื่อ และเบอร์มือถือ)'],['schedule','3. แผนดำเนินการแก้ไข']].map(([key,label])=>`<label for="repair-${key}">${label}<textarea id="repair-${key}" name="repair-${key}" maxlength="4000">${esc(values[key])}</textarea></label>`).join('')}<label>4. วันที่คาดว่าจะแก้ไขเสร็จ (พ.ศ.)${dateControl('repair-expected',values.expectedDate)}</label></div></fieldset>`;
-}
 function edit(r){
  if(!cloudReady)return toast('รอโหลดข้อมูลก่อน');if(!r&&!canEdit())return;
  editing=r?structuredClone(r):null;
@@ -141,7 +137,7 @@ function edit(r){
   if(k==='station')return stationControl(r||{});
   if(k==='eventType')return eventTypeControl(val);
   if(k==='category')return categoryControl(val);
-  if(k==='criticality')return criticalityControl(val)+assessmentControl(r?.criticalityAssessment)+repairPlanControl(r||{});
+  if(k==='criticality')return criticalityControl(val)+assessmentControl(r?.criticalityAssessment)+repairPlanControl(r||{},dateControl);
   const long=['equipment','cause'].includes(k);
   const input=['date','due'].includes(k)?dateControl(k,val):k==='status'||k==='priority'?`<select name="${k}">${options(k==='status'?statuses:priorities,val)}</select>`:long?`<textarea name="${k}" maxlength="4000" ${k==='equipment'?'required':''}>${esc(val)}</textarea>`:`<input name="${k}" value="${esc(k==='time'?normalizeTime(val):val)}" ${k==='code'?'readonly placeholder="สร้างอัตโนมัติเมื่อบันทึก"':k==='time'?'type="time" step="60"':k==='station'?'required':''} maxlength="250">`;
   return `<label class="${long?'wide':''}">${l}${input}</label>`;
@@ -155,6 +151,7 @@ function edit(r){
  $('#history').innerHTML=(r?.history||[]).slice().reverse().map(h=>`<div class="history-item">${esc(String(h.note||'').replace(/แก้ปีวันที่ตามผู้ดูแล: 19\d{2}-\d{2}-\d{2} → พ.ศ. (25\d{2})-(\d{2})-(\d{2}) \(คงวันและเดือนเดิม\)/,'ตรวจแก้ปีวันที่เป็น $3/$2/$1 พ.ศ. (เก็บค่าต้นฉบับไว้แล้ว)'))}<small>${esc(dateText(h.at))} · ${esc(h.by)}</small></div>`).join('');
  document.querySelectorAll('#fields input,#fields textarea,#fields select,#followups input,#followups textarea,#followups select,#closure-fields input,#closure-fields textarea,#closure-fields select').forEach(el=>el.disabled=!canEdit());
  setupStation($('#fields .station-control'),canEdit());
+ setupRepairPlan($('#fields'),canEdit());
  $('#save').hidden=!canEdit();$('#delete').hidden=role!=='admin'||!r;
  $('#editor').showModal();
 }
@@ -169,8 +166,7 @@ $('#record-form').onsubmit=async e=>{
   const criticalityAssessment=Object.fromEntries(Object.keys(assessmentFields).map(key=>[key,String(f.get('assessment-'+key)||'').trim()]));
   if(r.criticality==='high'&&Object.values(criticalityAssessment).some(value=>!value))throw Error('ระดับสูง: กรุณากรอกผลประเมินระดับความสำคัญให้ครบทั้ง 4 ข้อ');
   if(Object.values(criticalityAssessment).some(value=>value.length>4000))throw Error('ผลประเมินแต่ละข้อยาวได้ไม่เกิน 4,000 ตัวอักษร');
-  const repairPlan={...Object.fromEntries(['approach','responsible','schedule'].map(key=>[key,String(f.get('repair-'+key)||'').trim()])),expectedDate:formDate(f,'repair-expected')};
-  if(['approach','responsible','schedule'].some(key=>repairPlan[key].length>4000))throw Error('แผนงานซ่อมแซมแต่ละข้อยาวได้ไม่เกิน 4,000 ตัวอักษร');
+  const repairPlan=readRepairPlan(f,editing?.repairPlan||{},formDate);
   const followups=Array.from({length:3},(_,i)=>({date:formDate(f,'follow-'+i),...Object.fromEntries(['time','informant','mobile','details','follower'].map(k=>[k,String(f.get('follow-'+i+'-'+k)||'').trim()]))}));
   if(followups.some(v=>Object.values(v).some(Boolean)&&(!v.date||!v.time)))throw Error('กรุณาระบุวันและเวลาของลำดับที่มีข้อมูลติดตาม');
   const closure={date:formDate(f,'closure'),...Object.fromEntries(['time','reporter','mobile','details','follower'].map(k=>[k,String(f.get('closure-'+k)||'').trim()]))};
