@@ -23,7 +23,7 @@ export function parseEquipmentCategory(value='') {
 export function formatEquipmentCategory(name,subtype='',voltage='') {
  const type=equipmentTypes.find(v=>v.name===name);
  if(!type)return '';
- if(type.subtypes.length&&!type.subtypes.includes(subtype))throw Error('กรุณาเลือกชนิดอุปกรณ์ย่อย');
- if(type.voltages.length&&!type.voltages.includes(voltage))throw Error('กรุณาเลือกระดับแรงดัน');
+ if(subtype&&type.subtypes.length&&!type.subtypes.includes(subtype))throw Error('กรุณาเลือกชนิดอุปกรณ์ย่อย');
+ if(voltage&&type.voltages.length&&!type.voltages.includes(voltage))throw Error('กรุณาเลือกระดับแรงดัน');
  return [name,...(type.subtypes.length?[subtype]:[]),...(type.voltages.length?[voltage]:[])].join(separator);
 }

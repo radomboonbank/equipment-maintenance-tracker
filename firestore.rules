@@ -14,13 +14,13 @@ service cloud.firestore {
   function valid() {
    let d = request.resource.data;
    return d.code is string && d.equipment is string && d.station is string
-    && d.code.size() > 0 && d.code.size() <= 250 && d.equipment.size() > 0 && d.equipment.size() <= 4000
+    && d.code.size() > 0 && d.code.size() <= 250  && d.equipment.size() <= 4000
     && d.status in ['unreviewed', 'pending', 'repairing', 'resolved']
     && d.priority in ['normal', 'urgent', 'critical'] && d.history is list
     && d.revision is int && d.revision > 0
     && d.followups is list && d.followups.size() == 3
     && followup(d.followups[0]) && followup(d.followups[1]) && followup(d.followups[2])
-    && (!('eventType' in d) || d.eventType in ['อุปกรณ์ขัดข้อง','Abnormal Alarm','Winding Temp Alarm','โครงการก่อสร้าง','งานบำรุงรักษาเกินกำหนด','ข้อจำกัด ระบบส่ง','Power Flow Control'])
+    && (!('eventType' in d) || d.eventType in ['','อุปกรณ์ขัดข้อง','Abnormal Alarm','Winding Temp Alarm','โครงการก่อสร้าง','งานบำรุงรักษาเกินกำหนด','ข้อจำกัด ระบบส่ง','Power Flow Control'])
     && closure(d) && criticalityValid(d) && (!('repairPlan' in d) || repairPlanValid(d.repairPlan));
   }
   function repairPlanValid(p) {
@@ -35,24 +35,21 @@ service cloud.firestore {
     && (p.expectedDate == '' || p.expectedDate.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}'));
   }
   function criticalityValid(d) {
-   return !('criticality' in d) || (d.criticality in ['high','medium','low']
-    && ('criticalityAssessment' in d ? assessmentValid(d) : d.criticality != 'high'));
+   return !('criticality' in d) || (d.criticality in ['','high','medium','low']
+    && ('criticalityAssessment' in d ? assessmentValid(d) : true));
   }
   function assessmentValid(d) {
    let a = d.criticalityAssessment;
    return a is map && a.keys().hasAll(['scope','replacement','effect','measures'])
     && a.keys().hasOnly(['scope','replacement','effect','measures'])
     && a.scope is string && a.replacement is string && a.effect is string && a.measures is string
-    && a.scope.size() <= 4000 && a.replacement.size() <= 4000 && a.effect.size() <= 4000 && a.measures.size() <= 4000
-    && (d.criticality != 'high' || (a.scope.matches('(?s).*\\S.*') && a.replacement.matches('(?s).*\\S.*') && a.effect.matches('(?s).*\\S.*') && a.measures.matches('(?s).*\\S.*')));
+    && a.scope.size() <= 4000 && a.replacement.size() <= 4000 && a.effect.size() <= 4000 && a.measures.size() <= 4000;
   }
   function closure(d) {
    let c = d.closure;
    return c is map && c.keys().hasOnly(['date','time','reporter','mobile','details','follower'])
     && c.date is string && c.time is string && c.reporter is string && c.mobile is string && c.details is string && c.follower is string
-    && c.date.size() <= 10 && c.time.size() <= 5 && c.reporter.size() <= 250 && c.mobile.size() <= 250 && c.details.size() <= 4000 && c.follower.size() <= 250
-    && ((d.status == 'resolved' && c.date.size() == 10 && c.time.size() == 5 && c.reporter.size() > 0 && c.mobile.size() > 0 && c.details.size() > 0 && c.follower.size() > 0)
-     || (d.status != 'resolved' && c.date == '' && c.time == '' && c.reporter == '' && c.mobile == '' && c.details == '' && c.follower == ''));
+    && c.date.size() <= 10 && c.time.size() <= 5 && c.reporter.size() <= 250 && c.mobile.size() <= 250 && c.details.size() <= 4000 && c.follower.size() <= 250;
   }
   match /equipment/{id} {
    allow read: if true;

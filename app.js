@@ -1,9 +1,9 @@
 import {createPresence} from './presence.js?v=20261029-presence';
 import {createMembersPage} from './members.js?v=20261029-members3';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
-import {stationControl,setupStation,readStation} from './station-control.js';
+import {stationControl,setupStation,readStation} from './station-control.js?v=20261030-optional';
 import {dashboardHtml,systemStatuses} from './dashboard.js?v=20261030-repair';
-import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261029-stations';
+import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261030-optional';
 import {rotateLogins,loginEntries,loginTime,publicLoginEntries,rotatePublicLogins} from './login-history.js?v=20261029-ten';
 'use strict';
 import {dateParts,dateText,stamp,credential,loginEmail,readDate,normalizeTime,mergedEquipment} from './utils.js?v=20261027-merged';
@@ -77,13 +77,13 @@ function dateControl(name,value=''){
 function formDate(f,name){try{return readDate(f.get(name+'-day'),f.get(name+'-month'),f.get(name+'-year'))}catch(error){const label=name==='closure'?'วันที่ปิดงาน':name==='repair-expected'?'วันที่คาดว่าจะแก้ไขเสร็จ':name.startsWith('follow-')?'วันที่ติดตามลำดับ '+(Number(name.slice(7))+1):fields[name]||name;throw Error(label+': '+error.message)}}
 function eventTypeControl(value='') {
  if(value==='Power Flow Control')value='ข้อจำกัด ระบบส่ง';
- return `<fieldset class="event-type-field wide"><legend>ประเภทเหตุการณ์</legend><div class="event-type-options">${eventTypes.map(label=>`<label><input type="radio" name="eventType" value="${esc(label)}" ${value===label?'checked':''} required><span>${esc(label)}</span></label>`).join('')}</div></fieldset>`;
+ return `<fieldset class="event-type-field wide"><legend>ประเภทเหตุการณ์</legend><div class="event-type-options">${eventTypes.map(label=>`<label><input type="radio" name="eventType" value="${esc(label)}" ${value===label?'checked':''}><span>${esc(label)}</span></label>`).join('')}</div></fieldset>`;
 }
 function categoryControl(value='') {
  const current=parseEquipmentCategory(value);
  const choices=equipmentTypes.map(type=>[type.name,type.name]);
  if(current.legacy)choices.unshift(['__legacy__','ข้อมูลเดิม: '+current.legacy]);
- return `<fieldset class="equipment-category wide"><legend>ชนิดของอุปกรณ์ที่ชำรุด</legend><p class="category-hint">เลือกชนิดอุปกรณ์ เพื่อแสดงชนิดย่อยและระดับแรงดันที่เกี่ยวข้อง</p><div class="category-grid"><label>ชนิดอุปกรณ์หลัก<select id="equipment-type" aria-label="ชนิดอุปกรณ์หลัก" required><option value="">เลือกชนิดอุปกรณ์</option>${options(Object.fromEntries(choices),current.legacy?'__legacy__':current.name)}</select></label><label id="equipment-subtype-field" hidden>ชนิดอุปกรณ์ย่อย<select id="equipment-subtype" aria-label="ชนิดอุปกรณ์ย่อย"></select></label><label id="equipment-voltage-field" hidden>ระดับแรงดัน<select id="equipment-voltage" aria-label="ระดับแรงดัน"></select></label></div><input type="hidden" name="category" value="${esc(value)}"><p id="category-summary" class="category-summary" aria-live="polite"></p></fieldset>`;
+ return `<fieldset class="equipment-category wide"><legend>ชนิดของอุปกรณ์ที่ชำรุด</legend><p class="category-hint">เลือกชนิดอุปกรณ์ เพื่อแสดงชนิดย่อยและระดับแรงดันที่เกี่ยวข้อง</p><div class="category-grid"><label>ชนิดอุปกรณ์หลัก<select id="equipment-type" aria-label="ชนิดอุปกรณ์หลัก"><option value="">เลือกชนิดอุปกรณ์</option>${options(Object.fromEntries(choices),current.legacy?'__legacy__':current.name)}</select></label><label id="equipment-subtype-field" hidden>ชนิดอุปกรณ์ย่อย<select id="equipment-subtype" aria-label="ชนิดอุปกรณ์ย่อย"></select></label><label id="equipment-voltage-field" hidden>ระดับแรงดัน<select id="equipment-voltage" aria-label="ระดับแรงดัน"></select></label></div><input type="hidden" name="category" value="${esc(value)}"><p id="category-summary" class="category-summary" aria-live="polite"></p></fieldset>`;
 }
 function setupCategory(value='') {
  const current=parseEquipmentCategory(value),main=$('#equipment-type'),sub=$('#equipment-subtype'),voltage=$('#equipment-voltage');
@@ -97,7 +97,7 @@ function setupCategory(value='') {
  const refresh=(initial=false)=>{
   const type=equipmentTypes.find(v=>v.name===main.value);
   for(const [select,id,values,selected] of [[sub,'#equipment-subtype-field',type?.subtypes||[],current.subtype],[voltage,'#equipment-voltage-field',type?.voltages||[],current.voltage]]){
-   $(id).hidden=!values.length;select.required=values.length>0;
+   $(id).hidden=!values.length;select.required=false;
    select.innerHTML='<option value="">เลือก'+(select===sub?'ชนิดอุปกรณ์ย่อย':'ระดับแรงดัน')+'</option>'+options(Object.fromEntries(values.map(v=>[v,v])),initial?selected:'');
   }
   sync();
@@ -112,7 +112,7 @@ const criticalityCriteria={
  low:'ผลกระทบจำกัดเฉพาะจุด ระบบทดแทนพร้อมและรองรับได้ โดยไม่กระทบเสถียรภาพหรือข้อจำกัดของระบบหลักตามผลประเมิน'
 };
 function criticalityControl(value='') {
- return `<fieldset class="criticality-field wide"><legend>ระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า</legend><div class="criticality-header" aria-hidden="true"><span>ระดับ</span><span>เกณฑ์พิจารณาเมื่ออุปกรณ์สูญเสียหน้าที่</span></div>${Object.entries(criticalities).map(([key,label])=>`<label class="criticality-option ${key}"><span class="criticality-choice"><input type="radio" name="criticality" value="${key}" ${value===key?'checked':''} required aria-describedby="criticality-${key}-criteria"><span class="criticality-dot" aria-hidden="true"></span><strong>${label}</strong></span><span id="criticality-${key}-criteria" class="criticality-criteria">${criticalityCriteria[key]}</span></label>`).join('')}${!criticalities[value]?'<p class="criticality-unassessed">ยังไม่ประเมิน — กรุณาเลือกระดับก่อนบันทึก</p>':''}</fieldset>`;
+ return `<fieldset class="criticality-field wide"><legend>ระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า</legend><div class="criticality-header" aria-hidden="true"><span>ระดับ</span><span>เกณฑ์พิจารณาเมื่ออุปกรณ์สูญเสียหน้าที่</span></div>${Object.entries(criticalities).map(([key,label])=>`<label class="criticality-option ${key}"><span class="criticality-choice"><input type="radio" name="criticality" value="${key}" ${value===key?'checked':''} aria-describedby="criticality-${key}-criteria"><span class="criticality-dot" aria-hidden="true"></span><strong>${label}</strong></span><span id="criticality-${key}-criteria" class="criticality-criteria">${criticalityCriteria[key]}</span></label>`).join('')}${!criticalities[value]?'<p class="criticality-unassessed">ยังไม่ประเมิน</p>':''}</fieldset>`;
 }
 const assessmentFields={scope:['1. ขอบเขตผลกระทบ','เฉพาะอุปกรณ์ / สถานี / หลายสถานีหรือระบบหลัก'],replacement:['2. ระบบหรืออุปกรณ์ทดแทน','มีและรองรับได้ / มีแต่มีข้อจำกัด / ไม่มี'],effect:['3. ผลต่อระบบ','กระทบการส่งจ่ายไฟอย่างไร และที่ใด'],measures:['4. มาตรการรองรับเหตุการณ์','คืออะไร อย่างไร']};
 function assessmentControl(value={}) {
@@ -120,10 +120,10 @@ function assessmentControl(value={}) {
 }
 function setupAssessment() {
  const update=()=>{
-  const required=$('#fields [name="criticality"]:checked')?.value==='high';
+  const required=false;
   document.querySelectorAll('[name^="assessment-"]').forEach(el=>el.required=required);
   $('.assessment-field').classList.toggle('requires-assessment',required);
-  $('#assessment-requirement').textContent=required?'ระดับสูง: ต้องกรอกผลประเมินให้ครบทั้ง 4 ข้อ':'ระดับปานกลางและต่ำ: กรอกผลประเมินเพิ่มเติมได้';
+  $('#assessment-requirement').textContent=required?'ระดับสูง: ต้องกรอกผลประเมินให้ครบทั้ง 4 ข้อ':'กรอกผลประเมินเพิ่มเติมได้ตามข้อมูลที่มี';
  };
  document.querySelectorAll('#fields [name="criticality"]').forEach(el=>el.addEventListener('change',update));update();
 }
@@ -150,7 +150,7 @@ function edit(r){
   if(k==='category')return categoryControl(val);
   if(k==='criticality')return criticalityControl(val)+assessmentControl(r?.criticalityAssessment)+repairPlanControl(r||{});
   const long=['equipment','cause'].includes(k);
-  const input=['date','due'].includes(k)?dateControl(k,val):k==='status'||k==='priority'?`<select name="${k}">${options(k==='status'?statuses:priorities,val)}</select>`:long?`<textarea name="${k}" maxlength="4000" ${k==='equipment'?'required':''}>${esc(val)}</textarea>`:`<input name="${k}" value="${esc(k==='time'?normalizeTime(val):val)}" ${k==='code'?'readonly placeholder="สร้างอัตโนมัติเมื่อบันทึก"':k==='time'?'type="time" step="60"':k==='station'?'required':''} maxlength="250">`;
+  const input=['date','due'].includes(k)?dateControl(k,val):k==='status'||k==='priority'?`<select name="${k}">${options(k==='status'?statuses:priorities,val)}</select>`:long?`<textarea name="${k}" maxlength="4000" >${esc(val)}</textarea>`:`<input name="${k}" value="${esc(k==='time'?normalizeTime(val):val)}" ${k==='code'?'readonly placeholder="สร้างอัตโนมัติเมื่อบันทึก"':k==='time'?'type="time" step="60"':k==='station'?'':''} maxlength="250">`;
   return `<label class="${long?'wide':''}">${l}${input}</label>`;
  }).join('');
  setupCategory(r?.category||'');
@@ -179,23 +179,17 @@ $('#record-form').onsubmit=async e=>{
  try{
   const f=new FormData(e.target),r=Object.fromEntries(Object.keys(fields).map(k=>[k,['date','due'].includes(k)?formDate(f,k):String(f.get(k)||'').trim()]));
   Object.assign(r,readStation(f));
-  if(!eventTypes.includes(r.eventType))throw Error('กรุณาเลือกประเภทเหตุการณ์');
-  if(!Object.hasOwn(criticalities,r.criticality))throw Error('กรุณาเลือกระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า');
+  if(r.eventType&&!eventTypes.includes(r.eventType))throw Error('กรุณาเลือกประเภทเหตุการณ์');
+  if(r.criticality&&!Object.hasOwn(criticalities,r.criticality))throw Error('กรุณาเลือกระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า');
   const criticalityAssessment=Object.fromEntries(Object.keys(assessmentFields).map(key=>[key,String(f.get('assessment-'+key)||'').trim()]));
-  if(r.criticality==='high'&&Object.values(criticalityAssessment).some(value=>!value))throw Error('ระดับสูง: กรุณากรอกผลประเมินระดับความสำคัญให้ครบทั้ง 4 ข้อ');
   if(Object.values(criticalityAssessment).some(value=>value.length>4000))throw Error('ผลประเมินแต่ละข้อยาวได้ไม่เกิน 4,000 ตัวอักษร');
   const repairPlan={...Object.fromEntries(['approach','responsible','operatorName','operatorId','operatorMobile'].map(key=>[key,String(f.get('repair-'+key)||'').trim()])),schedule:editing?.repairPlan?.schedule||'',expectedDateUnknown:f.has('repair-unknown'),expectedDate:f.has('repair-unknown')?'':formDate(f,'repair-expected')};
   if(repairPlan.approach.length>8000||['responsible','schedule'].some(key=>repairPlan[key].length>4000)||['operatorName','operatorId','operatorMobile'].some(key=>repairPlan[key].length>250))throw Error('ข้อความแผนงานซ่อมแซมยาวเกินขนาดที่กำหนด');
   const followups=Array.from({length:3},(_,i)=>({date:formDate(f,'follow-'+i),...Object.fromEntries(['time','informant','mobile','details','follower'].map(k=>[k,String(f.get('follow-'+i+'-'+k)||'').trim()]))}));
-  if(followups.some(v=>Object.values(v).some(Boolean)&&(!v.date||!v.time)))throw Error('กรุณาระบุวันและเวลาของลำดับที่มีข้อมูลติดตาม');
   const closure={date:formDate(f,'closure'),...Object.fromEntries(['time','reporter','mobile','details','follower'].map(k=>[k,String(f.get('closure-'+k)||'').trim()]))};
   const hasClosure=Object.values(closure).some(Boolean);
   closure.time=normalizeTime(closure.time);
-  const closureLabels={date:'วันที่ปิดงาน',time:'เวลาปิดงาน',reporter:'ชื่อผู้แจ้งปิดงาน',mobile:'เบอร์มือถือผู้แจ้งปิดงาน',details:'รายละเอียด',follower:'ชื่อผู้ตามข้อมูล'};
-  const missing=Object.keys(closureLabels).filter(key=>!closure[key]);
-  if(hasClosure&&missing.length)throw Error('ข้อมูลปิดงานยังไม่ครบ: '+missing.map(key=>closureLabels[key]).join(', '));
   if(hasClosure)r.status='resolved';
-  if(r.status==='resolved'&&!hasClosure)throw Error('กรุณากรอกข้อมูลปิดงานก่อนเลือกสถานะซ่อมแล้ว');
   const now=new Date(),at=now.toISOString(),code=editing?.code||stamp(now);
   const next={...editing,...r,code,id:editing?.id||code,criticalityAssessment,repairPlan,followups,closure,history:[...(editing?.history||[]),{at,by:username,displayName:displayName||username,note:hasClosure?'บันทึกปิดงาน · '+closure.details:(!editing?'สร้างรายการ':'บันทึกข้อมูล · '+statuses[r.status])}],updatedAt:at,revision:(editing?.revision||0)+1,...(!editing?{createdAt:at,dateNeedsReview:false}:{})};
   if(editing?.breaker){next.originalBreaker=editing.originalBreaker||editing.breaker;next.breaker='';}
