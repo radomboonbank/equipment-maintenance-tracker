@@ -25,7 +25,11 @@ service cloud.firestore {
   }
   function repairPlanValid(p) {
    return p is map && p.keys().hasAll(['approach','responsible','schedule','expectedDate'])
-    && p.keys().hasOnly(['approach','responsible','schedule','expectedDate'])
+    && p.keys().hasOnly(['approach','responsible','schedule','expectedDate','operatorName','operatorId','operatorMobile','unknownDate'])
+    && (!('operatorName' in p) || (p.operatorName is string && p.operatorName.size() <= 250))
+    && (!('operatorId' in p) || (p.operatorId is string && p.operatorId.size() <= 250))
+    && (!('operatorMobile' in p) || (p.operatorMobile is string && p.operatorMobile.size() <= 250))
+    && (!('unknownDate' in p) || (p.unknownDate is bool && (!p.unknownDate || p.expectedDate == '')))
     && p.approach is string && p.responsible is string && p.schedule is string && p.expectedDate is string
     && p.approach.size() <= 4000 && p.responsible.size() <= 4000 && p.schedule.size() <= 4000
     && (p.expectedDate == '' || p.expectedDate.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}'));
