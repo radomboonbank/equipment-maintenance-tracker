@@ -2,7 +2,7 @@ import {createPresence} from './presence.js?v=20261029-presence';
 import {createMembersPage} from './members.js?v=20261029-members3';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js';
-import {dashboardHtml,systemStatuses} from './dashboard.js';
+import {dashboardHtml,systemStatuses} from './dashboard.js?v=20261030-repair';
 import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261029-stations';
 import {rotateLogins,loginEntries,loginTime,publicLoginEntries,rotatePublicLogins} from './login-history.js?v=20261029-ten';
 'use strict';
@@ -129,8 +129,14 @@ function setupAssessment() {
 }
 function repairPlanControl(record={}) {
  const plan=record.repairPlan||{};
- const values={approach:plan.approach??record.solution??'',responsible:plan.responsible??record.owner??'',schedule:plan.schedule??'',expectedDate:plan.expectedDate??record.due??''};
- return `<fieldset class="repair-plan-field wide"><legend>แผนงานซ่อมแซมแก้ไข</legend><div class="form-grid">${[['approach','1. แนวทาง การแก้ไข'],['responsible','2. ผู้รับผิดชอบ การแก้ไข (ชื่อ และเบอร์มือถือ)'],['schedule','3. แผนดำเนินการแก้ไข']].map(([key,label])=>`<label for="repair-${key}">${label}<textarea id="repair-${key}" name="repair-${key}" maxlength="4000">${esc(values[key])}</textarea></label>`).join('')}<label>4. วันที่คาดว่าจะแก้ไขเสร็จ (พ.ศ.)${dateControl('repair-expected',values.expectedDate)}</label></div></fieldset>`;
+ let approach=plan.approach??record.solution??'';
+ if(!Object.hasOwn(plan,'operatorName')&&plan.schedule?.trim()&&plan.schedule.trim()!==approach.trim())approach+=(approach?'\n\n':'')+'แผนดำเนินการเดิม: '+plan.schedule;
+ return `<fieldset class="repair-plan-field wide"><legend>แผนงานซ่อมแซมแก้ไข</legend><div class="form-grid"><label for="repair-approach">1. แนวทางการแก้ไข (แผนดำเนินการแก้ไข)<textarea id="repair-approach" name="repair-approach" maxlength="8000">${esc(approach)}</textarea></label><label for="repair-responsible">2. ผู้รับผิดชอบ การแก้ไข (ชื่อ และเบอร์มือถือ)<textarea id="repair-responsible" name="repair-responsible" maxlength="4000">${esc(plan.responsible??record.owner??'')}</textarea></label><fieldset class="repair-operator"><legend>3. ข้อมูล Operator สฟ.</legend><div class="repair-operator-row">${[['operatorName','Operator สฟ.'],['operatorId','เลขประจำตัว'],['operatorMobile','เบอร์มือถือ']].map(([key,label])=>`<label>${label}<input name="repair-${key}" maxlength="250" ${key==='operatorMobile'?'type="tel" inputmode="tel"':''} value="${esc(plan[key]||'')}"></label>`).join('')}</div></fieldset><div class="repair-expected"><label>4. วันที่คาดว่าจะแก้ไขเสร็จ (พ.ศ.)${dateControl('repair-expected',plan.expectedDateUnknown?'':(plan.expectedDate??record.due??''))}</label><label class="repair-unknown"><input type="checkbox" name="repair-unknown" ${plan.expectedDateUnknown?'checked':''}>ยังไม่ทราบกำหนดการแก้ไข</label></div></div></fieldset>`;
+}
+function setupRepairPlan(){
+ const unknown=$('[name="repair-unknown"]');
+ const update=()=>document.querySelectorAll('[name^="repair-expected-"]').forEach(el=>el.disabled=!canEdit()||unknown.checked);
+ unknown.addEventListener('change',update);update();
 }
 function edit(r){
  if(!cloudReady)return toast('รอโหลดข้อมูลก่อน');if(!r&&!canEdit())return;
@@ -155,6 +161,7 @@ function edit(r){
  $('#history').innerHTML=(r?.history||[]).slice().reverse().map(h=>`<div class="history-item">${esc(String(h.note||'').replace(/แก้ปีวันที่ตามผู้ดูแล: 19\d{2}-\d{2}-\d{2} → พ.ศ. (25\d{2})-(\d{2})-(\d{2}) \(คงวันและเดือนเดิม\)/,'ตรวจแก้ปีวันที่เป็น $3/$2/$1 พ.ศ. (เก็บค่าต้นฉบับไว้แล้ว)'))}<small>${esc(dateText(h.at))} · ${esc(h.by)}</small></div>`).join('');
  document.querySelectorAll('#fields input,#fields textarea,#fields select,#followups input,#followups textarea,#followups select,#closure-fields input,#closure-fields textarea,#closure-fields select').forEach(el=>el.disabled=!canEdit());
  setupStation($('#fields .station-control'),canEdit());
+ setupRepairPlan();
  $('#save').hidden=!canEdit();$('#delete').hidden=role!=='admin'||!r;
  $('#editor').showModal();
 }
@@ -169,8 +176,8 @@ $('#record-form').onsubmit=async e=>{
   const criticalityAssessment=Object.fromEntries(Object.keys(assessmentFields).map(key=>[key,String(f.get('assessment-'+key)||'').trim()]));
   if(r.criticality==='high'&&Object.values(criticalityAssessment).some(value=>!value))throw Error('ระดับสูง: กรุณากรอกผลประเมินระดับความสำคัญให้ครบทั้ง 4 ข้อ');
   if(Object.values(criticalityAssessment).some(value=>value.length>4000))throw Error('ผลประเมินแต่ละข้อยาวได้ไม่เกิน 4,000 ตัวอักษร');
-  const repairPlan={...Object.fromEntries(['approach','responsible','schedule'].map(key=>[key,String(f.get('repair-'+key)||'').trim()])),expectedDate:formDate(f,'repair-expected')};
-  if(['approach','responsible','schedule'].some(key=>repairPlan[key].length>4000))throw Error('แผนงานซ่อมแซมแต่ละข้อยาวได้ไม่เกิน 4,000 ตัวอักษร');
+  const repairPlan={...Object.fromEntries(['approach','responsible','operatorName','operatorId','operatorMobile'].map(key=>[key,String(f.get('repair-'+key)||'').trim()])),schedule:editing?.repairPlan?.schedule||'',expectedDateUnknown:f.has('repair-unknown'),expectedDate:f.has('repair-unknown')?'':formDate(f,'repair-expected')};
+  if(repairPlan.approach.length>8000||['responsible','schedule'].some(key=>repairPlan[key].length>4000)||['operatorName','operatorId','operatorMobile'].some(key=>repairPlan[key].length>250))throw Error('ข้อความแผนงานซ่อมแซมยาวเกินขนาดที่กำหนด');
   const followups=Array.from({length:3},(_,i)=>({date:formDate(f,'follow-'+i),...Object.fromEntries(['time','informant','mobile','details','follower'].map(k=>[k,String(f.get('follow-'+i+'-'+k)||'').trim()]))}));
   if(followups.some(v=>Object.values(v).some(Boolean)&&(!v.date||!v.time)))throw Error('กรุณาระบุวันและเวลาของลำดับที่มีข้อมูลติดตาม');
   const closure={date:formDate(f,'closure'),...Object.fromEntries(['time','reporter','mobile','details','follower'].map(k=>[k,String(f.get('closure-'+k)||'').trim()]))};

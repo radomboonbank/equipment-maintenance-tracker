@@ -1,6 +1,6 @@
 export const systemStatuses={normal:'ปกติ',monitoring:'เฝ้าระวัง',degraded:'มีข้อจำกัด',critical:'วิกฤต'};
 export function bangkokDay(now=new Date()){return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit'}).format(now)}
-export function repairDue(record){const value=record.repairPlan?.expectedDate;return typeof value==='string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0,10)===value?value:''}
+export function repairDue(record){if(record.repairPlan?.expectedDateUnknown)return '';const value=record.repairPlan?.expectedDate;return typeof value==='string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0,10)===value?value:''}
 export function dashboardSummary(records,now=new Date()){
  const open=records.filter(r=>r.status!=='resolved'),today=bangkokDay(now);
  return {open:open.length,high:open.filter(r=>r.criticality==='high').length,unassessed:open.filter(r=>!['high','medium','low'].includes(r.criticality)).length,overdue:open.filter(r=>repairDue(r)&&repairDue(r)<today),undated:open.filter(r=>!repairDue(r)),today};
