@@ -65,3 +65,14 @@ aside .brand{font-size:16px;letter-spacing:.3px;gap:9px}aside .brand>span{min-wi
 .work-action-buttons{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px}.work-draft-form{padding:24px}.work-draft-form label{display:block;margin:16px 0}.work-draft-form input,.work-draft-form textarea,.work-draft-form select{width:100%}
 
 .work-draft-dialog{width:min(1080px,94vw);max-height:90vh;overflow:auto}.construction-section{border:1px solid #cde2e5;border-radius:14px;padding:16px;margin:22px 0;background:#f5fafb}.construction-section legend{font-weight:700;color:#087e84;padding:0 8px}.construction-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 20px}.construction-grid label{margin:0}.construction-grid input,.construction-grid textarea{margin-top:8px;background:white}@media(max-width:650px){.construction-grid{grid-template-columns:1fr}}
+
+.work-draft-title{display:flex;align-items:center;justify-content:space-between;gap:20px}.work-draft-title h2{margin:0}.work-draft-close{flex:none;width:44px;height:44px;padding:0;font-size:22px}
+
+.construction-station-control [data-line-toggle]{margin:8px 0}.construction-station-control [aria-pressed="true"]{background:#087e84;color:white}.construction-station-control span{display:block;margin-top:12px}
+
+/* Keep the station mode button aligned with its field heading. */
+.construction-grid label:has(.construction-station-control){position:relative;padding-top:10px;padding-right:0}
+.construction-station-control [data-line-toggle]{position:absolute;right:0;top:0;margin:0;padding:6px 12px;font-size:13px;min-height:32px}
+.construction-station-control [data-single-station]{padding-top:12px}
+.construction-station-control #construction-line-fields{padding-top:12px}
+@media(max-width:380px){.construction-grid label:has(.construction-station-control){font-size:12px}.construction-station-control [data-line-toggle]{font-size:11px;padding:6px 8px}}
