@@ -2,8 +2,8 @@ import {createPresence} from './presence.js?v=20261029-presence';
 import {createMembersPage} from './members.js?v=20261029-members3';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261030-optional';
-import {dashboardHtml,systemStatuses} from './dashboard.js?v=20261030-repair';
-import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261030-optional';
+import {dashboardHtml} from './dashboard.js?v=20261031-types-trim2';
+import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261031-types-trim2';
 import {rotateLogins,loginEntries,loginTime,publicLoginEntries,rotatePublicLogins} from './login-history.js?v=20261029-ten';
 'use strict';
 import {dateParts,dateText,stamp,credential,loginEmail,readDate,normalizeTime,mergedEquipment} from './utils.js?v=20261027-merged';
@@ -12,7 +12,7 @@ const statuses={unreviewed:'รอตรวจสอบ',pending:'รอดำ�
 const eventTypes=['อุปกรณ์ขัดข้อง','Abnormal Alarm','Winding Temp Alarm','โครงการก่อสร้าง','งานบำรุงรักษาเกินกำหนด','ข้อจำกัด ระบบส่ง'];
 const fields={code:'รหัสชำรุด',date:'วันที่ได้รับแจ้งอุปกรณ์ชำรุด (พ.ศ.)',time:'เวลาที่ได้รับแจ้งอุปกรณ์ชำรุด',station:'สถานีไฟฟ้าแรงสูง',eventType:'ประเภทเหตุการณ์',category:'ชนิดอุปกรณ์',equipment:'อุปกรณ์ที่ชำรุด (อุปกรณ์ที่ OFF)',cause:'สาเหตุ ที่ ปลด (OFF)',criticality:'ระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า',owner:'ผู้รับผิดชอบแก้ไข',reporter:'ผู้แจ้ง',receiver:'พนักงานศูนย์ ผู้รับเรื่อง',due:'คาดการณ์กำหนดการแก้ไข (พ.ศ.)',status:'สถานะ',priority:'ความเร่งด่วน'};
 let data=[],notes=[],page=1,view='all',editing=null,cloud=null,unsubscribe=null,user=null,cloudReady=false,busy=false;
-let systemAssessment=null,unsubscribeSystem=null;
+
 let role='guest',username='',displayName='',generation=0;
 let memberDuty='';
 const membersPage=createMembersPage({session:()=>({cloud,user,role,duty:memberDuty}),endpoint:()=>window.GRID_TELEGRAM_URL});
@@ -61,7 +61,7 @@ function updateClock(){const now=new Date();$('#today').dateTime=now.toISOString
 updateClock();setInterval(updateClock,1000);
 const presence=createPresence({render(entries,message){$('#online-count').textContent=message?'—':entries.length;$('#online-list').innerHTML=message?`<li class="online-empty">${esc(message)}</li>`:entries.length?entries.map(entry=>`<li><span class="online-avatar" aria-hidden="true">${esc(Array.from(entry.displayName)[0]||'●')}</span><div><strong>${esc(entry.displayName)}</strong><small>${entry.uid===user?.uid?'คุณ · ':''}เชื่อมต่อล่าสุด ${new Date(entry.at).toLocaleTimeString('en-GB',{timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit'})}</small></div><span class="online-dot" aria-label="ออนไลน์"></span></li>`).join(''):'<li>ยังไม่มีผู้ใช้ออนไลน์</li>'}});
 function filtered(){const q=$('#search').value.toLowerCase().trim();return data.filter(r=>(view==='all'||(view==='open'?r.status!=='resolved':r.status==='resolved'))&&matchesListFilters(r,{eventType:$('#event-filter').value,equipmentType:$('#equipment-filter').value,station:$('#station').value})&&(!q||Object.keys(fields).some(k=>String(k==='equipment'?mergedEquipment(r):r[k]||'').toLowerCase().includes(q)))).sort(compareEventDates)}
-function render(){ $('#dashboard').innerHTML=cloudReady?dashboardHtml(data,systemAssessment):'<p>กำลังโหลดข้อมูล Dashboard…</p>';$('#export-pdf').disabled=!cloudReady||!data.length;$('#add').hidden=!canEdit();const station=$('#station').value;$('#station').innerHTML='<option value="">ทุกสถานี</option>'+[...new Set(data.map(r=>r.station).filter(Boolean))].sort().map(s=>`<option ${s===station?'selected':''}>${esc(s)}</option>`).join('');const counts=Object.fromEntries(Object.keys(statuses).map(k=>[k,data.filter(r=>r.status===k).length]));const open=data.filter(r=>r.status!=='resolved');$('#stats').innerHTML=[['อุปกรณ์ทั้งหมด',data.length,'รายการในทะเบียน'],['งานที่ยังไม่ปิด',open.length,'รวมรายการรอตรวจสอบ'],['งานเร่งด่วน / วิกฤต',open.filter(r=>r.priority!=='normal').length,'เฉพาะรายการที่ยังไม่ปิด'],['ซ่อมแล้ว',counts.resolved,'รายการที่ยืนยันการแก้ไข']].map(([l,n,s])=>`<article class="stat"><div class="label">${l}</div><strong>${n.toLocaleString('th-TH')}</strong><small>${s}</small></article>`).join('');const bars=(entries,total)=>entries.map(([l,n])=>`<div class="bar-row"><span>${esc(l)}</span><div class="bar-bg"><div class="bar-fill" style="width:${total?n/total*100:0}%"></div></div><b>${n}</b></div>`).join('');$('#status-bars').innerHTML=bars(Object.keys(statuses).map(k=>[statuses[k],counts[k]]),data.length);const groups={};open.forEach(r=>{const s=r.station||'ไม่ระบุ';groups[s]=(groups[s]||0)+1});$('#station-bars').innerHTML=bars(Object.entries(groups).sort((a,b)=>b[1]-a[1]).slice(0,5),open.length)||'<p>ยังไม่มีงานค้างในทะเบียน</p>';const rows=filtered();page=Math.max(1,Math.min(page,Math.ceil(rows.length/12)||1));$('#count').textContent=rows.length;$('#rows').innerHTML=rows.slice((page-1)*12,page*12).map(r=>`<tr><td><span class="event-date ${r.dateNeedsReview?'warning':''}">${esc(dateLabel(r))}</span></td><td><strong>${esc(mergedEquipment(r))}</strong><small title="${esc(r.cause)}">${esc(r.cause||r.category||'—')}</small></td><td><span class="station-tag">${esc(r.station||'—')}</span></td><td>${esc(r.owner||'ยังไม่ระบุ')}</td><td><span class="badge event-type-badge">${esc(r.eventType==='Power Flow Control'?'ข้อจำกัด ระบบส่ง':r.eventType||'ยังไม่ระบุ')}</span></td><td>${criticalityBadge(r.criticality)}</td><td><button data-edit="${esc(r.id)}" aria-label="เปิดรายการ ${esc(r.code)}">เปิด →</button></td></tr>`).join('');$('#empty').hidden=rows.length>0;$('#range').textContent=rows.length?`${(page-1)*12+1}–${Math.min(page*12,rows.length)} จาก ${rows.length} รายการ`:'0 รายการ';$('#prev').disabled=page<=1;$('#next').disabled=page*12>=rows.length;
+function render(){ $('#dashboard').innerHTML=cloudReady?dashboardHtml(data):'<p>กำลังโหลดข้อมูล Dashboard…</p>';$('#export-pdf').disabled=!cloudReady||!data.length;$('#add').hidden=!canEdit();const station=$('#station').value;$('#station').innerHTML='<option value="">ทุกสถานี</option>'+[...new Set(data.map(r=>r.station).filter(Boolean))].sort().map(s=>`<option ${s===station?'selected':''}>${esc(s)}</option>`).join('');const counts=Object.fromEntries(Object.keys(statuses).map(k=>[k,data.filter(r=>r.status===k).length]));const open=data.filter(r=>r.status!=='resolved');$('#stats').innerHTML=[['อุปกรณ์ทั้งหมด',data.length,'รายการในทะเบียน'],['งานที่ยังไม่ปิด',open.length,'รวมรายการรอตรวจสอบ'],['งานเร่งด่วน / วิกฤต',open.filter(r=>r.priority!=='normal').length,'เฉพาะรายการที่ยังไม่ปิด'],['ซ่อมแล้ว',counts.resolved,'รายการที่ยืนยันการแก้ไข']].map(([l,n,s])=>`<article class="stat"><div class="label">${l}</div><strong>${n.toLocaleString('th-TH')}</strong><small>${s}</small></article>`).join('');const bars=(entries,total)=>entries.map(([l,n])=>`<div class="bar-row"><span>${esc(l)}</span><div class="bar-bg"><div class="bar-fill" style="width:${total?n/total*100:0}%"></div></div><b>${n}</b></div>`).join('');$('#status-bars').innerHTML=bars(Object.keys(statuses).map(k=>[statuses[k],counts[k]]),data.length);const groups={};open.forEach(r=>{const s=r.station||'ไม่ระบุ';groups[s]=(groups[s]||0)+1});$('#station-bars').innerHTML=bars(Object.entries(groups).sort((a,b)=>b[1]-a[1]).slice(0,5),open.length)||'<p>ยังไม่มีงานค้างในทะเบียน</p>';const rows=filtered();page=Math.max(1,Math.min(page,Math.ceil(rows.length/12)||1));$('#count').textContent=rows.length;$('#rows').innerHTML=rows.slice((page-1)*12,page*12).map(r=>`<tr><td><span class="event-date ${r.dateNeedsReview?'warning':''}">${esc(dateLabel(r))}</span></td><td><strong>${esc(mergedEquipment(r))}</strong><small title="${esc(r.cause)}">${esc(r.cause||r.category||'—')}</small></td><td><span class="station-tag">${esc(r.station||'—')}</span></td><td>${esc(r.owner||'ยังไม่ระบุ')}</td><td><span class="badge event-type-badge">${esc(r.eventType==='Power Flow Control'?'ข้อจำกัด ระบบส่ง':r.eventType||'ยังไม่ระบุ')}</span></td><td>${criticalityBadge(r.criticality)}</td><td><button data-edit="${esc(r.id)}" aria-label="เปิดรายการ ${esc(r.code)}">เปิด →</button></td></tr>`).join('');$('#empty').hidden=rows.length>0;$('#range').textContent=rows.length?`${(page-1)*12+1}–${Math.min(page*12,rows.length)} จาก ${rows.length} รายการ`:'0 รายการ';$('#prev').disabled=page<=1;$('#next').disabled=page*12>=rows.length;
 if(cloud&&!cloudReady){document.querySelectorAll('.stat strong').forEach(el=>el.textContent='—');$('#empty').innerHTML='<strong>ยังไม่สามารถแสดงข้อมูลจาก Firebase</strong><p>กำลังเชื่อมต่อ หรือยังไม่ได้รับสิทธิ์เข้าถึงข้อมูล</p>';}else{$('#empty').innerHTML='<strong>ยังไม่มีรายการในมุมมองนี้</strong><p>ยังไม่มีข้อมูลที่ตรงกับตัวกรอง</p>';}}
 
 for(const sel of ['#search','#event-filter','#station','#equipment-filter'])$(sel).addEventListener(sel==='#search'?'input':'change',()=>{page=1;render()});
@@ -217,13 +217,13 @@ $('#delete').onclick=async()=>{
  busy=true;$('#delete').disabled=true;
  try{const original=editing;await cloud.runTransaction(cloud.db,async t=>{const ref=cloud.doc(cloud.db,'equipment',original.id),snap=await t.get(ref);if(!snap.exists()||snap.data().revision!==original.revision)throw Error('ข้อมูลเปลี่ยนแปลง กรุณาเปิดใหม่');t.delete(ref)});$('#editor').close();toast('ลบรายการแล้ว')}catch(err){toast('ลบไม่สำเร็จ: '+err.message)}finally{busy=false;$('#delete').disabled=false}
 };
-function resetSession(){presence.stop();membersPage.reset();memberDuty="";generation++;unsubscribeSystem?.();unsubscribeSystem=null;systemAssessment=null;unsubscribeLogins?.();unsubscribeLogins=null;renderLogins(null);unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';displayName='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
+function resetSession(){presence.stop();membersPage.reset();memberDuty="";generation++;unsubscribeLogins?.();unsubscribeLogins=null;renderLogins(null);unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';displayName='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
 function showWorkspace(){
  $('#current-account').textContent=role==='guest'?'ผู้ชมทั่วไป':`บัญชีของคุณ: ${displayName||username}`;
  presence.start(cloud,role==='guest'?null:user,displayName||username);
  membersPage.setAccess(role==='admin'&&memberDuty==='super admin');
  watchLogins();
- watchSystemAssessment();
+ 
  $('#workspace').hidden=false;$('#login-screen').hidden=true;
  $('#identity').textContent=username+' · '+({admin:'super admin',editor:'cac term',viewer:'user · ดูอย่างเดียว',guest:'ดูอย่างเดียว'}[role]);
  const gen=generation;
@@ -274,16 +274,4 @@ $('#export-pdf').onclick=()=>{
  preview.addEventListener('close',()=>preview.remove(),{once:true});preview.showModal();
 };
 
-function watchSystemAssessment(){
- unsubscribeSystem?.();systemAssessment=null;
- $('#system-assessment-form').hidden=role!=='admin';
- if(role==='guest'){render();return}
- const gen=generation;
- unsubscribeSystem=cloud.onSnapshot(cloud.doc(cloud.db,'metadata','systemAssessment'),snap=>{if(gen!==generation)return;systemAssessment=snap.exists()?snap.data():null;render()},()=>{if(gen!==generation)return;systemAssessment=null;render();$('#system-assessment-message').textContent='ยังโหลดผลประเมินไม่ได้ กรุณาตรวจสิทธิ์และการเชื่อมต่อ'});
-}
-$('#system-assessment-form').onsubmit=async e=>{
- e.preventDefault();if(role!=='admin'||!user||busy)return;
- const f=new FormData(e.target),status=f.get('systemStatus'),reason=String(f.get('systemReason')||'').trim();if(!systemStatuses[status]||!reason)return;
- const button=e.target.querySelector('button');button.disabled=true;busy=true;
- try{await cloud.setDoc(cloud.doc(cloud.db,'metadata','systemAssessment'),{status,reason,assessedBy:displayName||username,assessedUid:user.uid,confirmedAt:cloud.serverTimestamp()});$('#system-assessment-message').textContent='บันทึกผลประเมินแล้ว'}catch(err){$('#system-assessment-message').textContent='บันทึกไม่สำเร็จ กรุณาลองใหม่'}finally{busy=false;button.disabled=false}
-};
+

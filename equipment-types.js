@@ -4,13 +4,8 @@ export const equipmentTypes = [
  {name:'เซอร์กิตเบรกเกอร์',subtypes:[],voltages:['500 kV','230 kV','115 kV','69 kV','22 kV']},
  {name:'Disconnecting SW',subtypes:['ใบมีด','ใบมีด Ground','Power Fuse'],voltages:['500 kV','230 kV','115 kV','69 kV','22 kV']},
  {name:'คาปาซิเตอร์แบงค์',subtypes:[],voltages:['230 kV','115 kV','69 kV','22 kV']},
- {name:'จุดจ่ายไฟ ลูกค้า',subtypes:['กฟภ.','โรงไฟฟ้า','ลูกค้าตรง'],voltages:['230 kV','115 kV','69 kV','22 kV']},
  {name:'รีเลย์ระบบป้องกัน',subtypes:[],voltages:[]},
  {name:'ระบบสื่อสาร',subtypes:['สถานีไฟฟ้า','ศูนย์นนทบุรี'],voltages:[]},
- {name:'บัส',subtypes:[],voltages:['500 kV','230 kV','115 kV','22 kV']},
- {name:'SCADA system',subtypes:['สถานีไฟฟ้า','ศูนย์นนทบุรี'],voltages:[]},
- {name:'DC system',subtypes:['สถานีไฟฟ้า'],voltages:[]},
- {name:'อุปกรณ์ภายใน สฟ.',subtypes:[],voltages:[]}
 ];
 const separator=' · ';
 export function parseEquipmentCategory(value='') {
