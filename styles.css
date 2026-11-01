@@ -126,3 +126,5 @@ aside .brand{font-size:16px;letter-spacing:.3px;gap:9px}aside .brand>span{min-wi
 @media(prefers-reduced-motion:reduce){.work-action-buttons > button.primary{transition:none}}
 
 .grid-summary-number{font-size:28px;font-weight:700;line-height:1.2;color:#173d77}
+
+.recent-updates-table{width:100%;table-layout:fixed}.recent-updates-table th:first-child{width:65%}.recent-updates-table td{vertical-align:top;overflow-wrap:anywhere}.recent-updates-table small,.recent-updates-table time{display:block;margin-top:5px;color:#718595;font-size:12px}.recent-updates-table strong{font-size:14px}

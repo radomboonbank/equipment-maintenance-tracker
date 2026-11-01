@@ -33,3 +33,20 @@ export function dashboardHtml(records,assessment=null,now=new Date()){
  panel(5,'อุปกรณ์ที่มีผลกระทบต่อระบบ',[['มีรายละเอียดผลต่อระบบ',impact.length,'#57a7f5'],['ยังไม่ระบุผลต่อระบบ',open.length-impact.length,'#8d9baa']],'นับการกรอกผลประเมินข้อ 3 เท่านั้น ยังไม่ใช่จำนวนที่ยืนยันว่ามีผลกระทบ ต้องเพิ่มเกณฑ์ยืนยันก่อนสรุป')+
  `<article class="grid-summary-panel"><header><span class="grid-summary-number">6</span><h3>งานสำคัญ อปก.</h3></header>${['BESS','LPLC','TSLC','Data Center'].map(t=>`<div class="grid-summary-row"><span>${t}</span><span class="grid-summary-pending">รอจัดหมวดข้อมูล</span></div>`).join('')}<p>ข้อมูลปัจจุบันยังไม่มีช่องระบุหมวดงานสำคัญ จึงไม่แสดงเป็นศูนย์หรือเดาจากข้อความ</p></article></div>`;
 }
+
+const updateMillis=value=>{const raw=value?.toDate?.()||value;const ms=raw?new Date(raw).getTime():NaN;return Number.isFinite(ms)?ms:0};
+export function latestRecordUpdates(records){
+ const names=new Map();
+ for(const r of records)for(const h of r.history||[]){if(h.by&&/[\u0E00-\u0E7F]/.test(h.displayName||''))names.set(h.by,h.displayName)}
+ return records.map(r=>{
+  const history=[...(r.history||[])].sort((a,b)=>updateMillis(b.at)-updateMillis(a.at));const last=history[0];
+  const at=updateMillis(r.updatedAt)||updateMillis(last?.at)||updateMillis(r.createdAt);
+  const author=/[\u0E00-\u0E7F]/.test(last?.displayName||'')?last.displayName:names.get(last?.by)||'ไม่พบชื่อผู้บันทึกในประวัติ';
+  return {record:r,at,author};
+ }).filter(x=>x.at).sort((a,b)=>b.at-a.at||String(a.record.id||a.record.code).localeCompare(String(b.record.id||b.record.code))).slice(0,5);
+}
+export function latestUpdatesHtml(records){
+ const entries=latestRecordUpdates(records);
+ if(!entries.length)return '<p class="empty">ยังไม่มีประวัติการเพิ่มหรือแก้ไข</p>';
+ return '<div class="table-wrap"><table class="recent-updates-table"><thead><tr><th>อุปกรณ์ / สาเหตุ</th><th>ผู้เพิ่ม / แก้ไข</th></tr></thead><tbody>'+entries.map(({record:r,at,author})=>`<tr><td><strong>${esc(r.equipment||r.breaker||'ยังไม่ระบุอุปกรณ์')}</strong><small>${esc(r.cause||'ยังไม่ระบุสาเหตุ')}</small><time>${esc(new Intl.DateTimeFormat('th-TH-u-ca-buddhist',{timeZone:'Asia/Bangkok',dateStyle:'short',timeStyle:'short',hourCycle:'h23'}).format(new Date(at)))}</time></td><td>${esc(author)}</td></tr>`).join('')+'</tbody></table></div>';
+}
