@@ -94,3 +94,25 @@ aside .brand{font-size:16px;letter-spacing:.3px;gap:9px}aside .brand>span{min-wi
 .grid-summary-panel{transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease}
 .grid-summary-panel:hover{background:#fff8cf;border-color:#36a9f4;box-shadow:inset 0 0 0 2px #36a9f4,0 3px 12px rgba(30,65,75,.06)}
 @media(prefers-reduced-motion:reduce){.grid-summary-panel{transition:none}}
+
+.bess-full{grid-column:1/-1;min-width:0}.bess-event{padding:18px;background:white;border:1px solid #d4e4e8;border-radius:12px;margin:14px 0}.bess-event select[multiple]{min-height:160px}.bess-event small{display:block;color:#526b7b;margin:6px 0}
+
+.bess-pb-field{min-width:0;margin:0;border:1px solid #d4e4e8;border-radius:12px;padding:12px}
+.bess-pb-field legend{font-size:14px;padding:0 6px}
+.bess-pb-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.work-draft-form .bess-pb-option{display:flex;align-items:center;gap:6px;margin:0;padding:9px 5px;border:1px solid #dce7eb;border-radius:8px;background:#fff;cursor:pointer;font-size:13px}
+.work-draft-form .bess-pb-option input{width:16px;height:16px;flex:none;margin:0;accent-color:#07848a}
+.bess-pb-option:has(input:checked){background:#e0f5f2;border-color:#07848a}
+.bess-pb-option:focus-within{outline:2px solid #36a9f4;outline-offset:1px}
+
+.bess-pb-side{display:flex;flex-direction:column;gap:20px;min-width:0}.bess-pb-side label{margin:0}
+
+.work-draft-form .bess-trip-check{display:flex;align-items:center;gap:8px;margin:12px 0}.work-draft-form .bess-trip-check input{width:18px;height:18px;margin:0;accent-color:#087f85}.bess-breaker-state p{color:#526b7b;font-size:14px}
+
+.bess-breaker-codes{border:1px solid #d4e4e8;border-radius:12px;padding:12px;margin-top:16px;min-width:0}.bess-breaker-codes legend{font-size:13px;padding:0 6px}.bess-breaker-code-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+
+.bess-cause-weather{display:flex;flex-direction:column;gap:12px;min-width:0}.bess-cause-weather label{margin:0}
+
+@media(max-width:650px){.bess-time-spacer{display:none}}
+
+.winding-values-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.winding-values-grid label{margin:0}.winding-values-grid input{width:100%}@media(max-width:650px){.winding-values-grid{grid-template-columns:1fr}}
