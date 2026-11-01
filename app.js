@@ -2,7 +2,7 @@ import {createPresence} from './presence.js?v=20261029-presence';
 import {createMembersPage} from './members.js?v=20261029-members3';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261030-optional';
-import {dashboardHtml} from './dashboard.js?v=20261101-soft-dashboard';
+import {dashboardHtml} from './dashboard.js?v=20261102-swap-impact';
 import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261031-abnormal-local';
 import {rotateLogins,loginEntries,loginTime,publicLoginEntries,rotatePublicLogins} from './login-history.js?v=20261029-ten';
 'use strict';
@@ -234,7 +234,7 @@ function showWorkspace(){
  $('#workspace').hidden=false;$('#login-screen').hidden=true;
  $('#identity').textContent=username+' · '+({admin:'super admin',editor:'cac term',viewer:'user · ดูอย่างเดียว',guest:'ดูอย่างเดียว'}[role]);
  const gen=generation;
- unsubscribe=cloud.onSnapshot(cloud.collection(cloud.db,'equipment'),snap=>{if(gen!==generation)return;data=snap.docs.map(d=>({...d.data(),id:d.id}));cloudReady=true;$('#mode').textContent='Firebase · เชื่อมต่อแล้ว';$('#notice').textContent='ซิงก์ข้อมูลอัตโนมัติ · '+(['guest','viewer'].includes(role)?'โหมดดูอย่างเดียว':'บันทึกความคืบหน้าได้ทันที');render()},err=>{if(gen!==generation)return;cloudReady=false;data=[];render();$('#notice').textContent='โหลดข้อมูลไม่สำเร็จ กรุณาตรวจการเชื่อมต่อและสิทธิ์';toast(err.code==='permission-denied'?'ยังไม่ได้รับสิทธิ์อ่านฐานข้อมูล':err.message)});
+ unsubscribe=cloud.onSnapshot(cloud.collection(cloud.db,'equipment'),snap=>{if(gen!==generation)return;data=snap.docs.map(d=>({...d.data(),id:d.id}));cloudReady=true;$('#mode').textContent='Firebase · เชื่อมต่อแล้ว';$('#notice').hidden=true;$('#notice').textContent='';render()},err=>{if(gen!==generation)return;cloudReady=false;data=[];render();$('#notice').hidden=false;$('#notice').textContent='โหลดข้อมูลไม่สำเร็จ กรุณาตรวจการเชื่อมต่อและสิทธิ์';toast(err.code==='permission-denied'?'ยังไม่ได้รับสิทธิ์อ่านฐานข้อมูล':err.message)});
 }
 $('#login').onsubmit=async e=>{
  e.preventDefault();if(!cloud||busy)return;busy=true;$('#login-submit').disabled=true;$('#guest').disabled=true;
