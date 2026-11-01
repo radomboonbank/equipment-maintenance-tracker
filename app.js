@@ -77,8 +77,8 @@ function dateControl(name,value=''){
 function formDate(f,name){try{return readDate(f.get(name+'-day'),f.get(name+'-month'),f.get(name+'-year'))}catch(error){const label=name==='closure'?'วันที่ปิดงาน':name==='repair-expected'?'วันที่คาดว่าจะแก้ไขเสร็จ':name.startsWith('follow-')?'วันที่ติดตามลำดับ '+(Number(name.slice(7))+1):fields[name]||name;throw Error(label+': '+error.message)}}
 function eventTypeControl(value='') {
  if(value==='Power Flow Control')value='ข้อจำกัด ระบบส่ง';
- const choices=eventTypes.filter(label=>!['Abnormal Alarm','Winding Temp Alarm'].includes(label));
- if(['Abnormal Alarm','Winding Temp Alarm'].includes(value))return `<input type="hidden" name="eventType" value="${esc(value)}"><p class="wide">ประเภทเหตุการณ์เดิม: ${esc(value)}</p>`;
+ const choices=eventTypes.filter(label=>!['Abnormal Alarm','Winding Temp Alarm','โครงการก่อสร้าง'].includes(label));
+ if(['Abnormal Alarm','Winding Temp Alarm','โครงการก่อสร้าง'].includes(value))return `<input type="hidden" name="eventType" value="${esc(value)}"><p class="wide">ประเภทเหตุการณ์เดิม: ${esc(value)}</p>`;
  return `<fieldset class="event-type-field wide"><legend>ประเภทเหตุการณ์</legend><div class="event-type-options">${choices.map(label=>`<label><input type="radio" name="eventType" value="${esc(label)}" ${value===label?'checked':''}><span>${esc(label)}</span></label>`).join('')}</div></fieldset>`;
 }
 function categoryControl(value='') {
@@ -118,7 +118,7 @@ function criticalityControl(value='') {
 }
 const assessmentFields={scope:['1. ขอบเขตผลกระทบ','เฉพาะอุปกรณ์ / สถานี / หลายสถานีหรือระบบหลัก'],replacement:['2. ระบบหรืออุปกรณ์ทดแทน','มีและรองรับได้ / มีแต่มีข้อจำกัด / ไม่มี'],effect:['3. ผลต่อระบบ','กระทบการส่งจ่ายไฟอย่างไร และที่ใด'],measures:['4. มาตรการรองรับเหตุการณ์','คืออะไร อย่างไร']};
 function assessmentControl(value={}) {
- return `<fieldset class="assessment-field wide"><legend>ผลประเมินระดับความสำคัญ</legend><p id="assessment-requirement" class="assessment-requirement" aria-live="polite"></p><div class="form-grid">${Object.entries(assessmentFields).map(([key,[label,hint]])=>`<label for="assessment-${key}">${label}<span class="assessment-required" aria-hidden="true"> *</span><small id="assessment-${key}-hint">${hint}</small><textarea id="assessment-${key}" name="assessment-${key}" maxlength="4000" aria-describedby="assessment-${key}-hint">${esc(value?.[key])}</textarea></label>`).join('')}</div></fieldset>`;
+ return `<fieldset class="assessment-field wide"><legend>ประเมินผลกระทบต่อระบบไฟฟ้า</legend><p id="assessment-requirement" class="assessment-requirement" aria-live="polite"></p><label for="assessment-effect">ประเมินผลกระทบต่อระบบไฟฟ้า<textarea id="assessment-effect" name="assessment-effect" maxlength="4000" rows="5">${esc(value?.effect)}</textarea></label></fieldset>`;
 }
 function setupAssessment() {
  const update=()=>{
@@ -187,7 +187,7 @@ $('#record-form').onsubmit=async e=>{
   Object.assign(r,readStation(f));
   if(r.eventType&&!eventTypes.includes(r.eventType))throw Error('กรุณาเลือกประเภทเหตุการณ์');
   if(r.criticality&&!Object.hasOwn(criticalities,r.criticality))throw Error('กรุณาเลือกระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า');
-  const criticalityAssessment=Object.fromEntries(Object.keys(assessmentFields).map(key=>[key,String(f.get('assessment-'+key)||'').trim()]));
+  const criticalityAssessment=Object.fromEntries(Object.keys(assessmentFields).map(key=>[key,String(key==='effect'?(f.get('assessment-effect')||''):(editing?.criticalityAssessment?.[key]||'')).trim()]));
   if(Object.values(criticalityAssessment).some(value=>value.length>4000))throw Error('ผลประเมินแต่ละข้อยาวได้ไม่เกิน 4,000 ตัวอักษร');
   const repairPlan={...Object.fromEntries(['approach','responsible','operatorName','operatorId','operatorMobile'].map(key=>[key,String(f.get('repair-'+key)||'').trim()])),schedule:editing?.repairPlan?.schedule||'',expectedDateUnknown:f.has('repair-unknown'),expectedDate:f.has('repair-unknown')?'':formDate(f,'repair-expected')};
   if(repairPlan.approach.length>8000||['responsible','schedule'].some(key=>repairPlan[key].length>4000)||['operatorName','operatorId','operatorMobile'].some(key=>repairPlan[key].length>250))throw Error('ข้อความแผนงานซ่อมแซมยาวเกินขนาดที่กำหนด');
