@@ -116,3 +116,5 @@ aside .brand{font-size:16px;letter-spacing:.3px;gap:9px}aside .brand>span{min-wi
 @media(max-width:650px){.bess-time-spacer{display:none}}
 
 .winding-values-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.winding-values-grid label{margin:0}.winding-values-grid input{width:100%}@media(max-width:650px){.winding-values-grid{grid-template-columns:1fr}}
+
+.local-date-picker{display:grid;grid-template-columns:.8fr 1.1fr 1.2fr;gap:6px;margin-top:8px}.work-draft-form .local-date-picker select{width:100%;min-width:0;margin:0;padding-left:10px;padding-right:22px}
