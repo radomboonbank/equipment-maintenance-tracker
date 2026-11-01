@@ -77,7 +77,9 @@ function dateControl(name,value=''){
 function formDate(f,name){try{return readDate(f.get(name+'-day'),f.get(name+'-month'),f.get(name+'-year'))}catch(error){const label=name==='closure'?'วันที่ปิดงาน':name==='repair-expected'?'วันที่คาดว่าจะแก้ไขเสร็จ':name.startsWith('follow-')?'วันที่ติดตามลำดับ '+(Number(name.slice(7))+1):fields[name]||name;throw Error(label+': '+error.message)}}
 function eventTypeControl(value='') {
  if(value==='Power Flow Control')value='ข้อจำกัด ระบบส่ง';
- return `<fieldset class="event-type-field wide"><legend>ประเภทเหตุการณ์</legend><div class="event-type-options">${eventTypes.map(label=>`<label><input type="radio" name="eventType" value="${esc(label)}" ${value===label?'checked':''}><span>${esc(label)}</span></label>`).join('')}</div></fieldset>`;
+ const choices=eventTypes.filter(label=>!['Abnormal Alarm','Winding Temp Alarm'].includes(label));
+ if(['Abnormal Alarm','Winding Temp Alarm'].includes(value))return `<input type="hidden" name="eventType" value="${esc(value)}"><p class="wide">ประเภทเหตุการณ์เดิม: ${esc(value)}</p>`;
+ return `<fieldset class="event-type-field wide"><legend>ประเภทเหตุการณ์</legend><div class="event-type-options">${choices.map(label=>`<label><input type="radio" name="eventType" value="${esc(label)}" ${value===label?'checked':''}><span>${esc(label)}</span></label>`).join('')}</div></fieldset>`;
 }
 function categoryControl(value='') {
  const current=parseEquipmentCategory(value);
@@ -141,10 +143,12 @@ function setupRepairPlan(){
 function edit(r){
  if(!cloudReady)return toast('รอโหลดข้อมูลก่อน');if(!r&&!canEdit())return;
  editing=r?structuredClone(r):null;
+ const current=dateParts();
+ const defaults=r?{}:{date:`${current.year}-${current.month}-${current.day}`,time:`${current.hour}:${current.minute}`};
  $('#save-error').hidden=true;$('#save-error').textContent='';
  $('#editor-title').textContent=r?'รายละเอียด #'+r.code:'แจ้งอุปกรณ์ชำรุด';
  $('#fields').innerHTML=Object.entries(fields).map(([k,l])=>{
-  const val=(k==='equipment'?mergedEquipment(r||{}):r?.[k])||(k==='status'?'pending':k==='priority'?'normal':'');
+  const val=(k==='equipment'?mergedEquipment(r||{}):(r?.[k]??defaults[k]))||(k==='status'?'pending':k==='priority'?'normal':'');
   if(k==='station')return stationControl(r||{});
   if(k==='eventType')return eventTypeControl(val);
   if(k==='category')return categoryControl(val);
