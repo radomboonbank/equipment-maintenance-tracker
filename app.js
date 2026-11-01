@@ -11,6 +11,7 @@ const $=s=>document.querySelector(s), esc=s=>String(s??'').replace(/[&<>"']/g,c=
 const statuses={unreviewed:'รอตรวจสอบ',pending:'รอดำเนินการ',repairing:'กำลังซ่อม',resolved:'ซ่อมแล้ว'}, priorities={normal:'ปกติ',urgent:'เร่งด่วน',critical:'วิกฤต'};
 const eventTypes=['อุปกรณ์ขัดข้อง','Abnormal Alarm','Winding Temp Alarm','โครงการก่อสร้าง','งานบำรุงรักษาเกินกำหนด','ข้อจำกัด ระบบส่ง'];
 const fields={code:'รหัสชำรุด',date:'วันที่ได้รับแจ้งอุปกรณ์ชำรุด (พ.ศ.)',time:'เวลาที่ได้รับแจ้งอุปกรณ์ชำรุด',station:'สถานีไฟฟ้าแรงสูง',eventType:'ประเภทเหตุการณ์',category:'ชนิดอุปกรณ์',equipment:'อุปกรณ์ที่ชำรุด (อุปกรณ์ที่ OFF)',cause:'สาเหตุ ที่ ปลด (OFF)',criticality:'ระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า',owner:'ผู้รับผิดชอบแก้ไข',reporter:'ผู้แจ้ง',receiver:'พนักงานศูนย์ ผู้รับเรื่อง',due:'คาดการณ์กำหนดการแก้ไข (พ.ศ.)',status:'สถานะ',priority:'ความเร่งด่วน'};
+const retiredRecordFields=new Set(['owner','reporter','receiver','due','status','priority']);
 let data=[],notes=[],page=1,view='all',editing=null,cloud=null,unsubscribe=null,user=null,cloudReady=false,busy=false;
 
 let role='guest',username='',displayName='',generation=0;
@@ -74,7 +75,7 @@ function dateControl(name,value=''){
  const years=Array.from({length:current+11-2400},(_,i)=>current+10-i);if(y&& !years.includes(y+543))years.push(y+543);
  return `<div class="date-control"><select name="${name}-day" aria-label="วัน ${name}">${opts(Array.from({length:31},(_,i)=>[i+1,i+1]),d)}</select><select name="${name}-month" aria-label="เดือน ${name}">${opts(['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'].map((v,i)=>[i+1,v]),m)}</select><select name="${name}-year" aria-label="ปี พ.ศ. ${name}">${opts(years.map(v=>[v,v]),y+543)}</select></div>`;
 }
-function formDate(f,name){try{return readDate(f.get(name+'-day'),f.get(name+'-month'),f.get(name+'-year'))}catch(error){const label=name==='closure'?'วันที่ปิดงาน':name==='repair-expected'?'วันที่คาดว่าจะแก้ไขเสร็จ':name.startsWith('follow-')?'วันที่ติดตามลำดับ '+(Number(name.slice(7))+1):fields[name]||name;throw Error(label+': '+error.message)}}
+function formDate(f,name){try{return readDate(f.get(name+'-day'),f.get(name+'-month'),f.get(name+'-year'))}catch(error){const label=name==='closure'?'วันที่ปิดงาน':name==='repair-expected'?'วันที่คาดว่าจะแก้ไขเสร็จ':name.startsWith('follow-')?'วันที่ติดตามครั้ง '+(Number(name.slice(7))+1):fields[name]||name;throw Error(label+': '+error.message)}}
 function eventTypeControl(value='') {
  if(value==='Power Flow Control')value='ข้อจำกัด ระบบส่ง';
  const choices=eventTypes.filter(label=>!['Abnormal Alarm','Winding Temp Alarm','โครงการก่อสร้าง'].includes(label));
@@ -147,7 +148,7 @@ function edit(r){
  const defaults=r?{}:{date:`${current.year}-${current.month}-${current.day}`,time:`${current.hour}:${current.minute}`};
  $('#save-error').hidden=true;$('#save-error').textContent='';
  $('#editor-title').textContent=r?'รายละเอียด #'+r.code:'แจ้งอุปกรณ์ชำรุด';
- $('#fields').innerHTML=Object.entries(fields).map(([k,l])=>{
+ $('#fields').innerHTML=Object.entries(fields).filter(([key])=>!retiredRecordFields.has(key)).map(([k,l])=>{
   const val=(k==='equipment'?mergedEquipment(r||{}):(r?.[k]??defaults[k]))||(k==='status'?'pending':k==='priority'?'normal':'');
   if(k==='station')return stationControl(r||{});
   if(k==='eventType')return eventTypeControl(val);
@@ -160,7 +161,7 @@ function edit(r){
  setupCategory(r?.category||'');
  setupAssessment();
  $('#legacy-tracking').textContent=r?.tracking?'ข้อมูลติดตามเดิม: '+r.tracking:'';
- $('#followups').innerHTML=Array.from({length:3},(_,i)=>{const v=r?.followups?.[i]||{};return `<tr><td>${i+1}</td><td>${dateControl('follow-'+i,v.date)}<input type="time" step="60" name="follow-${i}-time" aria-label="เวลาติดตาม ลำดับ ${i+1}" value="${esc(v.time)}"></td>`+['informant','mobile','details','follower'].map((k,j)=>`<td>${k==='details'?`<textarea name="follow-${i}-${k}" maxlength="4000" aria-label="${['ชื่อผู้ให้ข้อมูล','เบอร์มือถือผู้ให้ข้อมูล','รายละเอียด','ชื่อผู้ตามข้อมูล'][j]} ลำดับ ${i+1}">${esc(v[k])}</textarea>`:`<input name="follow-${i}-${k}" ${k==='mobile'?'type="tel" inputmode="tel"':''} maxlength="250" aria-label="${['ชื่อผู้ให้ข้อมูล','เบอร์มือถือผู้ให้ข้อมูล','รายละเอียด','ชื่อผู้ตามข้อมูล'][j]} ลำดับ ${i+1}" value="${esc(v[k])}">`}</td>`).join('')+'</tr>'}).join('');
+ $('#followups').innerHTML=Array.from({length:3},(_,i)=>{const v=r?.followups?.[i]||{};return `<tr><td>${i+1}</td><td>${dateControl('follow-'+i,v.date)}<input type="time" step="60" name="follow-${i}-time" aria-label="เวลาติดตาม ครั้ง ${i+1}" value="${esc(v.time)}"></td>`+['informant','mobile','details'].map((k,j)=>`<td>${k==='details'?`<textarea name="follow-${i}-${k}" maxlength="4000" aria-label="${['ชื่อผู้ให้ข้อมูล','เบอร์มือถือผู้ให้ข้อมูล','รายละเอียด'][j]} ครั้ง ${i+1}">${esc(v[k])}</textarea>`:`<input name="follow-${i}-${k}" ${k==='mobile'?'type="tel" inputmode="tel"':''} maxlength="250" aria-label="${['ชื่อผู้ให้ข้อมูล','เบอร์มือถือผู้ให้ข้อมูล','รายละเอียด'][j]} ครั้ง ${i+1}" value="${esc(v[k])}">`}</td>`).join('')+'</tr>'}).join('');
  const c=r?.closure||{};
  $('#closure-fields').innerHTML=`<label>วันเวลาที่ปิดงาน (พ.ศ.)${dateControl('closure',c.date)}<input type="time" name="closure-time" aria-label="เวลาที่ปิดงาน" value="${esc(c.time)}"></label>`+[['reporter','ชื่อผู้แจ้งปิดงาน'],['mobile','เบอร์มือถือผู้แจ้งปิดงาน'],['details','รายละเอียด'],['follower','ชื่อผู้ตามข้อมูล']].map(([k,label])=>`<label class="${k==='details'?'wide':''}">${label}${k==='details'?`<textarea name="closure-${k}" aria-label="รายละเอียดปิดงาน" maxlength="4000">${esc(c[k])}</textarea>`:`<input name="closure-${k}" ${k==='mobile'?'type="tel" inputmode="tel"':''} value="${esc(c[k])}" maxlength="250">`}</label>`).join('');
  $('#history').innerHTML=(r?.history||[]).slice().reverse().map(h=>`<div class="history-item">${esc(String(h.note||'').replace(/แก้ปีวันที่ตามผู้ดูแล: 19\d{2}-\d{2}-\d{2} → พ.ศ. (25\d{2})-(\d{2})-(\d{2}) \(คงวันและเดือนเดิม\)/,'ตรวจแก้ปีวันที่เป็น $3/$2/$1 พ.ศ. (เก็บค่าต้นฉบับไว้แล้ว)'))}<small>${esc(dateText(h.at))} · ${esc(h.by)}</small></div>`).join('');
@@ -183,7 +184,7 @@ $('#record-form').onsubmit=async e=>{
  const invalid=Array.from(e.target.elements).find(el=>el.willValidate&&!el.validity.valid);
  if(invalid){const label=invalid.getAttribute('aria-label')||invalid.closest('label')?.textContent?.trim().slice(0,120)||invalid.name||'ช่องข้อมูล';showSaveError('กรุณาตรวจสอบ '+label+' — '+invalid.validationMessage);invalid.scrollIntoView({block:'center'});invalid.focus();invalid.reportValidity();return}
  try{
-  const f=new FormData(e.target),r=Object.fromEntries(Object.keys(fields).map(k=>[k,['date','due'].includes(k)?formDate(f,k):String(f.get(k)||'').trim()]));
+  const f=new FormData(e.target),r=Object.fromEntries(Object.keys(fields).map(k=>[k,retiredRecordFields.has(k)?(editing?.[k]??(k==='status'?'pending':k==='priority'?'normal':'')):['date','due'].includes(k)?formDate(f,k):String(f.get(k)||'').trim()]));
   Object.assign(r,readStation(f));
   if(r.eventType&&!eventTypes.includes(r.eventType))throw Error('กรุณาเลือกประเภทเหตุการณ์');
   if(r.criticality&&!Object.hasOwn(criticalities,r.criticality))throw Error('กรุณาเลือกระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า');
@@ -191,7 +192,7 @@ $('#record-form').onsubmit=async e=>{
   if(Object.values(criticalityAssessment).some(value=>value.length>4000))throw Error('ผลประเมินแต่ละข้อยาวได้ไม่เกิน 4,000 ตัวอักษร');
   const repairPlan={...Object.fromEntries(['approach','responsible','operatorName','operatorId','operatorMobile'].map(key=>[key,String(f.get('repair-'+key)||'').trim()])),schedule:editing?.repairPlan?.schedule||'',expectedDateUnknown:f.has('repair-unknown'),expectedDate:f.has('repair-unknown')?'':formDate(f,'repair-expected')};
   if(repairPlan.approach.length>8000||['responsible','schedule'].some(key=>repairPlan[key].length>4000)||['operatorName','operatorId','operatorMobile'].some(key=>repairPlan[key].length>250))throw Error('ข้อความแผนงานซ่อมแซมยาวเกินขนาดที่กำหนด');
-  const followups=Array.from({length:3},(_,i)=>({date:formDate(f,'follow-'+i),...Object.fromEntries(['time','informant','mobile','details','follower'].map(k=>[k,String(f.get('follow-'+i+'-'+k)||'').trim()]))}));
+  const followups=Array.from({length:3},(_,i)=>({date:formDate(f,'follow-'+i),...Object.fromEntries(['time','informant','mobile','details','follower'].map(k=>[k,String(k==='follower'?(editing?.followups?.[i]?.follower||''):(f.get('follow-'+i+'-'+k)||'')).trim()]))}));
   const closure={date:formDate(f,'closure'),...Object.fromEntries(['time','reporter','mobile','details','follower'].map(k=>[k,String(f.get('closure-'+k)||'').trim()]))};
   const hasClosure=Object.values(closure).some(Boolean);
   closure.time=normalizeTime(closure.time);
