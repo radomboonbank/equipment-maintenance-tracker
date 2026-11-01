@@ -43,10 +43,10 @@ export function latestRecordUpdates(records){
   const at=updateMillis(r.updatedAt)||updateMillis(last?.at)||updateMillis(r.createdAt);
   const author=/[\u0E00-\u0E7F]/.test(last?.displayName||'')?last.displayName:names.get(last?.by)||'ไม่พบชื่อผู้บันทึกในประวัติ';
   return {record:r,at,author};
- }).filter(x=>x.at).sort((a,b)=>b.at-a.at||String(a.record.id||a.record.code).localeCompare(String(b.record.id||b.record.code))).slice(0,5);
+ }).filter(x=>x.at).sort((a,b)=>b.at-a.at||String(a.record.id||a.record.code).localeCompare(String(b.record.id||b.record.code))).slice(0,3);
 }
 export function latestUpdatesHtml(records){
  const entries=latestRecordUpdates(records);
  if(!entries.length)return '<p class="empty">ยังไม่มีประวัติการเพิ่มหรือแก้ไข</p>';
- return '<div class="table-wrap"><table class="recent-updates-table"><thead><tr><th>อุปกรณ์ / สาเหตุ</th><th>ผู้เพิ่ม / แก้ไข</th></tr></thead><tbody>'+entries.map(({record:r,at,author})=>`<tr><td><strong>${esc(r.equipment||r.breaker||'ยังไม่ระบุอุปกรณ์')}</strong><small>${esc(r.cause||'ยังไม่ระบุสาเหตุ')}</small><time>${esc(new Intl.DateTimeFormat('th-TH-u-ca-buddhist',{timeZone:'Asia/Bangkok',dateStyle:'short',timeStyle:'short',hourCycle:'h23'}).format(new Date(at)))}</time></td><td>${esc(author)}</td></tr>`).join('')+'</tbody></table></div>';
+ return '<div class="table-wrap"><table class="recent-updates-table"><thead><tr><th>อุปกรณ์</th><th>ผู้เพิ่ม / แก้ไข</th></tr></thead><tbody>'+entries.map(({record:r,at,author})=>`<tr><td><strong>${esc(r.equipment||r.breaker||'ยังไม่ระบุอุปกรณ์')}</strong><time>${esc(new Intl.DateTimeFormat('th-TH-u-ca-buddhist',{timeZone:'Asia/Bangkok',dateStyle:'short',timeStyle:'short',hourCycle:'h23'}).format(new Date(at)))}</time></td><td>${esc(author)}</td></tr>`).join('')+'</tbody></table></div>';
 }
