@@ -167,3 +167,5 @@ aside .brand{font-size:16px;letter-spacing:.3px;gap:9px}aside .brand>span{min-wi
 .inventory-transformers tr:last-child th{padding-top:4px;vertical-align:middle}
 
 .alarm-section-save{display:flex;align-items:center;justify-content:flex-end;gap:16px;margin-top:22px;padding-top:16px;border-top:1px solid #d4e4e8}.alarm-section-save p{margin:0;color:#087f85;font-size:13px}.alarm-section-save button{flex:none}
+
+.time-picker-24{display:flex;align-items:center;gap:8px;margin-top:8px;min-width:0}.time-picker-24 select{flex:1;width:0;min-width:0;margin:0!important}.time-picker-24>span{flex:none;font-weight:700}.followup-table .time-picker-24 select{min-width:0}
