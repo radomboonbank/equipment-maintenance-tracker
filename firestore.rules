@@ -51,6 +51,31 @@ service cloud.firestore {
     && c.date is string && c.time is string && c.reporter is string && c.mobile is string && c.details is string && c.follower is string
     && c.date.size() <= 10 && c.time.size() <= 5 && c.reporter.size() <= 250 && c.mobile.size() <= 250 && c.details.size() <= 4000 && c.follower.size() <= 250;
   }
+  // Alarm forms: each section is stored independently; no public access.
+  match /AbnormalAlarm/{id} {
+   allow read: if account() && role() in ['admin','editor','viewer'];
+   allow create: if editor() && alarmValid() && request.resource.data.createdBy == request.auth.uid
+    && request.resource.data.createdAt == request.time && request.resource.data.revision == 1;
+   allow update: if editor() && alarmValid()
+    && request.resource.data.section == resource.data.section
+    && request.resource.data.createdBy == resource.data.createdBy
+    && request.resource.data.createdAt == resource.data.createdAt
+    && request.resource.data.revision == resource.data.revision + 1;
+   allow delete: if false;
+  }
+  function alarmValid() {
+   let d=request.resource.data;
+   let p=get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data;
+   return d.keys().hasAll(['schemaVersion','section','type','data','createdBy','createdAt','updatedBy','updatedByName','updatedByUsername','updatedAt','revision'])
+    && d.keys().hasOnly(['schemaVersion','section','type','data','createdBy','createdAt','updatedBy','updatedByName','updatedByUsername','updatedAt','revision'])
+    && d.schemaVersion == 1 && d.section in [1,2,3]
+    && ((d.section == 1 && d.type == 'general') || (d.section == 2 && d.type == 'bess') || (d.section == 3 && d.type == 'winding'))
+    && d.data is map && d.data.size() <= 400
+    && d.createdBy is string && d.createdAt is timestamp
+    && d.updatedBy == request.auth.uid && d.updatedAt == request.time
+    && d.updatedByName == p.get('displayName',p.username) && d.updatedByUsername == p.username
+    && d.revision is int && d.revision > 0;
+  }
   match /equipment/{id} {
    allow read: if true;
    allow create: if editor() && valid() && queued(id) && request.resource.data.id == id && request.resource.data.revision == 1;

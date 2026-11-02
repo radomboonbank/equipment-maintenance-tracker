@@ -1,3 +1,4 @@
+import {createAlarmStore} from './alarm-store.js?v=20261102-firestore';
 import {createPresence} from './presence.js?v=20261029-presence';
 import {createMembersPage} from './members.js?v=20261029-members3';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
@@ -52,6 +53,7 @@ function watchLogins() {
  });
 }
 
+window.GRID_ALARM_STORE=createAlarmStore(()=>({cloud,user,role,username,displayName}));
 const canEdit=()=>cloudReady&&['admin','editor'].includes(role);
 function toast(message){$('#toast').textContent=message;$('#toast').classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('#toast').classList.remove('show'),6000)}
 function dateLabel(r){return dateText(r.date)||'ไม่ระบุวันที่'}
