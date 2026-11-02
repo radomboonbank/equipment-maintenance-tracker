@@ -128,3 +128,7 @@ aside .brand{font-size:16px;letter-spacing:.3px;gap:9px}aside .brand>span{min-wi
 .grid-summary-number{font-size:28px;font-weight:700;line-height:1.2;color:#173d77}
 
 .recent-updates-table{width:100%;table-layout:fixed}.recent-updates-table th:first-child{width:65%}.recent-updates-table td{vertical-align:top;overflow-wrap:anywhere}.recent-updates-table small,.recent-updates-table time{display:block;margin-top:5px;color:#718595;font-size:12px}.recent-updates-table strong{font-size:14px}
+
+.grid-summary-combined{grid-column:span 2}.combined-assessments{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:26px}.combined-assessments h4{margin:0 0 18px;color:#213e4c;font-size:16px}@media(max-width:650px){.grid-summary-combined{grid-column:auto}.combined-assessments{grid-template-columns:1fr}}
+
+.grid-summary-combined{grid-column:auto}.combined-assessments{grid-template-columns:1fr;gap:18px}.combined-assessments section+section{border-top:1px solid #d4e2e5;padding-top:18px}
