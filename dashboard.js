@@ -48,5 +48,5 @@ export function latestRecordUpdates(records){
 export function latestUpdatesHtml(records){
  const entries=latestRecordUpdates(records);
  if(!entries.length)return '<p class="empty">ยังไม่มีประวัติการเพิ่มหรือแก้ไข</p>';
- return '<div class="table-wrap"><table class="recent-updates-table"><thead><tr><th>อุปกรณ์</th><th>ผู้เพิ่ม / แก้ไข</th></tr></thead><tbody>'+entries.map(({record:r,at,author})=>`<tr><td><strong>${esc(r.equipment||r.breaker||'ยังไม่ระบุอุปกรณ์')}</strong><time>${esc(new Intl.DateTimeFormat('th-TH-u-ca-buddhist',{timeZone:'Asia/Bangkok',dateStyle:'short',timeStyle:'short',hourCycle:'h23'}).format(new Date(at)))}</time></td><td>${esc(author)}</td></tr>`).join('')+'</tbody></table></div>';
+ return '<div class="table-wrap"><table class="recent-updates-table"><thead><tr><th>อุปกรณ์</th><th>ผู้เพิ่ม / แก้ไข</th></tr></thead><tbody>'+entries.map(({record:r,at,author})=>`<tr><td><strong>${esc(r.equipment||r.breaker||'ยังไม่ระบุอุปกรณ์')}</strong><time>${esc(new Intl.DateTimeFormat('th-TH-u-ca-buddhist',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(at)))}</time></td><td>${esc(author)}</td></tr>`).join('')+'</tbody></table></div>';
 }
