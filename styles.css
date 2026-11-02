@@ -132,3 +132,34 @@ aside .brand{font-size:16px;letter-spacing:.3px;gap:9px}aside .brand>span{min-wi
 .grid-summary-combined{grid-column:span 2}.combined-assessments{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:26px}.combined-assessments h4{margin:0 0 18px;color:#213e4c;font-size:16px}@media(max-width:650px){.grid-summary-combined{grid-column:auto}.combined-assessments{grid-template-columns:1fr}}
 
 .grid-summary-combined{grid-column:auto}.combined-assessments{grid-template-columns:1fr;gap:18px}.combined-assessments section+section{border-top:1px solid #d4e2e5;padding-top:18px}
+
+.inventory-table-wrap{overflow-x:auto}.inventory-voltage-table{width:100%;border-collapse:collapse;font-size:13px;table-layout:auto}.inventory-voltage-table caption{text-align:left;color:#526b7b;font-size:12px;margin-bottom:12px}.inventory-voltage-table th,.inventory-voltage-table td{padding:12px 6px;text-align:center;border:0;border-right:1px solid #8aa9dc;white-space:nowrap;color:#213e4c}.inventory-voltage-table th:first-child{text-align:left;font-weight:500}.inventory-voltage-table thead th{background:transparent;font-weight:600;border-bottom:1px solid #8aa9dc}.inventory-voltage-table th:last-child,.inventory-voltage-table td:last-child{border-right:0}.inventory-transformers tr:first-child>*{border-top:1px solid #8aa9dc}.inventory-transformers th{font-weight:500}.inventory-voltage-table tr:hover{background:transparent}
+
+/* Compact inventory overview. */
+.inventory-voltage-table{font-size:12px;line-height:1.4}
+.inventory-voltage-table caption{font-size:11px;margin-bottom:8px}
+.inventory-voltage-table th,.inventory-voltage-table td{padding:8px 4px}
+.inventory-voltage-table th:first-child{white-space:normal;min-width:95px}
+.inventory-voltage-table thead th{background:#e8eff6;font-size:12px}
+.inventory-voltage-table td{font-weight:600;font-variant-numeric:tabular-nums}
+.inventory-transformers tr:first-child th:not(:first-child){font-size:11px;padding-bottom:4px}
+.inventory-transformers tr:last-child td{padding-top:4px}
+
+.inventory-voltage-table{width:max-content;max-width:100%;table-layout:auto}
+.inventory-voltage-table th,.inventory-voltage-table td{width:auto;padding:8px 9px;white-space:nowrap}
+.inventory-voltage-table th:first-child{min-width:0;white-space:nowrap;padding-left:0;padding-right:12px}
+.inventory-voltage-table caption{white-space:nowrap}
+
+/* Override the record table's 220px second-column minimum. */
+.inventory-voltage-table{width:auto;min-width:0;max-width:100%;font-size:11px}
+.inventory-voltage-table th,.inventory-voltage-table td,.inventory-voltage-table td:nth-child(2){min-width:0;max-width:none;width:auto;padding:7px 5px}
+.inventory-voltage-table th:first-child{padding-right:8px;min-width:0}
+.inventory-voltage-table thead th{font-size:11px}
+.inventory-transformers tr:first-child th:not(:first-child){font-size:10px}
+
+/* Fill the card while keeping record-table minimum widths disabled. */
+.inventory-voltage-table{width:100%;max-width:100%;table-layout:fixed}
+.inventory-voltage-table th,.inventory-voltage-table td,.inventory-voltage-table td:nth-child(2){width:auto;min-width:0;max-width:none;padding:8px 4px}
+.inventory-voltage-table thead th:first-child{width:32%}
+.inventory-voltage-table th:first-child{white-space:normal;overflow-wrap:break-word;padding-right:6px}
+.inventory-voltage-table caption{white-space:normal}
