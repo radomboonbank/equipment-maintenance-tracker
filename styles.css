@@ -163,3 +163,7 @@ aside .brand{font-size:16px;letter-spacing:.3px;gap:9px}aside .brand>span{min-wi
 .inventory-voltage-table thead th:first-child{width:32%}
 .inventory-voltage-table th:first-child{white-space:normal;overflow-wrap:break-word;padding-right:6px}
 .inventory-voltage-table caption{white-space:normal}
+
+.inventory-transformers tr:last-child th{padding-top:4px;vertical-align:middle}
+
+.alarm-section-save{display:flex;align-items:center;justify-content:flex-end;gap:16px;margin-top:22px;padding-top:16px;border-top:1px solid #d4e4e8}.alarm-section-save p{margin:0;color:#087f85;font-size:13px}.alarm-section-save button{flex:none}

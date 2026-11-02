@@ -2,16 +2,41 @@
  const field=(name,label,hint='',long=false)=>`<label>${label}${long?`<textarea name="${name}" rows="3" maxlength="4000" placeholder="${hint}"></textarea>`:`<input name="${name}" maxlength="500" placeholder="${hint}">`}</label>`;
  const select=(name,label,values)=>`<label>${label}<select name="${name}"><option value="">ยังไม่ระบุ</option>${values.map(v=>`<option>${v}</option>`).join('')}</select></label>`;
  const reporterFields=prefix=>`<div class="construction-grid alarm-section-reporter">${field(prefix+'ReporterName','แจ้ง พนักงานประจำ สฟ. ชื่อ','ชื่อพนักงาน')}<label>เบอร์มือถือ<input type="tel" name="${prefix}ReporterPhone" maxlength="50" placeholder="เบอร์มือถือ"></label></div>`;
- const section=(n,title,content)=>`<fieldset class="construction-section"><legend>${n}. ${title}</legend><div class="construction-grid">${content}</div></fieldset>`;
+ const section=(n,title,content)=>`<fieldset class="construction-section" data-alarm-section="${n}"><legend>${n}. ${title}</legend><div class="construction-grid">${content}</div><div class="alarm-section-save"><p role="status" data-section-status></p><button type="button" data-close>ปิด</button><button type="button" class="primary" data-save-section="${n}">บันทึกข้อมูล</button></div></fieldset>`;
  window.openAbnormalDraft=()=>{
   const d=document.createElement('dialog');d.className='work-draft-dialog';
   d.innerHTML=`<form class="work-draft-form"><div class="work-draft-title"><div><small style="color:#087f85">ALARM REPORT</small><h2>แจ้ง Abnormal Alarm</h2></div><button type="button" data-close aria-label="ปิดหน้าต่าง">✕</button></div><p>แบบออกแบบออฟไลน์ · ทุกช่องเว้นว่างได้ · ยังไม่ส่ง Firebase หรือ Telegram</p>`+
   section(1,'ข้อมูลรับแจ้งและรายละเอียด Alarm',field('receivedDate','วันที่ได้รับแจ้ง (พ.ศ.)','วว/ดด/พ.ศ.')+'<label>เวลาที่ได้รับแจ้ง<input type="time" name="receivedTime"></label>'+field('station','สถานีไฟฟ้าแรงสูง','เช่น PTG')+field('equipment','ชื่อ / รหัสอุปกรณ์','เช่น TX1 หรือ Bkr. 80212')+select('alarmGroup','กลุ่ม Alarm',['หม้อแปลง','เบรคเกอร์','ระบบสื่อสาร','รีเลย์','อุปกรณ์ สฟ.','BESS ทริป','Winding Temp','อื่น ๆ'])+select('alarmState','สถานะ Alarm',['ยังปรากฏอยู่','เกิดเป็นครั้งคราว','หายแล้ว รอตรวจสอบ'])+field('alarmText','ข้อความ Alarm ที่ปรากฏ','ข้อความตามหน้าจอหรืออุปกรณ์',true)+field('symptoms','อาการและรายละเอียด','สิ่งที่ตรวจพบ และลำดับเหตุการณ์',true)+field('stationReporterName','แจ้ง พนักงานประจำ สฟ. ชื่อ','ชื่อพนักงาน')+'<label>เบอร์มือถือ<input type="tel" name="reporterPhone" maxlength="50" placeholder="เบอร์มือถือ"></label>')+
   section(2,'ข้อมูล BESS ทริป','<div class="bess-full"><p>บันทึกการทริปแต่ละชุดแยกแถว · เลือก PB ได้หลายหมายเลข · ทุกช่องเว้นว่างได้</p><div data-bess-events></div><button type="button" data-add-bess>＋ เพิ่มเหตุการณ์ทริป อื่นในวันเดียวกัน</button>'+reporterFields('bess')+'</div>')+
   section(3,'ข้อมูล Winding Temp Alarm','<div class="bess-full"><div class="construction-grid">'+field('windingDate','วันที่เกิด Alarm','วว/ดด/พ.ศ.')+'<label>เวลา<input type="time" name="windingTime" step="60"></label>'+field('windingStation','สถานีไฟฟ้าแรงสูง','เช่น RY2, BL, SR1')+field('windingTransformer','ชื่อ หม้อแปลงไฟฟ้า','เช่น KT5A, KT3A, KT1A')+field('windingCause','สาเหตุ / หมายเหตุ','เช่น PEA ย้าย Load มาฝาก หรือมีงาน De-energize หม้อแปลงอีกชุด',true)+`<fieldset class="bess-pb-field"><legend>Annunciator Show (เลือกได้ 1 รายการ)</legend>${['Winding Temp. Alarm Stage 1','Winding Temp. Alarm Stage 2','Oil Temperature Alarm'].map(v=>`<label class="bess-trip-check"><input type="radio" name="windingAnnunciator" value="${v}">${v}</label>`).join('')}</fieldset>`+'</div><p>เพิ่มลำดับสำหรับ Alarm และ Reset แต่ละครั้ง แยกวันที่เมื่อข้ามวัน · ค่าที่ไม่ทราบให้เว้นว่าง · เก็บตัวเลขตามที่ได้รับแจ้ง</p><div data-winding-events></div><button type="button" data-add-winding>＋ เพิ่มเหตุการณ์ Alarm / Reset</button>'+reporterFields('winding')+'</div>')+
-  '<p role="status"></p><div class="work-action-buttons"><button type="button" data-close>ปิด</button><button class="primary">บันทึกฉบับร่างในเครื่อง</button></div></form>';
+  '</form>';
   document.body.append(d);d.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>d.close());d.addEventListener('close',()=>d.remove(),{once:true});
   const form=d.querySelector('form');
+  d.querySelectorAll('[data-save-section]').forEach(button=>button.onclick=()=>{
+   const block=button.closest('[data-alarm-section]'),message=block.querySelector('[data-section-status]');
+   const controls=[...block.querySelectorAll('input,select,textarea')];
+   const invalid=controls.find(el=>!el.disabled&&!el.checkValidity());
+   if(invalid){invalid.reportValidity();message.textContent='กรุณาตรวจสอบข้อมูลในข้อนี้';return}
+   try{
+    const values={};
+    controls.forEach(el=>{
+     if(el.disabled||!el.name)return;
+     if(el.type==='radio'){if(el.checked)values[el.name]=el.value;return}
+     if(el.type==='checkbox'){
+      if(el.hasAttribute('data-breaker-trip'))values[el.name]=el.checked;
+      else {values[el.name]??=[];if(el.checked)values[el.name].push(el.value)}
+      return;
+     }
+     values[el.name]=el.multiple?[...el.selectedOptions].map(o=>o.value):el.value;
+    });
+    const key='crod-abnormal-section-drafts-v1',items=JSON.parse(localStorage.getItem(key)||'[]');
+    if(!Array.isArray(items))throw Error('Invalid local drafts');
+    items.push({section:Number(button.dataset.saveSection),data:values,createdAt:new Date().toISOString()});
+    localStorage.setItem(key,JSON.stringify(items));
+    message.textContent=`บันทึกข้อมูลข้อ ${button.dataset.saveSection} ในเครื่องแล้ว`;
+   }catch{message.textContent='บันทึกไม่สำเร็จ กรุณาคัดลอกข้อมูลไว้ก่อนปิดหน้าต่าง'}
+  });
+
   const now=new Date();
   const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB-u-ca-buddhist-nu-latn',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(now).map(p=>[p.type,p.value]));
   form.elements.receivedDate.value=`${parts.day}/${parts.month}/${parts.year}`;
@@ -68,7 +93,7 @@
    windingRows.append(row);
   };
   d.querySelector('[data-add-winding]').onclick=addWinding;addWinding();
-  form.onsubmit=e=>{e.preventDefault();try{const key='crod-abnormal-design-drafts-v1',items=JSON.parse(localStorage.getItem(key)||'[]');if(!Array.isArray(items))throw Error();const values=new FormData(form);const bessEvents=[...bessRows.children].map(row=>{const entry={};row.querySelectorAll('input,select,textarea').forEach(el=>{if(el.disabled||!el.name)return;const key=el.name.replace(/^bess-\d+-/,'');if(key==='breaker22Trip'){entry[key]=el.checked;return}if(el.type==='checkbox'){entry[key]??=[];if(el.checked)entry[key].push(el.value)}else{entry[key]=el.multiple?[...el.selectedOptions].map(o=>o.value):el.value}});return entry}).filter(entry=>Object.values(entry).some(v=>Array.isArray(v)?v.length:typeof v==='boolean'?v:String(v).trim()));const windingEvents=[...windingRows.children].map(row=>{const entry={};row.querySelectorAll('input,select,textarea').forEach(el=>{if(el.disabled||!el.name)return;const key=el.name.replace(/^winding-\d+-/,'');if(el.type==='checkbox'){entry[key]??=[];if(el.checked)entry[key].push(el.value)}else{entry[key]=el.value}});return entry}).filter(entry=>Object.values(entry).some(v=>Array.isArray(v)?v.length:String(v).trim()));const general=Object.fromEntries([...values].filter(([key])=>!key.startsWith('bess-')&&!key.startsWith('winding-')));items.push({...general,bessEvents,windingEvents,createdAt:new Date().toISOString()});localStorage.setItem(key,JSON.stringify(items));d.querySelector('[role=status]').textContent='บันทึกฉบับร่างในเครื่องแล้ว — ยังไม่ส่งฐานข้อมูล';}catch{d.querySelector('[role=status]').textContent='บันทึกไม่สำเร็จ กรุณาคัดลอกข้อมูลไว้ก่อนปิด'}};
+  form.onsubmit=e=>e.preventDefault();
   d.showModal();
  };
  const previewButton=document.getElementById('preview-add-abnormal');
