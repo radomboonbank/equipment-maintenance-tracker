@@ -1,3 +1,4 @@
+import {createIdleSession} from './idle-session.js?v=20261103';
 import {createConstructionStore} from './construction-store.js?v=20261103-construction';
 import {createAlarmStore} from './alarm-store.js?v=20261102-firestore';
 import {createPresence} from './presence.js?v=20261029-presence';
@@ -229,15 +230,14 @@ $('#delete').onclick=async()=>{
  busy=true;$('#delete').disabled=true;
  try{const original=editing;await cloud.runTransaction(cloud.db,async t=>{const ref=cloud.doc(cloud.db,'equipment',original.id),snap=await t.get(ref);if(!snap.exists()||snap.data().revision!==original.revision)throw Error('ข้อมูลเปลี่ยนแปลง กรุณาเปิดใหม่');t.delete(ref)});$('#editor').close();toast('ลบรายการแล้ว')}catch(err){toast('ลบไม่สำเร็จ: '+err.message)}finally{busy=false;$('#delete').disabled=false}
 };
-function resetSession(){unsubscribeConstruction?.();unsubscribeConstruction=null;constructionData=[];constructionState='loading';presence.stop();membersPage.reset();memberDuty="";generation++;unsubscribeLogins?.();unsubscribeLogins=null;renderLogins(null);unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';displayName='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
-function showWorkspace(){
+function resetSession(){idleSession.stop();document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());unsubscribeConstruction?.();unsubscribeConstruction=null;constructionData=[];constructionState='loading';presence.stop();membersPage.reset();memberDuty="";generation++;unsubscribeLogins?.();unsubscribeLogins=null;renderLogins(null);unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';displayName='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
+function showWorkspace(){idleSession.start();
  $('#current-account').textContent=role==='guest'?'ผู้ชมทั่วไป':`บัญชีของคุณ: ${displayName||username}`;
  presence.start(cloud,role==='guest'?null:user,displayName||username);
  membersPage.setAccess(role==='admin'&&memberDuty==='super admin');
  watchLogins();
  
  $('#workspace').hidden=false;$('#login-screen').hidden=true;
- $('#identity').textContent=username+' · '+({admin:'super admin',editor:'cac term',viewer:'user · ดูอย่างเดียว',guest:'ดูอย่างเดียว'}[role]);
  const gen=generation;
  constructionState=role==='guest'?'guest':'loading';
  if(role!=='guest')unsubscribeConstruction=cloud.onSnapshot(cloud.collection(cloud.db,'ConstructionProjects'),snap=>{if(gen!==generation)return;constructionData=snap.docs.map(d=>({...d.data(),id:d.id})).filter(d=>d.type==='construction');constructionState='ready';render()},error=>{if(gen!==generation)return;constructionData=[];constructionState='error';render();console.warn('Construction data unavailable:',error.code)});
@@ -255,7 +255,17 @@ $('#login').onsubmit=async e=>{
  finally{busy=false;$('#login-submit').disabled=false;$('#guest').disabled=false}
 };
 $('#guest').onclick=async()=>{if(!cloud||busy)return;try{await cloud.signOut(cloud.auth);resetSession();user=null;username='ผู้ชมทั่วไป';showWorkspace()}catch(err){toast(err.message)}};
-$('#logout').onclick=async()=>{if(busy)return;await Promise.race([presence.stop(),new Promise(resolve=>setTimeout(resolve,1500))]);resetSession();user=null;$('#password').value='';try{await cloud.signOut(cloud.auth)}catch(err){toast(err.message)}};
+async function logoutSession(expired=false){
+ const stopping=presence.stop();resetSession();user=null;$('#password').value='';
+ if(expired)$('#login-status').textContent='ออกจากระบบเนื่องจากไม่มีการใช้งาน 15 นาที กรุณาเข้าสู่ระบบใหม่';
+ try{await cloud.signOut(cloud.auth)}catch(err){toast(err.message)}
+ await Promise.race([stopping,new Promise(resolve=>setTimeout(resolve,1500))]);
+}
+const idleSession=createIdleSession({onExpire:()=>{void logoutSession(true)}});
+for(const event of ['pointerdown','pointermove','keydown','input','scroll','touchstart'])document.addEventListener(event,e=>{if(e.isTrusted)idleSession.activity()},{capture:true,passive:true});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)idleSession.check()});
+window.addEventListener('focus',()=>idleSession.check());
+$('#logout').onclick=()=>{if(!busy)void logoutSession()};
 async function init(){
  const base='https://www.gstatic.com/firebasejs/13.0.0/';
  try{const [app,auth,fs]=await Promise.all([import(base+'firebase-app.js'),import(base+'firebase-auth.js'),import(base+'firebase-firestore.js')]);
