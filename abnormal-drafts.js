@@ -7,7 +7,7 @@
   const d=document.createElement('dialog');d.className='work-draft-dialog';
   d.innerHTML=`<form class="work-draft-form"><div class="work-draft-title"><div><small style="color:#087f85">ALARM REPORT</small><h2>แจ้ง Abnormal Alarm</h2></div><button type="button" data-close aria-label="ปิดหน้าต่าง">✕</button></div><p>ทุกช่องเว้นว่างได้ · บันทึกแยกแต่ละข้อ</p>`+
   section(1,'ข้อมูลรับแจ้งและรายละเอียด Alarm',field('receivedDate','วันที่ได้รับแจ้ง (พ.ศ.)','วว/ดด/พ.ศ.')+'<label>เวลาที่ได้รับแจ้ง<input type="time" name="receivedTime"></label>'+field('station','สถานีไฟฟ้าแรงสูง','เช่น PTG')+field('equipment','ชื่อ / รหัสอุปกรณ์','เช่น TX1 หรือ Bkr. 80212')+select('alarmGroup','กลุ่ม Alarm',['หม้อแปลง','เบรคเกอร์','ระบบสื่อสาร','รีเลย์','อุปกรณ์ สฟ.','BESS ทริป','Winding Temp','อื่น ๆ'])+select('alarmState','สถานะ Alarm',['ยังปรากฏอยู่','เกิดเป็นครั้งคราว','หายแล้ว รอตรวจสอบ'])+field('alarmText','ข้อความ Alarm ที่ปรากฏ','ข้อความตามหน้าจอหรืออุปกรณ์',true)+field('symptoms','อาการและรายละเอียด','สิ่งที่ตรวจพบ และลำดับเหตุการณ์',true)+field('stationReporterName','แจ้ง พนักงานประจำ สฟ. ชื่อ','ชื่อพนักงาน')+'<label>เบอร์มือถือ<input type="tel" name="reporterPhone" maxlength="50" placeholder="เบอร์มือถือ"></label>')+
-  section(2,'ข้อมูล BESS ทริป','<div class="bess-full"><p>บันทึกการทริปแต่ละชุดแยกแถว · เลือก PB ได้หลายหมายเลข · ทุกช่องเว้นว่างได้</p><div data-bess-events></div><button type="button" data-add-bess>＋ เพิ่มเหตุการณ์ทริป อื่นในวันเดียวกัน</button>'+reporterFields('bess')+'</div>')+
+  section(2,'ข้อมูล BESS ทริป','<div class="bess-full"><p>บันทึกการทริปแต่ละชุดแยกแถว · เลือก PB ได้หลายหมายเลข · ทุกช่องเว้นว่างได้</p><div data-bess-events></div>'+reporterFields('bess')+'</div>')+
   section(3,'ข้อมูล Winding Temp Alarm','<div class="bess-full"><div class="construction-grid">'+field('windingDate','วันที่เกิด Alarm','วว/ดด/พ.ศ.')+'<label>เวลา<input type="time" name="windingTime" step="60"></label>'+field('windingStation','สถานีไฟฟ้าแรงสูง','เช่น RY2, BL, SR1')+`<fieldset class="bess-pb-field"><legend>ชื่อ หม้อแปลงไฟฟ้า</legend><div style="display:flex;flex-wrap:wrap;gap:16px">${['1A','2A','3A','4A','5A'].map(v=>`<label class="bess-trip-check"><input type="radio" name="windingTransformer" value="${v}">${v}</label>`).join('')}</div></fieldset>`+field('windingCause','สาเหตุ / หมายเหตุ','เช่น PEA ย้าย Load มาฝาก หรือมีงาน De-energize หม้อแปลงอีกชุด',true)+`<fieldset class="bess-pb-field"><legend>Annunciator Show (เลือกได้ 1 รายการ)</legend>${['Winding Temp. Alarm Stage 1','Winding Temp. Alarm Stage 2','Oil Temperature Alarm'].map(v=>`<label class="bess-trip-check"><input type="radio" name="windingAnnunciator" value="${v}">${v}</label>`).join('')}</fieldset>`+'</div><p>เพิ่มลำดับสำหรับ Alarm และ Reset แต่ละครั้ง แยกวันที่เมื่อข้ามวัน · ค่าที่ไม่ทราบให้เว้นว่าง · เก็บตัวเลขตามที่ได้รับแจ้ง</p><div data-winding-events></div>'+reporterFields('winding')+'</div>')+
   '</form>';
   document.body.append(d);d.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>d.close());d.addEventListener('close',()=>d.remove(),{once:true});
@@ -58,9 +58,8 @@
    const row=document.createElement('div');row.className='bess-event';
    row.innerHTML=`<div class="work-draft-title"><h3>เหตุการณ์ ทริป ที่ ${id}</h3></div><div class="construction-grid">`+
     (id===1?field(prefix+'date','วันที่เกิดเหตุการณ์ทริป (พ.ศ.)','วว/ดด/พ.ศ.')+`<label>เวลาเกิดเหตุการณ์ทริป<input type="time" name="${prefix}time" step="60"></label>`:`<label>เวลาเกิดเหตุการณ์ทริป ที่ ${id}<input type="time" name="${prefix}time" step="60"></label><div class="bess-time-spacer" aria-hidden="true"></div>`)+
-    select(prefix+'tripType','ชนิดการทริป',['AC&DC Bkr. BESS','22 kV Bkr.','BESS (ยังไม่ระบุชนิดเบรกเกอร์)','อื่น ๆ'])+
     
-    '<div class="bess-pb-side">'+select(prefix+'alarm','Alarm',['รอตรวจสอบ','Fire Alarm Bess op.','Fire Alarm Op.','Power Unit Temperature High','Lost Communication','อื่น ๆ'])+'</div>'+
+    '<div class="bess-pb-side">'+select(prefix+'alarm','Alarm',['รอตรวจสอบ','Fire Alarm Bess op.','Fire Alarm Op.','Power Unit Temperature High','Lost Communication','Smoke Detector Op.','Inverter Fault','ATS MCCB Incoming UV Relay Op.','Fire System Operated','อื่น ๆ'])+'</div>'+
     `<fieldset class="bess-pb-field"><legend>PB ที่ทริป (เลือกได้หลายรายการ)</legend><div class="bess-pb-grid">${Array.from({length:20},(_,i)=>`<label class="bess-pb-option"><input type="checkbox" name="${prefix}pb" value="${i+1}"><span>PB.${i+1}</span></label>`).join('')}</div></fieldset>`+
     `<div class="bess-breaker-state"><span>สถานะ 22 kV เบรกเกอร์</span><p data-breaker-state>ไม่มี 22 kV เบรกเกอร์ ทริป</p><label class="bess-trip-check"><input type="checkbox" name="${prefix}breaker22Trip" value="yes" data-breaker-trip> มี 22 kV เบรกเกอร์ ทริป</label><input type="hidden" name="${prefix}breaker22Status" value="ไม่มี 22 kV เบรกเกอร์ ทริป"><fieldset data-breaker-details class="bess-breaker-codes" hidden><legend>22 kV เบรกเกอร์ที่ทริป (เลือกได้หลายรายการ)</legend><div class="bess-breaker-code-grid">${['22212','22312','22412','22512','22612','22712','22812','22912','221012','221112'].map(code=>`<label class="bess-pb-option"><input type="checkbox" name="${prefix}breaker22Codes" value="${code}" disabled><span>${code}</span></label>`).join('')}</div></fieldset></div>`+
     
@@ -74,7 +73,7 @@
    }
    bessRows.append(row);
   };
-  d.querySelector('[data-add-bess]').onclick=addBess;addBess();
+  addBess();
   const windingRows=d.querySelector('[data-winding-events]');let windingSequence=0;
   const addWinding=()=>{
    const id=++windingSequence,prefix='winding-'+id+'-';const row=document.createElement('div');row.className='bess-event';
