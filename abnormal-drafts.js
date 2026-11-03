@@ -8,7 +8,7 @@
   d.innerHTML=`<form class="work-draft-form"><div class="work-draft-title"><div><small style="color:#087f85">ALARM REPORT</small><h2>แจ้ง Abnormal Alarm</h2></div><button type="button" data-close aria-label="ปิดหน้าต่าง">✕</button></div><p>ทุกช่องเว้นว่างได้ · บันทึกแยกแต่ละข้อ</p>`+
   section(1,'ข้อมูลรับแจ้งและรายละเอียด Alarm',field('receivedDate','วันที่ได้รับแจ้ง (พ.ศ.)','วว/ดด/พ.ศ.')+'<label>เวลาที่ได้รับแจ้ง<input type="time" name="receivedTime"></label>'+field('station','สถานีไฟฟ้าแรงสูง','เช่น PTG')+field('equipment','ชื่อ / รหัสอุปกรณ์','เช่น TX1 หรือ Bkr. 80212')+select('alarmGroup','กลุ่ม Alarm',['หม้อแปลง','เบรคเกอร์','ระบบสื่อสาร','รีเลย์','อุปกรณ์ สฟ.','BESS ทริป','Winding Temp','อื่น ๆ'])+select('alarmState','สถานะ Alarm',['ยังปรากฏอยู่','เกิดเป็นครั้งคราว','หายแล้ว รอตรวจสอบ'])+field('alarmText','ข้อความ Alarm ที่ปรากฏ','ข้อความตามหน้าจอหรืออุปกรณ์',true)+field('symptoms','อาการและรายละเอียด','สิ่งที่ตรวจพบ และลำดับเหตุการณ์',true)+field('stationReporterName','แจ้ง พนักงานประจำ สฟ. ชื่อ','ชื่อพนักงาน')+'<label>เบอร์มือถือ<input type="tel" name="reporterPhone" maxlength="50" placeholder="เบอร์มือถือ"></label>')+
   section(2,'ข้อมูล BESS ทริป','<div class="bess-full"><p>บันทึกการทริปแต่ละชุดแยกแถว · เลือก PB ได้หลายหมายเลข · ทุกช่องเว้นว่างได้</p><div data-bess-events></div><button type="button" data-add-bess>＋ เพิ่มเหตุการณ์ทริป อื่นในวันเดียวกัน</button>'+reporterFields('bess')+'</div>')+
-  section(3,'ข้อมูล Winding Temp Alarm','<div class="bess-full"><div class="construction-grid">'+field('windingDate','วันที่เกิด Alarm','วว/ดด/พ.ศ.')+'<label>เวลา<input type="time" name="windingTime" step="60"></label>'+field('windingStation','สถานีไฟฟ้าแรงสูง','เช่น RY2, BL, SR1')+field('windingTransformer','ชื่อ หม้อแปลงไฟฟ้า','เช่น KT5A, KT3A, KT1A')+field('windingCause','สาเหตุ / หมายเหตุ','เช่น PEA ย้าย Load มาฝาก หรือมีงาน De-energize หม้อแปลงอีกชุด',true)+`<fieldset class="bess-pb-field"><legend>Annunciator Show (เลือกได้ 1 รายการ)</legend>${['Winding Temp. Alarm Stage 1','Winding Temp. Alarm Stage 2','Oil Temperature Alarm'].map(v=>`<label class="bess-trip-check"><input type="radio" name="windingAnnunciator" value="${v}">${v}</label>`).join('')}</fieldset>`+'</div><p>เพิ่มลำดับสำหรับ Alarm และ Reset แต่ละครั้ง แยกวันที่เมื่อข้ามวัน · ค่าที่ไม่ทราบให้เว้นว่าง · เก็บตัวเลขตามที่ได้รับแจ้ง</p><div data-winding-events></div><button type="button" data-add-winding>＋ เพิ่มเหตุการณ์ Alarm / Reset</button>'+reporterFields('winding')+'</div>')+
+  section(3,'ข้อมูล Winding Temp Alarm','<div class="bess-full"><div class="construction-grid">'+field('windingDate','วันที่เกิด Alarm','วว/ดด/พ.ศ.')+'<label>เวลา<input type="time" name="windingTime" step="60"></label>'+field('windingStation','สถานีไฟฟ้าแรงสูง','เช่น RY2, BL, SR1')+`<fieldset class="bess-pb-field"><legend>ชื่อ หม้อแปลงไฟฟ้า</legend><div style="display:flex;flex-wrap:wrap;gap:16px">${['1A','2A','3A','4A','5A'].map(v=>`<label class="bess-trip-check"><input type="radio" name="windingTransformer" value="${v}">${v}</label>`).join('')}</div></fieldset>`+field('windingCause','สาเหตุ / หมายเหตุ','เช่น PEA ย้าย Load มาฝาก หรือมีงาน De-energize หม้อแปลงอีกชุด',true)+`<fieldset class="bess-pb-field"><legend>Annunciator Show (เลือกได้ 1 รายการ)</legend>${['Winding Temp. Alarm Stage 1','Winding Temp. Alarm Stage 2','Oil Temperature Alarm'].map(v=>`<label class="bess-trip-check"><input type="radio" name="windingAnnunciator" value="${v}">${v}</label>`).join('')}</fieldset>`+'</div><p>เพิ่มลำดับสำหรับ Alarm และ Reset แต่ละครั้ง แยกวันที่เมื่อข้ามวัน · ค่าที่ไม่ทราบให้เว้นว่าง · เก็บตัวเลขตามที่ได้รับแจ้ง</p><div data-winding-events></div>'+reporterFields('winding')+'</div>')+
   '</form>';
   document.body.append(d);d.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>d.close());d.addEventListener('close',()=>d.remove(),{once:true});
   const form=d.querySelector('form');
@@ -78,11 +78,7 @@
   const addWinding=()=>{
    const id=++windingSequence,prefix='winding-'+id+'-';const row=document.createElement('div');row.className='bess-event';
    const numeric=(key,label)=>`<label>${label}<input type="number" step="any" name="${prefix}${key}" ${['mva','loadPercent'].includes(key)?'readonly placeholder="คำนวณอัตโนมัติ"':key==='kv'?'placeholder="เช่น 22.4 หรือไม่ทราบให้ว่าง"':'placeholder="ไม่ทราบให้เว้นว่าง"'}></label>`;
-   row.innerHTML=`<div class="construction-grid">`+
-    field(prefix+'date','วันที่ Reset Alarm','วว/ดด/พ.ศ.')+`<label>เวลา<input type="time" name="${prefix}time"></label>`+
-    
-    
-    '</div>'+
+   row.innerHTML=`<fieldset class="bess-pb-field"><legend>สถานะ Reset Alarm</legend><div style="display:flex;flex-wrap:wrap;gap:20px"><label class="bess-trip-check"><input type="radio" name="${prefix}resetState" value="pending" checked>รอ Reset Alarm</label><label class="bess-trip-check"><input type="radio" name="${prefix}resetState" value="reset">Reset Alarm</label></div></fieldset><div data-reset-fields class="construction-grid" hidden></div>`+
     '<h4>Load ขณะเกิดเหตุ</h4><div class="winding-values-grid">'+numeric('mw','กำลังจริง (MW)')+numeric('mvar','กำลังรีแอคทีฟ (MVAr)')+numeric('mva','กำลังปรากฏ (MVA)')+numeric('loadPercent','โหลด (%)')+numeric('kv','ระดับแรงดันไฟฟ้า 22 kV อ่านได้ (kV)')+'</div>'+
     '<h4>อุณหภูมิ (°C)</h4><div class="winding-values-grid">'+numeric('ot','OT — อุณหภูมิน้ำมัน')+numeric('wtHv','Wt.(HV / HS) — ขดลวดแรงสูง')+numeric('wtLv','Wt.(LV / LS) — ขดลวดแรงต่ำ')+numeric('at','AT — อุณหภูมิแวดล้อม')+'</div>';
    const inputFor=key=>row.querySelector(`[name="${prefix}${key}"]`);
@@ -94,12 +90,21 @@
     load.value=Number.isFinite(percent)?percent.toFixed(2):'';
    };
    inputFor('mw').addEventListener('input',calculateLoad);inputFor('mvar').addEventListener('input',calculateLoad);
-   const current=Object.fromEntries(new Intl.DateTimeFormat('en-GB-u-ca-buddhist-nu-latn',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).map(part=>[part.type,part.value]));
-   row.querySelector(`[name="${prefix}date"]`).value=`${current.day}/${current.month}/${current.year}`;
-   row.querySelector(`[name="${prefix}time"]`).value=`${current.hour}:${current.minute}`;
+   const resetFields=row.querySelector('[data-reset-fields]');
+   row.querySelectorAll(`[name="${prefix}resetState"]`).forEach(radio=>radio.addEventListener('change',()=>{
+    const active=row.querySelector(`[name="${prefix}resetState"]:checked`).value==='reset';
+    resetFields.hidden=!active;
+    resetFields.replaceChildren();
+    if(active){
+     resetFields.innerHTML=field(prefix+'date','วันที่ Reset Alarm','วว/ดด/พ.ศ.')+`<label>เวลา<input type="time" name="${prefix}time"></label>`;
+     const current=Object.fromEntries(new Intl.DateTimeFormat('en-GB-u-ca-buddhist-nu-latn',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).map(part=>[part.type,part.value]));
+     inputFor('date').value=`${current.day}/${current.month}/${current.year}`;
+     inputFor('time').value=`${current.hour}:${current.minute}`;
+    }
+   }));
    windingRows.append(row);
   };
-  d.querySelector('[data-add-winding]').onclick=addWinding;addWinding();
+  addWinding();
   form.onsubmit=e=>e.preventDefault();
   d.showModal();
  };
