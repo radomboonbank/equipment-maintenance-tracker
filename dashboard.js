@@ -22,10 +22,16 @@ export function sixPanelSummary(records){
  const count=(list,type)=>list.filter(r=>mainType(r)===type).length;
  return {open,faults,alarms,construction,count};
 }
+export function faultRecordsForType(records,type){
+ return sixPanelSummary(records).faults.filter(r=>type==='ยังไม่ระบุ / อื่น ๆ'?!mainTypes.includes(mainType(r)):mainType(r)===type);
+}
+export function faultTablePage(type,rows){
+ return `<!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(type)} — CROD GRID CARE</title><style>body{font-family:Tahoma,sans-serif;background:#f3f7fa;color:#193c50;margin:0;padding:28px}h1{font-size:24px}p{color:#587283}.wrap{overflow:auto;background:white;border-radius:14px;border:1px solid #dce6eb}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:15px;text-align:left;border-bottom:1px solid #e5edf2;vertical-align:top}th{background:#eaf4f7}td{white-space:pre-wrap;overflow-wrap:anywhere}a{color:#087f83}</style><h1>${esc(type)}</h1><p>อุปกรณ์ขัดข้องที่ยังไม่ปิดงาน · ${rows.length} รายการ · ข้อมูล ณ เวลาที่เปิดหน้านี้</p><div class="wrap"><table><thead><tr><th>วันที่</th><th>สถานีไฟฟ้าแรงสูง</th><th>ชนิดอุปกรณ์</th><th>อุปกรณ์ที่ชำรุด</th><th>สาเหตุ</th><th>ระดับความสำคัญ</th></tr></thead><tbody>${rows.map(r=>`<tr>${[r.date,r.station,r.category,r.equipment,r.cause,r.criticality].map(v=>`<td>${esc(v||'—')}</td>`).join('')}</tr>`).join('')||'<tr><td colspan="6">ไม่มีรายการอุปกรณ์ชนิดนี้ที่ยังไม่ปิดงาน</td></tr>'}</tbody></table></div></html>`;
+}
 export function dashboardHtml(records,assessment=null,now=new Date(),projects=[],projectState='ready'){
  const {open,faults,alarms,construction,count}=sixPanelSummary(records);
- const bars=(items)=>{const max=Math.max(1,...items.map(x=>x[1]));return [...items].sort((a,b)=>b[1]-a[1]).map(([label,n,color])=>`<div class="grid-summary-row"><span>${esc(label)}</span><div class="grid-summary-track"><i style="width:${n/max*100}%;background:${color}"></i></div><b>${n}</b></div>`).join('')};
- const panel=(n,title,items,note)=>`<article class="grid-summary-panel"><header><span class="grid-summary-number">${n}</span><h3>${title}</h3></header>${bars(items)}<p>${esc(note)}</p></article>`;
+ const bars=(items,clickable=false)=>{const max=Math.max(1,...items.map(x=>x[1]));return [...items].sort((a,b)=>b[1]-a[1]).map(([label,n,color])=>`<div class="grid-summary-row"><span>${esc(label)}</span>${clickable?`<button type="button" class="fault-drilldown" data-fault-type="${esc(label)}" aria-label="ดูรายการ ${esc(label)} ${n} รายการ"><span class="grid-summary-track"><i style="width:${n/max*100}%;background:${color}"></i></span><b>${n}</b></button>`:`<div class="grid-summary-track"><i style="width:${n/max*100}%;background:${color}"></i></div><b>${n}</b>`}</div>`).join('')};
+ const panel=(n,title,items,note)=>`<article class="grid-summary-panel"><header><span class="grid-summary-number">${n}</span><h3>${title}</h3></header>${bars(items,n===1)}<p>${esc(note)}</p></article>`;
  const alarmTypes=[['หม้อแปลง','หม้อแปลงไฟฟ้า'],['เบรคเกอร์','เซอร์กิตเบรกเกอร์'],['ระบบสื่อสาร','ระบบสื่อสาร'],['รีเลย์','รีเลย์ระบบป้องกัน'],['อุปกรณ์สฟ.','อุปกรณ์ภายใน สฟ.']];
  const constructionTypes=[['สถานีไฟฟ้า','สถานีไฟฟ้า'],['สายส่งไฟฟ้า','สายส่งไฟฟ้า'],['หม้อแปลงไฟฟ้า','หม้อแปลงไฟฟ้า'],['เบรคเกอร์','เซอร์กิตเบรกเกอร์'],['คาปาซิเตอร์','คาปาซิเตอร์แบงค์']];
  const projectType=p=>({'เบรคเกอร์':'เซอร์กิตเบรกเกอร์','คาปาซิเตอร์':'คาปาซิเตอร์แบงค์'}[p.data?.category]||p.data?.category||'');
