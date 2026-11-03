@@ -64,6 +64,13 @@
     `<div class="bess-breaker-state"><span>สถานะ 22 kV เบรกเกอร์</span><p data-breaker-state>ไม่มี 22 kV เบรกเกอร์ ทริป</p><label class="bess-trip-check"><input type="checkbox" name="${prefix}breaker22Trip" value="yes" data-breaker-trip> มี 22 kV เบรกเกอร์ ทริป</label><input type="hidden" name="${prefix}breaker22Status" value="ไม่มี 22 kV เบรกเกอร์ ทริป"><fieldset data-breaker-details class="bess-breaker-codes" hidden><legend>22 kV เบรกเกอร์ที่ทริป (เลือกได้หลายรายการ)</legend><div class="bess-breaker-code-grid">${['22212','22312','22412','22512','22612','22712','22812','22912','221012','221112'].map(code=>`<label class="bess-pb-option"><input type="checkbox" name="${prefix}breaker22Codes" value="${code}" disabled><span>${code}</span></label>`).join('')}</div></fieldset></div>`+
     
     '<div class="bess-cause-weather">'+select(prefix+'cause','สาเหตุ',['รอตรวจสอบ','ตรวจสอบแล้ว (ระบุรายละเอียด)'])+select(prefix+'weather','สภาพอากาศ',['ปกติ','ฝนตก','ฝนฟ้าคะนอง','อื่น ๆ'])+'</div>'+field(prefix+'causeDetails','รายละเอียดสาเหตุ','กรอกผลตรวจสอบจริง',true)+'</div>';
+   const grid=row.querySelector('.construction-grid');
+   const columns=document.createElement('div');columns.className='bess-content-columns';
+   const left=document.createElement('div');left.className='bess-content-column';
+   const right=document.createElement('div');right.className='bess-content-column';
+   left.append(row.querySelector('.bess-pb-side'),row.querySelector('.bess-breaker-state'),row.querySelector(`[name="${prefix}causeDetails"]`).closest('label'));
+   right.append(row.querySelector('.bess-pb-field'),row.querySelector('.bess-cause-weather'));
+   columns.append(left,right);grid.append(columns);
    const trip=row.querySelector('[data-breaker-trip]'),details=row.querySelector('[data-breaker-details]');
    trip.onchange=()=>{const text=trip.checked?'มี 22 kV เบรกเกอร์ ทริป':'ไม่มี 22 kV เบรกเกอร์ ทริป';row.querySelector('[data-breaker-state]').textContent=text;row.querySelector(`[name="${prefix}breaker22Status"]`).value=text;details.hidden=!trip.checked;details.querySelectorAll('input').forEach(input=>input.disabled=!trip.checked)};
    if(id===1){
