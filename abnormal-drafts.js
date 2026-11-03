@@ -41,6 +41,7 @@
      items.push({section,data:values,createdAt:new Date().toISOString()});localStorage.setItem(key,JSON.stringify(items));
      message.textContent=`บันทึกฉบับร่างข้อ ${section} ในเครื่องแล้ว (หน้าตัวอย่าง)`;
     }
+    d.close();
    }catch(error){message.textContent='บันทึกไม่สำเร็จ: '+(error.code==='permission-denied'?'ไม่มีสิทธิ์บันทึก กรุณาตรวจบัญชีและกฎฐานข้อมูล':error.message||'กรุณาลองใหม่')+' (ข้อมูลยังอยู่ในฟอร์ม)'}finally{button.disabled=false}
   });
 
