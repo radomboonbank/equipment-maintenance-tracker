@@ -5,7 +5,7 @@ import {createPresence} from './presence.js?v=20261029-presence';
 import {createMembersPage} from './members.js?v=20261029-members3';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261030-optional';
-import {dashboardHtml,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261103-criticality-order';
+import {dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261103-construction-table';
 import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261031-abnormal-local';
 import {rotateLogins,loginEntries,loginTime,publicLoginEntries,rotatePublicLogins} from './login-history.js?v=20261029-ten';
 'use strict';
@@ -308,17 +308,19 @@ $('#dashboard').addEventListener('click',e=>{
  const type=button.dataset.faultType;
  const alarm=button.dataset.summaryKind==='alarm';
  const assessment=button.dataset.summaryKind==='assessment';
- const rows=(assessment?assessmentRecordsForType(data,type):alarm?alarmRecordsForType([...data,...storedAlarmRecords(alarmData)],type):faultRecordsForType(data,type)).sort(compareEventDates).map(r=>({
-  editId:canEdit()?(r.id.startsWith('alarm:')?r.id:'equipment:'+r.id):'',
+ const construction=button.dataset.summaryKind==='construction';
+ const rows=(construction?constructionRecordsForType(data,constructionData,type):assessment?assessmentRecordsForType(data,type):alarm?alarmRecordsForType([...data,...storedAlarmRecords(alarmData)],type):faultRecordsForType(data,type)).sort(compareEventDates).map(r=>({
+  editId:canEdit()?((r.id.startsWith('alarm:')||r.id.startsWith('construction:'))?r.id:'equipment:'+r.id):'',
   date:dateLabel(r),station:r.station,category:r.category,equipment:mergedEquipment(r),cause:r.cause,
   criticality:({high:'สูง',medium:'ปานกลาง',low:'ต่ำ'})[r.criticality]||'ยังไม่ประเมิน'
  }));
  const page=window.open('','_blank');
  if(!page){toast('กรุณาอนุญาตให้เปิดหน้าต่างใหม่เพื่อดูตาราง');return;}
- page.opener=null;page.document.write(faultTablePage(type,rows,alarm,assessment));page.document.close();
+ page.opener=null;page.document.write(faultTablePage(type,rows,alarm,assessment,construction));page.document.close();
  page.document.querySelectorAll('[data-edit-alarm]').forEach(button=>button.addEventListener('click',()=>{
   if(!canEdit()){toast('กรุณาเข้าสู่ระบบด้วยบัญชีที่มีสิทธิ์แก้ไข');return;}
   const key=button.dataset.editAlarm;
+  if(key.startsWith('construction:')){const project=constructionData.find(r=>r.id===key.slice(13));if(!project){toast('ไม่พบรายการ กรุณาเปิดตารางใหม่');return;}window.focus();window.openConstructionDraft(project);page.close();return;}
   const stored=key.startsWith('alarm:');
   const id=key.slice(stored?6:10);
   const record=(stored?alarmData:data).find(r=>r.id===id);
