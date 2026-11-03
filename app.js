@@ -5,7 +5,7 @@ import {createPresence} from './presence.js?v=20261029-presence';
 import {createMembersPage} from './members.js?v=20261029-members3';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261030-optional';
-import {dashboardHtml,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261103-alarm-edit';
+import {dashboardHtml,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261103-equipment-edit';
 import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261031-abnormal-local';
 import {rotateLogins,loginEntries,loginTime,publicLoginEntries,rotatePublicLogins} from './login-history.js?v=20261029-ten';
 'use strict';
@@ -308,7 +308,7 @@ $('#dashboard').addEventListener('click',e=>{
  const type=button.dataset.faultType;
  const alarm=button.dataset.summaryKind==='alarm';
  const rows=(alarm?alarmRecordsForType([...data,...storedAlarmRecords(alarmData)],type):faultRecordsForType(data,type)).sort(compareEventDates).map(r=>({
-  editId:alarm&&canEdit()?(r.id.startsWith('alarm:')?r.id:'equipment:'+r.id):'',
+  editId:canEdit()?(r.id.startsWith('alarm:')?r.id:'equipment:'+r.id):'',
   date:dateLabel(r),station:r.station,category:r.category,equipment:mergedEquipment(r),cause:r.cause,
   criticality:({high:'สูง',medium:'ปานกลาง',low:'ต่ำ'})[r.criticality]||'ยังไม่ประเมิน'
  }));
