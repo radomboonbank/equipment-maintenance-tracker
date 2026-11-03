@@ -18,6 +18,8 @@ const retiredRecordFields=new Set(['owner','reporter','receiver','due','status',
 let data=[],notes=[],page=1,view='all',editing=null,cloud=null,unsubscribe=null,user=null,cloudReady=false,busy=false;
 
 let role='guest',username='',displayName='',generation=0;
+let loginStartedAt=null;
+function updateLoginSession(){const label=document.getElementById('login-session-label');if(label)label.textContent=loginStartedAt&&role!=='guest'?`${username} (${Math.max(0,Math.floor((Date.now()-loginStartedAt)/60000))} นาที)`:'ผู้ชมทั่วไป';}
 let memberDuty='';
 const membersPage=createMembersPage({session:()=>({cloud,user,role,duty:memberDuty}),endpoint:()=>window.GRID_TELEGRAM_URL});
 
@@ -65,7 +67,7 @@ function dateLabel(r){return dateText(r.date)||'ไม่ระบุวัน�
 function options(map,selected=''){return Object.entries(map).map(([v,l])=>`<option value="${esc(v)}" ${selected===v?'selected':''}>${esc(l)}</option>`).join('')}
 $('#event-filter').innerHTML='<option value="">ทุกประเภทเหตุการณ์</option><option value="__unspecified__">ยังไม่ระบุ</option>'+options(Object.fromEntries(eventTypes.map(v=>[v,v])));
 $('#equipment-filter').innerHTML='<option value="">ทุกชนิดอุปกรณ์หลัก</option>'+options(Object.fromEntries(equipmentTypes.map(v=>[v.name,v.name])));
-function updateClock(){const now=new Date();$('#today').dateTime=now.toISOString();$('#today').innerHTML=`<span>${now.toLocaleDateString('th-TH-u-ca-buddhist',{timeZone:'Asia/Bangkok',day:'numeric',month:'long',year:'numeric'})}</span><strong>${now.toLocaleTimeString('en-GB',{timeZone:'Asia/Bangkok',hour12:false})}</strong>`}
+function updateClock(){updateLoginSession();const now=new Date();$('#today').dateTime=now.toISOString();$('#today').innerHTML=`<span>${now.toLocaleDateString('th-TH-u-ca-buddhist',{timeZone:'Asia/Bangkok',day:'numeric',month:'long',year:'numeric'})}</span><strong>${now.toLocaleTimeString('en-GB',{timeZone:'Asia/Bangkok',hour12:false})}</strong>`}
 updateClock();setInterval(updateClock,1000);
 const presence=createPresence({render(entries,message){$('#online-count').textContent=message?'—':entries.length;$('#online-list').innerHTML=message?`<li class="online-empty">${esc(message)}</li>`:entries.length?entries.map(entry=>`<li><span class="online-avatar" aria-hidden="true">${esc(Array.from(entry.displayName)[0]||'●')}</span><div><strong>${esc(entry.displayName)}</strong><small>${entry.uid===user?.uid?'คุณ · ':''}เชื่อมต่อล่าสุด ${new Date(entry.at).toLocaleTimeString('en-GB',{timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit'})}</small></div><span class="online-dot" aria-label="ออนไลน์"></span></li>`).join(''):'<li>ยังไม่มีผู้ใช้ออนไลน์</li>'}});
 function filtered(){const q=$('#search').value.toLowerCase().trim();return data.filter(r=>(view==='all'||(view==='open'?r.status!=='resolved':r.status==='resolved'))&&matchesListFilters(r,{eventType:$('#event-filter').value,equipmentType:$('#equipment-filter').value,station:$('#station').value})&&(!q||Object.keys(fields).some(k=>String(k==='equipment'?mergedEquipment(r):r[k]||'').toLowerCase().includes(q)))).sort(compareEventDates)}
@@ -231,8 +233,8 @@ $('#delete').onclick=async()=>{
  busy=true;$('#delete').disabled=true;
  try{const original=editing;await cloud.runTransaction(cloud.db,async t=>{const ref=cloud.doc(cloud.db,'equipment',original.id),snap=await t.get(ref);if(!snap.exists()||snap.data().revision!==original.revision)throw Error('ข้อมูลเปลี่ยนแปลง กรุณาเปิดใหม่');t.delete(ref)});$('#editor').close();toast('ลบรายการแล้ว')}catch(err){toast('ลบไม่สำเร็จ: '+err.message)}finally{busy=false;$('#delete').disabled=false}
 };
-function resetSession(){unsubscribeAlarms?.();unsubscribeAlarms=null;alarmData=[];alarmState='loading';idleSession.stop();document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());unsubscribeConstruction?.();unsubscribeConstruction=null;constructionData=[];constructionState='loading';presence.stop();membersPage.reset();memberDuty="";generation++;unsubscribeLogins?.();unsubscribeLogins=null;renderLogins(null);unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';displayName='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
-function showWorkspace(){idleSession.start();
+function resetSession(){loginStartedAt=null;unsubscribeAlarms?.();unsubscribeAlarms=null;alarmData=[];alarmState='loading';idleSession.stop();document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());unsubscribeConstruction?.();unsubscribeConstruction=null;constructionData=[];constructionState='loading';presence.stop();membersPage.reset();memberDuty="";generation++;unsubscribeLogins?.();unsubscribeLogins=null;renderLogins(null);unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';displayName='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
+function showWorkspace(){updateLoginSession();idleSession.start();
  $('#current-account').textContent=role==='guest'?'ผู้ชมทั่วไป':`บัญชีของคุณ: ${displayName||username}`;
  presence.start(cloud,role==='guest'?null:user,displayName||username);
  membersPage.setAccess(role==='admin'&&memberDuty==='super admin');
@@ -253,7 +255,7 @@ $('#login').onsubmit=async e=>{
   const result=await cloud.signInWithEmailAndPassword(cloud.auth,loginEmail(name),await credential(name,password));
   const profile=await cloud.getDoc(cloud.doc(cloud.db,'DatabaseLogin',result.user.uid));
   if(!profile.exists()||!['admin','editor','viewer'].includes(profile.data().role)||profile.data().username!==name)throw Error('บัญชีนี้ยังไม่ได้รับสิทธิ์ใช้งาน');
-  resetSession();user=result.user;role=profile.data().role;memberDuty=profile.data().duty||'';username=name;displayName=profile.data().displayName||name;$('#password').value='';$('#login-status').textContent='';try{await recordLogin()}catch(historyError){console.warn('Login history unavailable')}showWorkspace();
+  resetSession();loginStartedAt=Date.now();user=result.user;role=profile.data().role;memberDuty=profile.data().duty||'';username=name;displayName=profile.data().displayName||name;$('#password').value='';$('#login-status').textContent='';try{await recordLogin()}catch(historyError){console.warn('Login history unavailable')}showWorkspace();
  }catch(err){await cloud.signOut(cloud.auth);$('#login-status').textContent=err.code?.startsWith('auth/')?'รหัสพนักงานหรือรหัสผ่านไม่ถูกต้อง หรือยังไม่เปิดใช้งานบัญชี':err.message}
  finally{busy=false;$('#login-submit').disabled=false;$('#guest').disabled=false}
 };
