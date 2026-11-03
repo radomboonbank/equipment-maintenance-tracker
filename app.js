@@ -19,7 +19,17 @@ let data=[],notes=[],page=1,view='all',editing=null,cloud=null,unsubscribe=null,
 
 let role='guest',username='',displayName='',generation=0;
 let loginStartedAt=null;
-function updateLoginSession(){const label=document.getElementById('login-session-label');if(label)label.textContent=loginStartedAt&&role!=='guest'?`${username} (${Math.max(0,Math.floor((Date.now()-loginStartedAt)/60000))} นาที)`:'ผู้ชมทั่วไป';}
+function updateLoginSession(){
+ const label=document.getElementById('login-session-label');if(!label)return;
+ const signedIn=loginStartedAt&&role!=='guest';
+ const showAvatar=Boolean(signedIn&&username==='559350'&&role==='admin'&&memberDuty==='super admin');
+ let text=label.querySelector('.login-session-text');
+ if(!text){label.replaceChildren();text=document.createElement('span');text.className='login-session-text';label.append(text);}
+ let avatar=label.querySelector('.login-session-avatar');
+ if(showAvatar&&!avatar){avatar=document.createElement('img');avatar.className='login-session-avatar';avatar.src='admin-559350.ico';avatar.alt='';avatar.width=32;avatar.height=32;label.prepend(avatar);}
+ if(!showAvatar&&avatar)avatar.remove();
+ text.textContent=signedIn?`${username} (${Math.max(0,Math.floor((Date.now()-loginStartedAt)/60000))} นาที)`:'ผู้ชมทั่วไป';
+}
 let memberDuty='';
 const membersPage=createMembersPage({session:()=>({cloud,user,role,duty:memberDuty}),endpoint:()=>window.GRID_TELEGRAM_URL});
 

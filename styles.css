@@ -196,3 +196,6 @@ aside #members-nav{font-size:12px;line-height:1.5}
 .dialog-actions > .delete-record,.alarm-section-save > .delete-record{margin-right:auto;white-space:nowrap;width:max-content;flex-shrink:0}
 
 .grid-summary-six > .grid-summary-panel:nth-child(5):hover,.grid-summary-six > .grid-summary-panel:nth-child(6):hover{background:#e5f7e9}
+
+#login-session-label{display:flex;align-items:center;gap:8px}
+.login-session-avatar{width:32px;height:32px;object-fit:contain;flex:none}
