@@ -3,7 +3,7 @@
  const select=(name,label,values)=>`<label>${label}<select name="${name}"><option value="">ยังไม่ระบุ</option>${values.map(v=>`<option>${v}</option>`).join('')}</select></label>`;
  const reporterFields=prefix=>`<div class="construction-grid alarm-section-reporter">${field(prefix+'ReporterName','แจ้ง พนักงานประจำ สฟ. ชื่อ','ชื่อพนักงาน')}<label>เบอร์มือถือ<input type="tel" name="${prefix}ReporterPhone" maxlength="50" placeholder="เบอร์มือถือ"></label></div>`;
  const section=(n,title,content)=>`<fieldset class="construction-section" data-alarm-section="${n}"><legend>${n}. ${title}</legend><div class="construction-grid">${content}</div><div class="alarm-section-save"><p role="status" data-section-status></p><button type="button" data-close>ปิด</button><button type="button" class="primary" data-save-section="${n}">บันทึกข้อมูล</button></div></fieldset>`;
- window.openAbnormalDraft=()=>{
+ window.openAbnormalDraft=(existing=null)=>{
   const offlinePreview=location.protocol==='file:'&&!window.GRID_ALARM_STORE;
   const d=document.createElement('dialog');d.className='work-draft-dialog';
   d.innerHTML=`<form class="work-draft-form"><div class="work-draft-title"><div><small style="color:#087f85">ALARM REPORT</small><h2>แจ้ง Abnormal Alarm</h2></div><button type="button" data-close aria-label="ปิดหน้าต่าง">✕</button></div><p>ทุกช่องเว้นว่างได้ · บันทึกแยกแต่ละข้อ</p>`+
@@ -18,6 +18,7 @@
    d.querySelectorAll('[data-save-section]').forEach(button=>button.textContent='บันทึกฉบับร่างในเครื่อง');
   }
   const sectionIds=new Map();
+  if(existing?.id)sectionIds.set(existing.section,existing.id);
   d.querySelectorAll('[data-save-section]').forEach(button=>button.onclick=async()=>{
    const block=button.closest('[data-alarm-section]'),message=block.querySelector('[data-section-status]');
    const controls=[...block.querySelectorAll('input,select,textarea')];
@@ -25,13 +26,14 @@
    if(invalid){invalid.reportValidity();message.textContent='กรุณาตรวจสอบข้อมูลในข้อนี้';return}
    if(button.disabled)return;button.disabled=true;message.textContent='กำลังบันทึก…';
    try{
-    const values={};
+    const values=existing?.data?{...existing.data}:{};
+    const seenCheckboxes=new Set();
     controls.forEach(el=>{
      if(el.disabled||!el.name)return;
      if(el.type==='radio'){if(el.checked)values[el.name]=el.value;return}
      if(el.type==='checkbox'){
       if(el.hasAttribute('data-breaker-trip'))values[el.name]=el.checked;
-      else {values[el.name]??=[];if(el.checked)values[el.name].push(el.value)}
+      else {if(!seenCheckboxes.has(el.name)){values[el.name]=[];seenCheckboxes.add(el.name)}if(el.checked)values[el.name].push(el.value)}
       return;
      }
      values[el.name]=el.multiple?[...el.selectedOptions].map(o=>o.value):el.value;
@@ -124,6 +126,20 @@
   };
   addWinding();
   form.onsubmit=e=>e.preventDefault();
+  if(existing?.data){
+   d.querySelectorAll('[data-alarm-section]').forEach(block=>block.hidden=Number(block.dataset.alarmSection)!==existing.section);
+   d.querySelector('h2').textContent='แก้ไข '+({1:'Abnormal Alarm',2:'BESS ทริป',3:'Winding Temp Alarm'}[existing.section]);
+   const populate=()=>d.querySelectorAll('input,select,textarea').forEach(el=>{
+    if(!el.name||!Object.prototype.hasOwnProperty.call(existing.data,el.name))return;
+    const value=existing.data[el.name];
+    if(el.type==='checkbox')el.checked=el.hasAttribute('data-breaker-trip')?value===true:Array.isArray(value)&&value.includes(el.value);
+    else if(el.type==='radio')el.checked=el.value===value;
+    else el.value=value??'';
+   });
+   populate();
+   d.querySelectorAll('[data-breaker-trip],input[name$="resetState"]:checked').forEach(el=>el.dispatchEvent(new Event('change',{bubbles:true})));
+   populate();
+  }
   d.showModal();
  };
  const previewButton=document.getElementById('preview-add-abnormal');
