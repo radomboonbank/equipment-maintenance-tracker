@@ -21,7 +21,7 @@
   if(existing?.id)sectionIds.set(existing.section,existing.id);
   if(existing?.id&&window.GRID_ALARM_STORE?.canDelete?.()){
    const actions=d.querySelector(`[data-alarm-section="${existing.section}"] .alarm-section-save`);
-   const remove=document.createElement('button');remove.type='button';remove.className='danger';remove.textContent='ลบ';
+   const remove=document.createElement('button');remove.type='button';remove.className='danger delete-record';remove.textContent='ลบรายการ';
    actions.prepend(remove);
    remove.onclick=async()=>{
     if(remove.disabled||!window.GRID_ALARM_STORE.canDelete())return;
