@@ -25,31 +25,47 @@ export function sixPanelSummary(records){
 export function faultRecordsForType(records,type){
  return sixPanelSummary(records).faults.filter(r=>type==='ยังไม่ระบุ / อื่น ๆ'?!mainTypes.includes(mainType(r)):mainType(r)===type);
 }
+export function storedAlarmRecords(documents){
+ const iso=value=>{const m=String(value||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);return m?`${Number(m[3])-543}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`:''};
+ const types={'หม้อแปลง':'หม้อแปลงไฟฟ้า','เบรคเกอร์':'เซอร์กิตเบรกเกอร์','รีเลย์':'รีเลย์ระบบป้องกัน','อุปกรณ์ สฟ.':'อุปกรณ์ภายใน สฟ.'};
+ return documents.filter(x=>[1,2,3].includes(x.section)&&x.data).map(x=>{
+  const d=x.data,bess=x.section===2,winding=x.section===3;
+  const pb=Array.isArray(d['bess-1-pb'])?d['bess-1-pb'].map(v=>'PB.'+v).join(', '):'';
+  return {id:'alarm:'+x.id,date:iso(bess?d['bess-1-date']:winding?d.windingDate:d.receivedDate),
+   eventType:winding||d.alarmGroup==='Winding Temp'?'Winding Temp Alarm':'Abnormal Alarm',
+   category:bess?'BESS ทริป':types[d.alarmGroup]||d.alarmGroup||'',
+   station:winding?d.windingStation:d.station||'',
+   equipment:bess?['BESS',pb,d['bess-1-alarm']].filter(Boolean).join(' · '):winding?[d.windingTransformer,d.windingAnnunciator].filter(Boolean).join(' · '):[d.equipment,d.alarmText].filter(Boolean).join(' · '),
+   cause:bess?[d['bess-1-cause'],d['bess-1-causeDetails']].filter(Boolean).join(' · '):winding?d.windingCause:d.symptoms,
+   status:winding&&d['winding-1-resetState']==='reset'?'resolved':'pending'};
+ });
+}
 export function alarmRecordsForType(records,type){
  const {open,alarms}=sixPanelSummary(records);
  if(type==='Winding Temp')return open.filter(r=>r.eventType==='Winding Temp Alarm');
- const types={'หม้อแปลง':'หม้อแปลงไฟฟ้า','เบรคเกอร์':'เซอร์กิตเบรกเกอร์','ระบบสื่อสาร':'ระบบสื่อสาร','รีเลย์':'รีเลย์ระบบป้องกัน','อุปกรณ์สฟ.':'อุปกรณ์ภายใน สฟ.'};
+ const types={'BESS ทริป':'BESS ทริป','หม้อแปลง':'หม้อแปลงไฟฟ้า','เบรคเกอร์':'เซอร์กิตเบรกเกอร์','ระบบสื่อสาร':'ระบบสื่อสาร','รีเลย์':'รีเลย์ระบบป้องกัน','อุปกรณ์สฟ.':'อุปกรณ์ภายใน สฟ.'};
  if(type==='อื่น ๆ / ยังไม่ระบุ')return alarms.filter(r=>!Object.values(types).includes(mainType(r)));
  return types[type]?alarms.filter(r=>mainType(r)===types[type]):[];
 }
 export function faultTablePage(type,rows,alarm=false){
  return `<!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(type)} — CROD GRID CARE</title><style>body{font-family:Tahoma,sans-serif;background:#f3f7fa;color:#193c50;margin:0;padding:28px}h1{font-size:24px}.page-heading{display:flex;align-items:center;justify-content:space-between;gap:20px}.close-page{flex-shrink:0;padding:12px 20px;border:1px solid #087f83;border-radius:10px;background:#087f83;color:white;font:inherit;font-weight:bold;cursor:pointer}.close-page:hover{background:#e1f2ff;color:#193c50}.close-page:focus-visible{outline:3px solid #38bdf8;outline-offset:3px}p{color:#587283}.wrap{overflow:auto;background:white;border-radius:14px;border:1px solid #dce6eb}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:15px;text-align:left;border-bottom:1px solid #e5edf2;vertical-align:top}th{background:#eaf4f7}td{white-space:pre-wrap;overflow-wrap:anywhere}a{color:#087f83}</style><div class="page-heading"><h1>${esc(type)}</h1><button type="button" class="close-page" id="close-table-page" aria-label="ปิดหน้าตาราง">ปิด ✕</button></div><p>${alarm?'Abnormal Alarm ที่ยังไม่ปิดงาน':'อุปกรณ์ขัดข้องที่ยังไม่ปิดงาน'} · ${rows.length} รายการ · ข้อมูล ณ เวลาที่เปิดหน้านี้</p><div class="wrap"><table><thead><tr><th>วันที่</th><th>สถานีไฟฟ้า</th><th>อุปกรณ์ที่ชำรุด</th><th>สาเหตุ</th><th>ระดับความสำคัญ</th></tr></thead><tbody>${rows.map(r=>`<tr>${[r.date,r.station,r.equipment,r.cause,r.criticality].map(v=>`<td>${esc(v||'—')}</td>`).join('')}</tr>`).join('')||'<tr><td colspan="5">ไม่มีรายการอุปกรณ์ชนิดนี้ที่ยังไม่ปิดงาน</td></tr>'}</tbody></table></div></html>`;
 }
-export function dashboardHtml(records,assessment=null,now=new Date(),projects=[],projectState='ready'){
- const {open,faults,alarms,construction,count}=sixPanelSummary(records);
+export function dashboardHtml(records,assessment=null,now=new Date(),projects=[],projectState='ready',alarmDocuments=[],alarmState='ready'){
+ const {open,faults,construction,count}=sixPanelSummary(records);
+ const alarmSummary=sixPanelSummary([...records,...storedAlarmRecords(alarmDocuments)]),alarms=alarmSummary.alarms;
  const bars=(items,clickable=false)=>{const max=Math.max(1,...items.map(x=>x[1]));return [...items].sort((a,b)=>b[1]-a[1]).map(([label,n,color])=>`<div class="grid-summary-row"><span>${esc(label)}</span>${clickable?`<button type="button" class="fault-drilldown" data-fault-type="${esc(label)}" data-summary-kind="${clickable===2?'alarm':'fault'}" aria-label="ดูรายการ ${esc(label)} ${n} รายการ"><span class="grid-summary-track"><i style="width:${n/max*100}%;background:${color}"></i></span><b>${n}</b></button>`:`<div class="grid-summary-track"><i style="width:${n/max*100}%;background:${color}"></i></div><b>${n}</b>`}</div>`).join('')};
  const panel=(n,title,items,note)=>`<article class="grid-summary-panel"><header><span class="grid-summary-number">${n}</span><h3>${title}</h3></header>${bars(items,n===1||n===2?n:0)}<p>${esc(note)}</p></article>`;
- const alarmTypes=[['หม้อแปลง','หม้อแปลงไฟฟ้า'],['เบรคเกอร์','เซอร์กิตเบรกเกอร์'],['ระบบสื่อสาร','ระบบสื่อสาร'],['รีเลย์','รีเลย์ระบบป้องกัน'],['อุปกรณ์สฟ.','อุปกรณ์ภายใน สฟ.']];
+ const alarmTypes=[['BESS ทริป','BESS ทริป'],['หม้อแปลง','หม้อแปลงไฟฟ้า'],['เบรคเกอร์','เซอร์กิตเบรกเกอร์'],['ระบบสื่อสาร','ระบบสื่อสาร'],['รีเลย์','รีเลย์ระบบป้องกัน'],['อุปกรณ์สฟ.','อุปกรณ์ภายใน สฟ.']];
  const constructionTypes=[['สถานีไฟฟ้า','สถานีไฟฟ้า'],['สายส่งไฟฟ้า','สายส่งไฟฟ้า'],['หม้อแปลงไฟฟ้า','หม้อแปลงไฟฟ้า'],['เบรคเกอร์','เซอร์กิตเบรกเกอร์'],['คาปาซิเตอร์','คาปาซิเตอร์แบงค์']];
  const projectType=p=>({'เบรคเกอร์':'เซอร์กิตเบรกเกอร์','คาปาซิเตอร์':'คาปาซิเตอร์แบงค์'}[p.data?.category]||p.data?.category||'');
  const constructionCounts=constructionTypes.map(([l,t],i)=>[l,count(construction,t)+projects.filter(p=>projectType(p)===t).length,colors[i]]);
  const otherConstruction=construction.filter(r=>!constructionTypes.some(([,t])=>t===mainType(r))).length+projects.filter(p=>!constructionTypes.some(([,t])=>t===projectType(p))).length;
  const constructionNote=projectState==='ready'?`รวม ${construction.length+projects.length} รายการ · เดิม ${construction.length} / แบบฟอร์มก่อสร้าง ${projects.length}`:projectState==='guest'?'แสดงรายการเดิม · เข้าสู่ระบบเพื่อดูข้อมูลก่อสร้างเพิ่มเติม':projectState==='error'?'ข้อมูลก่อสร้างใหม่โหลดไม่สำเร็จ · ยอดยังไม่ครบ':'กำลังโหลดข้อมูลก่อสร้างเพิ่มเติม…';
- const winding=open.filter(r=>r.eventType==='Winding Temp Alarm');
+ const winding=alarmSummary.open.filter(r=>r.eventType==='Winding Temp Alarm');
  const impact=open.filter(r=>String(r.criticalityAssessment?.effect||'').trim());
  return `<div class="grid-summary-six">`+
  panel(1,'สรุปอุปกรณ์ที่ชำรุด',[...mainTypes.map((t,i)=>[t,count(faults,t),colors[i]]),['ยังไม่ระบุ / อื่น ๆ',faults.filter(r=>!mainTypes.includes(mainType(r))).length,'#8d9baa']],`อุปกรณ์ขัดข้องทั้งหมด ${faults.length} รายการ`)+
- panel(2,'สรุป Abnormal Alarm',[...alarmTypes.map(([l,t],i)=>[l,count(alarms,t),colors[i]]),['Winding Temp',winding.length,'#e789c4'],['อื่น ๆ / ยังไม่ระบุ',alarms.filter(r=>!alarmTypes.some(([,t])=>t===mainType(r))).length,'#8d9baa']],`รวม ${alarms.length+winding.length} รายการ · รวม Winding Temp Alarm เฉพาะงานที่ยังไม่ปิด`).replace('</header>','</header><div class="grid-summary-row"><span>BESS ทริป</span><span class="grid-summary-pending">รอจัดหมวดข้อมูล</span></div>').replace('</article>','<p>BESS ทริป: ยังไม่มีช่องจัดประเภทในข้อมูลเดิม จึงยังไม่นับรวม</p></article>')+
+ panel(2,'สรุป Abnormal Alarm',[...alarmTypes.map(([l,t],i)=>[l,count(alarms,t),colors[i]]),['Winding Temp',winding.length,'#e789c4'],['อื่น ๆ / ยังไม่ระบุ',alarms.filter(r=>!alarmTypes.some(([,t])=>t===mainType(r))).length,'#8d9baa']],`รวม ${alarms.length+winding.length} รายการ · รวม Winding Temp Alarm เฉพาะงานที่ยังไม่ปิด`).replace('</article>',alarmState==='ready'?'</article>':`<p>${alarmState==='error'?'โหลดข้อมูล AbnormalAlarm ไม่สำเร็จ ยอดยังไม่ครบ':alarmState==='guest'?'เข้าสู่ระบบเพื่อดูข้อมูล Alarm เพิ่มเติม':'กำลังโหลดข้อมูล Alarm เพิ่มเติม…'}</p></article>` )+
  panel(3,'สรุปงานก่อสร้าง',[...constructionCounts,['อื่น ๆ / ยังไม่ระบุ',otherConstruction,'#8d9baa']],constructionNote)+
  panel(4,'ระดับความสำคัญและผลกระทบต่อระบบไฟฟ้า',[['สูง',open.filter(r=>r.criticality==='high').length,'#ef6474'],['ปานกลาง',open.filter(r=>r.criticality==='medium').length,'#f4a640'],['ต่ำ',open.filter(r=>r.criticality==='low').length,'#38c99a'],['ยังไม่ประเมิน',open.filter(r=>!['high','medium','low'].includes(r.criticality)).length,'#8d9baa']],`ทุกประเภทเหตุการณ์ รวม ${open.length} รายการ`).replace('class="grid-summary-panel"','class="grid-summary-panel grid-summary-combined"').replace('</header>','</header><div class="combined-assessments"><section><h4>ระดับความสำคัญอุปกรณ์</h4>').replace('</article>',`</section><section><h4>อุปกรณ์ที่มีผลกระทบต่อระบบ</h4>${bars([['มีรายละเอียดผลต่อระบบ',impact.length,'#57a7f5'],['ยังไม่ระบุผลต่อระบบ',open.length-impact.length,'#8d9baa']])}<p>นับรายการที่กรอกประเมินผลกระทบต่อระบบไฟฟ้า ยังไม่ใช่จำนวนที่ยืนยันว่ามีผลกระทบ</p></section></div></article>`)+
  `<article class="grid-summary-panel"><header><span class="grid-summary-number">5</span><h3>งานสำคัญ อปก.</h3></header>${['BESS','LPLC','TSLC','Data Center'].map(t=>`<div class="grid-summary-row"><span>${t}</span><span class="grid-summary-pending">รอจัดหมวดข้อมูล</span></div>`).join('')}<p>ข้อมูลปัจจุบันยังไม่มีช่องระบุหมวดงานสำคัญ จึงไม่แสดงเป็นศูนย์หรือเดาจากข้อความ</p></article>`+

@@ -4,6 +4,7 @@
  const reporterFields=prefix=>`<div class="construction-grid alarm-section-reporter">${field(prefix+'ReporterName','แจ้ง พนักงานประจำ สฟ. ชื่อ','ชื่อพนักงาน')}<label>เบอร์มือถือ<input type="tel" name="${prefix}ReporterPhone" maxlength="50" placeholder="เบอร์มือถือ"></label></div>`;
  const section=(n,title,content)=>`<fieldset class="construction-section" data-alarm-section="${n}"><legend>${n}. ${title}</legend><div class="construction-grid">${content}</div><div class="alarm-section-save"><p role="status" data-section-status></p><button type="button" data-close>ปิด</button><button type="button" class="primary" data-save-section="${n}">บันทึกข้อมูล</button></div></fieldset>`;
  window.openAbnormalDraft=()=>{
+  const offlinePreview=location.protocol==='file:'&&!window.GRID_ALARM_STORE;
   const d=document.createElement('dialog');d.className='work-draft-dialog';
   d.innerHTML=`<form class="work-draft-form"><div class="work-draft-title"><div><small style="color:#087f85">ALARM REPORT</small><h2>แจ้ง Abnormal Alarm</h2></div><button type="button" data-close aria-label="ปิดหน้าต่าง">✕</button></div><p>ทุกช่องเว้นว่างได้ · บันทึกแยกแต่ละข้อ</p>`+
   section(1,'ข้อมูลรับแจ้งและรายละเอียด Alarm',field('receivedDate','วันที่ได้รับแจ้ง (พ.ศ.)','วว/ดด/พ.ศ.')+'<label>เวลาที่ได้รับแจ้ง<input type="time" name="receivedTime"></label>'+field('station','สถานีไฟฟ้าแรงสูง','เช่น PTG')+field('equipment','ชื่อ / รหัสอุปกรณ์','เช่น TX1 หรือ Bkr. 80212')+select('alarmGroup','กลุ่ม Alarm',['หม้อแปลง','เบรคเกอร์','ระบบสื่อสาร','รีเลย์','อุปกรณ์ สฟ.','BESS ทริป','Winding Temp','อื่น ๆ'])+select('alarmState','สถานะ Alarm',['ยังปรากฏอยู่','เกิดเป็นครั้งคราว','หายแล้ว รอตรวจสอบ'])+field('alarmText','ข้อความ Alarm ที่ปรากฏ','ข้อความตามหน้าจอหรืออุปกรณ์',true)+field('symptoms','อาการและรายละเอียด','สิ่งที่ตรวจพบ และลำดับเหตุการณ์',true)+field('stationReporterName','แจ้ง พนักงานประจำ สฟ. ชื่อ','ชื่อพนักงาน')+'<label>เบอร์มือถือ<input type="tel" name="reporterPhone" maxlength="50" placeholder="เบอร์มือถือ"></label>')+
@@ -12,6 +13,10 @@
   '</form>';
   document.body.append(d);d.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>d.close());d.addEventListener('close',()=>d.remove(),{once:true});
   const form=d.querySelector('form');
+  if(offlinePreview){
+   d.querySelector('.work-draft-title + p').textContent='หน้าตัวอย่างออฟไลน์ · บันทึกเฉพาะในเครื่อง ไม่ส่งข้อมูลไป Firebase';
+   d.querySelectorAll('[data-save-section]').forEach(button=>button.textContent='บันทึกฉบับร่างในเครื่อง');
+  }
   const sectionIds=new Map();
   d.querySelectorAll('[data-save-section]').forEach(button=>button.onclick=async()=>{
    const block=button.closest('[data-alarm-section]'),message=block.querySelector('[data-section-status]');
@@ -36,12 +41,18 @@
      const id=await window.GRID_ALARM_STORE.save(section,values,sectionIds.get(section));
      sectionIds.set(section,id);message.textContent=`บันทึกข้อมูลข้อ ${section} ใน Firebase สำเร็จ`;
     }else{
+     if(!offlinePreview)throw Error('ระบบเชื่อมต่อ Firebase ยังไม่พร้อม กรุณาโหลดหน้าใหม่แล้วเข้าสู่ระบบอีกครั้ง');
      const key='crod-abnormal-section-drafts-v1',items=JSON.parse(localStorage.getItem(key)||'[]');
      if(!Array.isArray(items))throw Error('ข้อมูลฉบับร่างในเครื่องไม่ถูกต้อง');
      items.push({section,data:values,createdAt:new Date().toISOString()});localStorage.setItem(key,JSON.stringify(items));
      message.textContent=`บันทึกฉบับร่างข้อ ${section} ในเครื่องแล้ว (หน้าตัวอย่าง)`;
     }
+    const savedMessage=message.textContent;
     d.close();
+    const notice=document.createElement('div');notice.setAttribute('role','status');
+    notice.textContent=savedMessage;
+    notice.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:10000;background:#087f85;color:white;padding:16px 24px;border-radius:12px;max-width:90vw';
+    document.body.append(notice);setTimeout(()=>notice.remove(),8000);
    }catch(error){message.textContent='บันทึกไม่สำเร็จ: '+(error.code==='permission-denied'?'ไม่มีสิทธิ์บันทึก กรุณาตรวจบัญชีและกฎฐานข้อมูล':error.message||'กรุณาลองใหม่')+' (ข้อมูลยังอยู่ในฟอร์ม)'}finally{button.disabled=false}
   });
 
