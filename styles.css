@@ -178,3 +178,5 @@ aside .nav.transmission-link{display:flex;align-items:center;gap:9px;font-size:1
 .inventory-voltage-table td.inventory-max{font-weight:800;color:#0284c7}
 
 .fault-drilldown{grid-column:2/4;display:grid;grid-template-columns:minmax(0,1fr) 28px;align-items:center;gap:12px;width:100%;padding:8px 0;border:0;background:transparent;color:inherit;border-radius:6px}.fault-drilldown:hover,.fault-drilldown:focus-visible{background:#dceef9;outline:2px solid #159bd3}.fault-drilldown .grid-summary-track{display:block;width:100%}.fault-drilldown b{text-align:right}
+
+.heading .dashboard-main-title,.dashboard-main-title{font-size:clamp(26px,2.5vw,38px);font-weight:800;color:#0284c7;line-height:1.35}
