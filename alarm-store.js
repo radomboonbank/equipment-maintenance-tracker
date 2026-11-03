@@ -1,6 +1,19 @@
 // Stores one independently saved alarm section per Firestore document.
 export function createAlarmStore(getContext){
  return {
+  canDelete(){const {user,role,duty}=getContext();return !!user&&role==='admin'&&duty==='super admin'},
+  async remove(id,revision){
+   const {cloud,user,role,duty}=getContext();
+   if(!cloud||!user||role!=='admin'||duty!=='super admin')throw Error('เฉพาะ super admin เท่านั้นที่ลบได้');
+   if(!id||id==='_schema')throw Error('รายการไม่ถูกต้อง');
+   const ref=cloud.doc(cloud.db,'AbnormalAlarm',id);
+   await cloud.runTransaction(cloud.db,async transaction=>{
+    const snapshot=await transaction.get(ref);
+    if(!snapshot.exists())throw Error('รายการถูกลบแล้ว');
+    if(snapshot.data().revision!==revision)throw Error('ข้อมูลเปลี่ยนแปลงแล้ว กรุณาเปิดรายการใหม่ก่อนลบ');
+    transaction.delete(ref);
+   });
+  },
   async save(section,data,id){
    const {cloud,user,role,username,displayName}=getContext();
    if(!cloud||!user||!['admin','editor'].includes(role))throw Error('กรุณาเข้าสู่ระบบด้วยบัญชีที่มีสิทธิ์บันทึก');

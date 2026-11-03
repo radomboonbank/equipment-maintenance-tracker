@@ -1,6 +1,6 @@
 import {createIdleSession} from './idle-session.js?v=20261103';
 import {createConstructionStore} from './construction-store.js?v=20261103-construction';
-import {createAlarmStore} from './alarm-store.js?v=20261102-firestore';
+import {createAlarmStore} from './alarm-store.js?v=20261103-super-delete';
 import {createPresence} from './presence.js?v=20261029-presence';
 import {createMembersPage} from './members.js?v=20261029-members3';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
@@ -58,7 +58,7 @@ function watchLogins() {
 let alarmData=[],alarmState='loading',unsubscribeAlarms=null;
 let constructionData=[],constructionState='loading',unsubscribeConstruction=null;
 window.GRID_CONSTRUCTION_STORE=createConstructionStore(()=>({cloud,user,role,username,displayName}));
-window.GRID_ALARM_STORE=createAlarmStore(()=>({cloud,user,role,username,displayName}));
+window.GRID_ALARM_STORE=createAlarmStore(()=>({cloud,user,role,username,displayName,duty:memberDuty}));
 const canEdit=()=>cloudReady&&['admin','editor'].includes(role);
 function toast(message){$('#toast').textContent=message;$('#toast').classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('#toast').classList.remove('show'),6000)}
 function dateLabel(r){return dateText(r.date)||'ไม่ระบุวันที่'}
@@ -175,7 +175,7 @@ function edit(r){
  document.querySelectorAll('#fields input,#fields textarea,#fields select,#followups input,#followups textarea,#followups select,#closure-fields input,#closure-fields textarea,#closure-fields select').forEach(el=>el.disabled=!canEdit());
  setupStation($('#fields .station-control'),canEdit());
  setupRepairPlan();
- $('#save').hidden=!canEdit();$('#delete').hidden=role!=='admin'||!r;
+ $('#save').hidden=!canEdit();$('#delete').hidden=role!=='admin'||memberDuty!=='super admin'||!r;
  $('#editor').showModal();
 }
 $('#add').onclick=()=>edit();
@@ -226,7 +226,7 @@ async function sendRecordNotification(next){
  }catch{toast('บันทึกข้อมูลสำเร็จ แต่ยังยืนยันการส่ง Telegram ไม่ได้ — ไม่มีการส่งซ้ำอัตโนมัติ')}
 }
 $('#delete').onclick=async()=>{
- if(busy||role!=='admin'||!editing)return;
+ if(busy||role!=='admin'||memberDuty!=='super admin'||!editing)return;
  if(!confirm('ลบรายการ #'+editing.code+' ถาวรหรือไม่?'))return;
  busy=true;$('#delete').disabled=true;
  try{const original=editing;await cloud.runTransaction(cloud.db,async t=>{const ref=cloud.doc(cloud.db,'equipment',original.id),snap=await t.get(ref);if(!snap.exists()||snap.data().revision!==original.revision)throw Error('ข้อมูลเปลี่ยนแปลง กรุณาเปิดใหม่');t.delete(ref)});$('#editor').close();toast('ลบรายการแล้ว')}catch(err){toast('ลบไม่สำเร็จ: '+err.message)}finally{busy=false;$('#delete').disabled=false}

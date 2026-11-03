@@ -19,6 +19,19 @@
   }
   const sectionIds=new Map();
   if(existing?.id)sectionIds.set(existing.section,existing.id);
+  if(existing?.id&&window.GRID_ALARM_STORE?.canDelete?.()){
+   const actions=d.querySelector(`[data-alarm-section="${existing.section}"] .alarm-section-save`);
+   const remove=document.createElement('button');remove.type='button';remove.className='danger';remove.textContent='ลบ';
+   actions.prepend(remove);
+   remove.onclick=async()=>{
+    if(remove.disabled||!window.GRID_ALARM_STORE.canDelete())return;
+    if(!confirm('ยืนยันลบรายการนี้ออกจาก Firebase ถาวรหรือไม่?'))return;
+    const buttons=[...actions.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);
+    const message=actions.querySelector('[data-section-status]');message.textContent='กำลังลบ…';
+    try{await window.GRID_ALARM_STORE.remove(existing.id,existing.revision);d.close();alert('ลบข้อมูลใน Firebase แล้ว')}
+    catch(error){message.textContent='ลบไม่สำเร็จ: '+(error.message||'กรุณาลองใหม่');buttons.forEach(b=>b.disabled=false)}
+   };
+  }
   d.querySelectorAll('[data-save-section]').forEach(button=>button.onclick=async()=>{
    const block=button.closest('[data-alarm-section]'),message=block.querySelector('[data-section-status]');
    const controls=[...block.querySelectorAll('input,select,textarea')];
