@@ -5,7 +5,7 @@ import {createPresence} from './presence.js?v=20261029-presence';
 import {createMembersPage} from './members.js?v=20261029-members3';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261030-optional';
-import {dashboardHtml,latestUpdatesHtml,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261103-drilldown';
+import {dashboardHtml,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261103-alarm-drilldown';
 import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261031-abnormal-local';
 import {rotateLogins,loginEntries,loginTime,publicLoginEntries,rotatePublicLogins} from './login-history.js?v=20261029-ten';
 'use strict';
@@ -303,11 +303,12 @@ $('#export-pdf').onclick=()=>{
 $('#dashboard').addEventListener('click',e=>{
  const button=e.target.closest('[data-fault-type]');if(!button||!cloudReady)return;
  const type=button.dataset.faultType;
- const rows=faultRecordsForType(data,type).sort(compareEventDates).map(r=>({
+ const alarm=button.dataset.summaryKind==='alarm';
+ const rows=(alarm?alarmRecordsForType(data,type):faultRecordsForType(data,type)).sort(compareEventDates).map(r=>({
   date:dateLabel(r),station:r.station,category:r.category,equipment:mergedEquipment(r),cause:r.cause,
   criticality:({high:'สูง',medium:'ปานกลาง',low:'ต่ำ'})[r.criticality]||'ยังไม่ประเมิน'
  }));
  const page=window.open('','_blank');
  if(!page){toast('กรุณาอนุญาตให้เปิดหน้าต่างใหม่เพื่อดูตาราง');return;}
- page.opener=null;page.document.write(faultTablePage(type,rows));page.document.close();
+ page.opener=null;page.document.write(faultTablePage(type,rows,alarm));page.document.close();
 });
