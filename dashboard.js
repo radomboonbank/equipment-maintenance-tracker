@@ -23,7 +23,7 @@ export function sixPanelSummary(records){
 }
 export function dashboardHtml(records,assessment=null,now=new Date()){
  const {open,faults,alarms,construction,count}=sixPanelSummary(records);
- const bars=(items)=>{const max=Math.max(1,...items.map(x=>x[1]));return items.map(([label,n,color])=>`<div class="grid-summary-row"><span>${esc(label)}</span><div class="grid-summary-track"><i style="width:${n/max*100}%;background:${color}"></i></div><b>${n}</b></div>`).join('')};
+ const bars=(items)=>{const max=Math.max(1,...items.map(x=>x[1]));return [...items].sort((a,b)=>b[1]-a[1]).map(([label,n,color])=>`<div class="grid-summary-row"><span>${esc(label)}</span><div class="grid-summary-track"><i style="width:${n/max*100}%;background:${color}"></i></div><b>${n}</b></div>`).join('')};
  const panel=(n,title,items,note)=>`<article class="grid-summary-panel"><header><span class="grid-summary-number">${n}</span><h3>${title}</h3></header>${bars(items)}<p>${esc(note)}</p></article>`;
  const alarmTypes=[['หม้อแปลง','หม้อแปลงไฟฟ้า'],['เบรคเกอร์','เซอร์กิตเบรกเกอร์'],['ระบบสื่อสาร','ระบบสื่อสาร'],['รีเลย์','รีเลย์ระบบป้องกัน'],['อุปกรณ์สฟ.','อุปกรณ์ภายใน สฟ.']];
  const constructionTypes=[['สถานีไฟฟ้า','สถานีไฟฟ้า'],['สายส่งไฟฟ้า','สายส่งไฟฟ้า'],['หม้อแปลงไฟฟ้า','หม้อแปลงไฟฟ้า'],['เบรคเกอร์','เซอร์กิตเบรกเกอร์'],['คาปาซิเตอร์','คาปาซิเตอร์แบงค์']];
