@@ -31,7 +31,7 @@ export function storedAlarmRecords(documents){
  return documents.filter(x=>[1,2,3].includes(x.section)&&x.data).map(x=>{
   const d=x.data,bess=x.section===2,winding=x.section===3;
   const pb=Array.isArray(d['bess-1-pb'])?d['bess-1-pb'].map(v=>'PB.'+v).join(', '):'';
-  return {id:'alarm:'+x.id,date:iso(bess?d['bess-1-date']:winding?d.windingDate:d.receivedDate),
+  return {id:'alarm:'+x.id,updatedAt:x.updatedAt,createdAt:x.createdAt,updatedByName:x.updatedByName,updatedByUsername:x.updatedByUsername,date:iso(bess?d['bess-1-date']:winding?d.windingDate:d.receivedDate),
    eventType:winding||d.alarmGroup==='Winding Temp'?'Winding Temp Alarm':'Abnormal Alarm',
    category:bess?'BESS ทริป':types[d.alarmGroup]||d.alarmGroup||'',
    station:winding?d.windingStation:d.station||'',
@@ -80,7 +80,7 @@ export function latestRecordUpdates(records){
  return records.map(r=>{
   const history=[...(r.history||[])].sort((a,b)=>updateMillis(b.at)-updateMillis(a.at));const last=history[0];
   const at=updateMillis(r.updatedAt)||updateMillis(last?.at)||updateMillis(r.createdAt);
-  const author=/[\u0E00-\u0E7F]/.test(last?.displayName||'')?last.displayName:names.get(last?.by)||'ไม่พบชื่อผู้บันทึกในประวัติ';
+  const author=/[\u0E00-\u0E7F]/.test(r.updatedByName||'')?r.updatedByName:/[\u0E00-\u0E7F]/.test(last?.displayName||'')?last.displayName:names.get(r.updatedByUsername||last?.by)||r.updatedByName||'ไม่พบชื่อผู้บันทึกในประวัติ';
   return {record:r,at,author};
  }).filter(x=>x.at).sort((a,b)=>b.at-a.at||String(a.record.id||a.record.code).localeCompare(String(b.record.id||b.record.code))).slice(0,3);
 }
