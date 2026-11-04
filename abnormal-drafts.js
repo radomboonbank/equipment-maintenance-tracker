@@ -4,7 +4,7 @@
  const reporterFields=prefix=>`<div class="construction-grid alarm-section-reporter">${field(prefix+'ReporterName','แจ้ง พนักงานประจำ สฟ. ชื่อ','ชื่อพนักงาน')}<label>เบอร์มือถือ<input type="tel" name="${prefix}ReporterPhone" maxlength="50" placeholder="เบอร์มือถือ"></label></div>`;
  const section=(n,title,content)=>`<fieldset class="construction-section" data-alarm-section="${n}"><legend>${n}. ${title}</legend><div class="construction-grid">${content}</div><div class="alarm-section-save"><p role="status" data-section-status></p><button type="button" data-close>ปิด</button><button type="button" class="primary" data-save-section="${n}">บันทึกข้อมูล</button></div></fieldset>`;
  window.openAbnormalDraft=(existing=null,targetDocument=document)=>{
-  const document=targetDocument, Event=document.defaultView.Event;
+  const document=targetDocument, Event=document.defaultView.Event, dialogWindow=document.defaultView;
   const offlinePreview=location.protocol==='file:'&&!window.GRID_ALARM_STORE;
   const d=document.createElement('dialog');d.className='work-draft-dialog';
   d.innerHTML=`<form class="work-draft-form"><div class="work-draft-title"><div><small style="color:#087f85">ALARM REPORT</small><h2>แจ้ง Abnormal Alarm</h2></div><button type="button" data-close aria-label="ปิดหน้าต่าง">✕</button></div><p>ทุกช่องเว้นว่างได้ · บันทึกแยกแต่ละข้อ</p>`+
@@ -26,10 +26,10 @@
    actions.prepend(remove);
    remove.onclick=async()=>{
     if(remove.disabled||!window.GRID_ALARM_STORE.canDelete())return;
-    if(!confirm('ยืนยันลบรายการนี้ออกจาก Firebase ถาวรหรือไม่?'))return;
+    if(!dialogWindow.confirm('ยืนยันลบรายการนี้ออกจาก Firebase ถาวรหรือไม่?'))return;
     const buttons=[...actions.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);
     const message=actions.querySelector('[data-section-status]');message.textContent='กำลังลบ…';
-    try{await window.GRID_ALARM_STORE.remove(existing.id,existing.revision);d.close();alert('ลบข้อมูลใน Firebase แล้ว')}
+    try{await window.GRID_ALARM_STORE.remove(existing.id,existing.revision);d.close();document.querySelectorAll('[data-edit-alarm]').forEach(button=>{if(button.dataset.editAlarm==='alarm:'+existing.id)button.closest('tr')?.remove()});dialogWindow.alert('ลบข้อมูลใน Firebase แล้ว')}
     catch(error){message.textContent='ลบไม่สำเร็จ: '+(error.message||'กรุณาลองใหม่');buttons.forEach(b=>b.disabled=false)}
    };
   }
