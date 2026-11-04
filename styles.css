@@ -226,3 +226,8 @@ aside #members-nav{font-size:12px;line-height:1.5}
 .severity-button.extreme{background:#ff0000;color:white}.severity-button.severe{background:#ff6600}.severity-button.moderate{background:#ffff00}.severity-button.minor{background:#00ee00}
 .severity-button:has(input:checked){border-color:#123a5c;box-shadow:0 0 0 3px #8fd3ff}.severity-button:focus-within{outline:2px solid #123a5c;outline-offset:3px}
 @media(max-width:600px){.severity-buttons{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Offline: compact assessment illustration and follow-up timestamp action. */
+.severity-criteria-image{max-width:800px;margin-bottom:14px}
+.severity-button{font-size:13px;padding:10px 8px}
+.followup-now{display:block;white-space:nowrap;font-size:11px!important;padding:6px 8px!important;margin-top:8px;border-radius:7px;color:#087f83;background:#eaf7f8}
