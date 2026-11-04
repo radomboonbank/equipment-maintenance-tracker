@@ -382,8 +382,15 @@ $('#dashboard').addEventListener('click',e=>{
   const record=(stored?alarmData:data).find(r=>r.id===id);
   if(!record){toast('ไม่พบรายการ กรุณาเปิดตารางใหม่');return;}
   window.focus();
-  if(stored)window.openAbnormalDraft(record);else edit(record);
-  page.close();
+  if(stored){
+   try{
+    if(!page.document.querySelector('[data-alarm-editor-assets]')){
+     const style=page.document.createElement('link');style.rel='stylesheet';style.href=new URL('./styles.css',location.href).href;style.dataset.alarmEditorAssets='true';page.document.head.append(style);
+     for(const file of ['date-pickers.js','time-pickers.js']){const script=page.document.createElement('script');script.src=new URL(file,location.href).href;page.document.head.append(script)}
+    }
+    window.openAbnormalDraft(record,page.document);page.focus();
+   }catch(error){console.error('Cannot open alarm editor',error);page.alert('เปิดข้อมูลไม่สำเร็จ: '+error.message)}
+  }else{edit(record);page.close();}
  }));
  page.document.getElementById('close-table-page').addEventListener('click',()=>page.close());
 });
