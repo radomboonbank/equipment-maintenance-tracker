@@ -7,7 +7,7 @@ import {matchesListFilters,compareEventDates} from './table-filters.js?v=2026102
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261030-optional';
 import {dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261103-fault-heading';
 import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261031-abnormal-local';
-import {rotateLogins,loginEntries,loginTime,publicLoginEntries,rotatePublicLogins} from './login-history.js?v=20261029-ten';
+import {rotateLogins,loginEntries,loginTime,nextLoginStat,rotatePublicLogins} from './login-history.js?v=20261104-stats';
 'use strict';
 import {dateParts,dateText,stamp,credential,loginEmail,readDate,normalizeTime,mergedEquipment} from './utils.js?v=20261027-merged';
 const $=s=>document.querySelector(s), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -39,6 +39,14 @@ function renderLogins(value,message='') {
  $('#last-logins-list').innerHTML=message?`<li class="login-empty">${esc(message)}</li>`:entries.length?entries.map((entry,i)=>`<li><span class="login-rank">0${i+1}</span><div class="login-entry"><strong>${esc(entry.displayName || entry.username)}</strong><time>${esc(loginTime(entry.at))}</time></div></li>`).join(''):'<li class="login-empty">ยังไม่มีประวัติการเข้าสู่ระบบ</li>';
 }
 async function recordLogin() {
+ const statsRef=cloud.doc(cloud.db,'publicLoginStats',user.uid);
+ try {
+  await cloud.runTransaction(cloud.db,async transaction=>{
+   const snapshot=await transaction.get(statsRef);
+   transaction.set(statsRef,nextLoginStat(snapshot.exists()?snapshot.data():null,displayName||username,cloud.serverTimestamp()));
+  });
+ } catch(error){console.warn('Login statistics unavailable:',error.code)}
+
  const ref=cloud.doc(cloud.db,'loginHistory','recent');
  const publicRef=cloud.doc(cloud.db,'publicLoginHistory','recent');
  await cloud.runTransaction(cloud.db,async transaction=>{
@@ -51,10 +59,11 @@ async function recordLogin() {
 
 function watchPublicLogins(){
  const list=$('#public-logins-list');
- cloud.onSnapshot(cloud.doc(cloud.db,'publicLoginHistory','recent'),snapshot=>{
-  const entries=publicLoginEntries(snapshot.exists()?snapshot.data():null);
-  list.innerHTML=entries.length?entries.map((entry,i)=>`<li><span class="login-rank">${String(i+1).padStart(2,'0')}</span><div class="login-entry"><strong>${esc(entry.displayName)}</strong><time>${esc(loginTime(entry.at))}</time></div></li>`).join(''):'<li class="login-empty">ยังไม่มีประวัติการเข้าสู่ระบบ</li>';
- },error=>{list.innerHTML='<li class="login-empty">ยังโหลดประวัติไม่ได้ กรุณาลองเปิดหน้าใหม่ภายหลัง</li>';console.warn('Public login history unavailable:',error.code)});
+ const query=cloud.query(cloud.collection(cloud.db,'publicLoginStats'),cloud.orderBy('lastLoginAt','desc'),cloud.limit(10));
+ cloud.onSnapshot(query,snapshot=>{
+  const entries=snapshot.docs.map(doc=>doc.data());
+  list.innerHTML=entries.length?entries.map((entry,i)=>`<li><span class="login-rank">${String(i+1).padStart(2,'0')}</span><div class="login-entry"><strong>${esc(entry.displayName)} (${esc(entry.count)} ครั้ง)</strong><time>${esc(loginTime(entry.lastLoginAt))}</time></div></li>`).join(''):'<li class="login-empty">ยังไม่มีสถิติการเข้าสู่ระบบ</li>';
+ },error=>{list.innerHTML='<li class="login-empty">ยังโหลดสถิติไม่ได้ กรุณาลองใหม่ภายหลัง</li>';console.warn('Public login statistics unavailable:',error.code)});
 }
 function watchLogins() {
  unsubscribeLogins?.();unsubscribeLogins=null;

@@ -9,3 +9,8 @@ export function loginTime(value){
 export const publicLoginSlots=['first','second','third','fourth','fifth','sixth','seventh','eighth','ninth','tenth'];
 export function publicLoginEntries(value){return publicLoginSlots.map(key=>value?.[key]).filter(Boolean)}
 export function rotatePublicLogins(previous,entry){return Object.fromEntries(publicLoginSlots.map((key,i)=>[key,i===0?entry:previous?.[publicLoginSlots[i-1]]||null]))}
+
+// Counts start when statistics are enabled; the rolling history is not a lifetime archive.
+export function nextLoginStat(previous,displayName,now){
+ return {displayName,count:(previous?.count||0)+1,firstLoginAt:previous?.firstLoginAt||now,lastLoginAt:now};
+}

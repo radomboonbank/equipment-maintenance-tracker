@@ -110,6 +110,27 @@ service cloud.firestore {
    allow create, update, delete: if false;
   }
 
+  // Public login counts contain no employee IDs, passwords, or role data.
+  match /publicLoginStats/{uid} {
+   allow get: if true;
+   allow list: if request.query.limit != null && request.query.limit <= 10;
+   allow create: if validLoginStat(uid) && request.resource.data.count == 1
+    && request.resource.data.firstLoginAt == request.time;
+   allow update: if validLoginStat(uid)
+    && request.resource.data.count == resource.data.count + 1
+    && request.resource.data.firstLoginAt == resource.data.firstLoginAt;
+   allow delete: if false;
+  }
+  function validLoginStat(uid) {
+   let d=request.resource.data;
+   return account() && request.auth.uid == uid && role() in ['admin','editor','viewer']
+    && d.keys().hasAll(['displayName','count','firstLoginAt','lastLoginAt'])
+    && d.keys().hasOnly(['displayName','count','firstLoginAt','lastLoginAt'])
+    && d.displayName == get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.get('displayName', get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.username)
+    && d.count is int && d.count > 0
+    && d.firstLoginAt is timestamp && d.lastLoginAt == request.time;
+  }
+
   // Public projection contains only names and login times, never employee IDs or UIDs.
   match /publicLoginHistory/{id} {
    allow get: if id == 'recent';
