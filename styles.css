@@ -202,3 +202,9 @@ aside #members-nav{font-size:12px;line-height:1.5}
 .login-session-avatar{width:32px;height:32px;object-fit:contain;flex:none}
 
 .list-panel .table-sort{display:inline-flex;align-items:center;gap:8px;background:transparent;border:0;border-radius:4px;padding:4px 0;color:inherit;font:inherit;text-align:left;cursor:pointer;white-space:nowrap}.table-sort .sort-mark{font-size:10px}.list-panel .table-sort:hover{color:#008ab8}.list-panel .table-sort:focus-visible{outline:2px solid #008ab8;outline-offset:4px}
+
+/* Keep every active user visible in the header, including narrow screens. */
+#login-session-label{flex-wrap:wrap;gap:8px 18px;min-width:0;flex:1}
+#login-session-label .login-session-user{display:inline-flex;align-items:center;gap:4px;padding:0;color:inherit}
+#login-session-label .login-session-text{padding:0;white-space:nowrap;color:inherit}
+#equipment-page>header{height:auto;min-height:76px;gap:16px;padding-block:12px;flex-wrap:wrap}

@@ -19,16 +19,30 @@ let data=[],notes=[],page=1,view='all',editing=null,cloud=null,unsubscribe=null,
 
 let role='guest',username='',displayName='',generation=0;
 let loginStartedAt=null;
+let headerOnlineUsers=[];
+const onlineLoginInfo=new Map();
 function updateLoginSession(){
  const label=document.getElementById('login-session-label');if(!label)return;
- const signedIn=loginStartedAt&&role!=='guest';
- const showAvatar=Boolean(signedIn&&username==='559350'&&role==='admin'&&memberDuty==='super admin');
- let text=label.querySelector('.login-session-text');
- if(!text){label.replaceChildren();text=document.createElement('span');text.className='login-session-text';label.append(text);}
- let avatar=label.querySelector('.login-session-avatar');
- if(showAvatar&&!avatar){avatar=document.createElement('img');avatar.className='login-session-avatar';avatar.src='admin-559350.ico';avatar.alt='';avatar.width=32;avatar.height=32;label.prepend(avatar);}
- if(!showAvatar&&avatar)avatar.remove();
- text.textContent=signedIn?`${username} (${Math.max(0,Math.floor((Date.now()-loginStartedAt)/60000))} นาที)`:'ผู้ชมทั่วไป';
+ label.replaceChildren();
+ if(role==='guest'){label.textContent='ผู้ชมทั่วไป';return}
+ const entries=headerOnlineUsers.length?headerOnlineUsers:(user?[{uid:user.uid,displayName:displayName||username}]:[]);
+ for(const entry of entries){
+  const own=entry.uid===user?.uid, info=onlineLoginInfo.get(entry.uid)||{};
+  const started=own?loginStartedAt:info.started;
+  const name=own?username:(info.username||entry.displayName);
+  const item=document.createElement('span');item.className='login-session-user';
+  if(own&&username==='559350'&&role==='admin'&&memberDuty==='super admin'){
+   const avatar=document.createElement('img');avatar.className='login-session-avatar';avatar.src='admin-559350.ico';avatar.alt='';avatar.width=32;avatar.height=32;item.append(avatar);
+  }
+  const text=document.createElement('span');text.className='login-session-text';
+  text.textContent=started?`${name} (${Math.max(0,Math.floor((Date.now()-started)/60000))} นาที)`:`${name} (ออนไลน์)`;
+  item.append(text);label.append(item);
+ }
+}
+function rememberLogin(uid,entry){
+ const previous=onlineLoginInfo.get(uid)||{};
+ const started=entry.at?.toMillis?.()??entry.lastLoginAt?.toMillis?.();
+ onlineLoginInfo.set(uid,{...previous,...(entry.username?{username:entry.username}:{}),...(started?{started:Math.max(previous.started||0,started)}:{})});
 }
 let memberDuty='';
 const membersPage=createMembersPage({session:()=>({cloud,user,role,duty:memberDuty}),endpoint:()=>window.GRID_TELEGRAM_URL});
@@ -36,6 +50,7 @@ const membersPage=createMembersPage({session:()=>({cloud,user,role,duty:memberDu
 let unsubscribeLogins=null;
 function renderLogins(value,message='') {
  const entries=loginEntries(value);
+ entries.forEach(entry=>rememberLogin(entry.uid,entry));updateLoginSession();
  $('#last-logins-list').innerHTML=message?`<li class="login-empty">${esc(message)}</li>`:entries.length?entries.map((entry,i)=>`<li><span class="login-rank">0${i+1}</span><div class="login-entry"><strong>${esc(entry.displayName || entry.username)}</strong><time>${esc(loginTime(entry.at))}</time></div></li>`).join(''):'<li class="login-empty">ยังไม่มีประวัติการเข้าสู่ระบบ</li>';
 }
 async function recordLogin() {
@@ -61,6 +76,7 @@ function watchPublicLogins(){
  const list=$('#public-logins-list');
  const query=cloud.query(cloud.collection(cloud.db,'publicLoginStats'),cloud.orderBy('lastLoginAt','desc'),cloud.limit(10));
  cloud.onSnapshot(query,snapshot=>{
+  snapshot.docs.forEach(doc=>rememberLogin(doc.id,doc.data()));updateLoginSession();
   const entries=snapshot.docs.map(doc=>doc.data());
   list.innerHTML=entries.length?entries.map((entry,i)=>`<li><span class="login-rank">${String(i+1).padStart(2,'0')}</span><div class="login-entry"><strong>${esc(entry.displayName)} (${esc(entry.count)} ครั้ง)</strong><time>${esc(loginTime(entry.lastLoginAt))}</time></div></li>`).join(''):'<li class="login-empty">ยังไม่มีสถิติการเข้าสู่ระบบ</li>';
  },error=>{list.innerHTML='<li class="login-empty">ยังโหลดสถิติไม่ได้ กรุณาลองใหม่ภายหลัง</li>';console.warn('Public login statistics unavailable:',error.code)});
@@ -88,7 +104,7 @@ $('#event-filter').innerHTML='<option value="">ทุกประเภทเห
 $('#equipment-filter').innerHTML='<option value="">ทุกชนิดอุปกรณ์หลัก</option>'+options(Object.fromEntries(equipmentTypes.map(v=>[v.name,v.name])));
 function updateClock(){updateLoginSession();const now=new Date();$('#today').dateTime=now.toISOString();$('#today').innerHTML=`<span>${now.toLocaleDateString('th-TH-u-ca-buddhist',{timeZone:'Asia/Bangkok',day:'numeric',month:'long',year:'numeric'})}</span><strong>${now.toLocaleTimeString('en-GB',{timeZone:'Asia/Bangkok',hour12:false})}</strong>`}
 updateClock();setInterval(updateClock,1000);
-const presence=createPresence({render(entries,message){$('#online-count').textContent=message?'—':entries.length;$('#online-list').innerHTML=message?`<li class="online-empty">${esc(message)}</li>`:entries.length?entries.map(entry=>`<li><span class="online-avatar" aria-hidden="true">${esc(Array.from(entry.displayName)[0]||'●')}</span><div><strong>${esc(entry.displayName)}</strong><small>${entry.uid===user?.uid?'คุณ · ':''}เชื่อมต่อล่าสุด ${new Date(entry.at).toLocaleTimeString('en-GB',{timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit'})}</small></div><span class="online-dot" aria-label="ออนไลน์"></span></li>`).join(''):'<li>ยังไม่มีผู้ใช้ออนไลน์</li>'}});
+const presence=createPresence({render(entries,message){headerOnlineUsers=message?[]:entries;updateLoginSession();$('#online-count').textContent=message?'—':entries.length;$('#online-list').innerHTML=message?`<li class="online-empty">${esc(message)}</li>`:entries.length?entries.map(entry=>`<li><span class="online-avatar" aria-hidden="true">${esc(Array.from(entry.displayName)[0]||'●')}</span><div><strong>${esc(entry.displayName)}</strong><small>${entry.uid===user?.uid?'คุณ · ':''}เชื่อมต่อล่าสุด ${new Date(entry.at).toLocaleTimeString('en-GB',{timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit'})}</small></div><span class="online-dot" aria-label="ออนไลน์"></span></li>`).join(''):'<li>ยังไม่มีผู้ใช้ออนไลน์</li>'}});
 let tableSort={key:'date',direction:'desc'};
 function compareTableRows(a,b){
  const {key,direction}=tableSort;
@@ -271,7 +287,7 @@ $('#delete').onclick=async()=>{
  busy=true;$('#delete').disabled=true;
  try{const original=editing;await cloud.runTransaction(cloud.db,async t=>{const ref=cloud.doc(cloud.db,'equipment',original.id),snap=await t.get(ref);if(!snap.exists()||snap.data().revision!==original.revision)throw Error('ข้อมูลเปลี่ยนแปลง กรุณาเปิดใหม่');t.delete(ref)});$('#editor').close();toast('ลบรายการแล้ว')}catch(err){toast('ลบไม่สำเร็จ: '+err.message)}finally{busy=false;$('#delete').disabled=false}
 };
-function resetSession(){loginStartedAt=null;unsubscribeAlarms?.();unsubscribeAlarms=null;alarmData=[];alarmState='loading';idleSession.stop();document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());unsubscribeConstruction?.();unsubscribeConstruction=null;constructionData=[];constructionState='loading';presence.stop();membersPage.reset();memberDuty="";generation++;unsubscribeLogins?.();unsubscribeLogins=null;renderLogins(null);unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';displayName='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
+function resetSession(){headerOnlineUsers=[];onlineLoginInfo.clear();loginStartedAt=null;unsubscribeAlarms?.();unsubscribeAlarms=null;alarmData=[];alarmState='loading';idleSession.stop();document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());unsubscribeConstruction?.();unsubscribeConstruction=null;constructionData=[];constructionState='loading';presence.stop();membersPage.reset();memberDuty="";generation++;unsubscribeLogins?.();unsubscribeLogins=null;renderLogins(null);unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';displayName='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
 function showWorkspace(){updateLoginSession();idleSession.start();
  $('#current-account').textContent=role==='guest'?'ผู้ชมทั่วไป':`บัญชีของคุณ: ${displayName||username}`;
  presence.start(cloud,role==='guest'?null:user,displayName||username);
