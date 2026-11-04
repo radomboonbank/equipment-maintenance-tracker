@@ -1,6 +1,6 @@
 import {encodeSeverityRecord,decodeSeverityRecord} from './severity-record.js?v=20261104-legacy-levels';
 import {createIdleSession} from './idle-session.js?v=20261103';
-import {createConstructionStore} from './construction-store.js?v=20261103-construction';
+import {createConstructionStore} from './construction-store.js?v=20261104-delete';
 import {createAlarmStore} from './alarm-store.js?v=20261103-super-delete';
 import {createPresence} from './presence.js?v=20261029-presence';
 import {createMembersPage} from './members.js?v=20261029-members3';
@@ -95,7 +95,7 @@ function watchLogins() {
 
 let alarmData=[],alarmState='loading',unsubscribeAlarms=null;
 let constructionData=[],constructionState='loading',unsubscribeConstruction=null;
-window.GRID_CONSTRUCTION_STORE=createConstructionStore(()=>({cloud,user,role,username,displayName}));
+window.GRID_CONSTRUCTION_STORE=createConstructionStore(()=>({cloud,user,role,username,displayName,duty:memberDuty}));
 window.GRID_ALARM_STORE=createAlarmStore(()=>({cloud,user,role,username,displayName,duty:memberDuty}));
 const canEdit=()=>cloudReady&&['admin','editor'].includes(role);
 function toast(message){$('#toast').textContent=message;$('#toast').classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('#toast').classList.remove('show'),6000)}

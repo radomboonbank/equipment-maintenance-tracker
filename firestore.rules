@@ -84,7 +84,7 @@ service cloud.firestore {
     && request.resource.data.createdBy == resource.data.createdBy
     && request.resource.data.createdAt == resource.data.createdAt
     && request.resource.data.revision == resource.data.revision + 1;
-   allow delete: if false;
+   allow delete: if superAdmin() && id != '_schema';
   }
   function constructionValid() {
    let d=request.resource.data;

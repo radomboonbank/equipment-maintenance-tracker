@@ -1,7 +1,7 @@
 (() => {
  const groups={construction:['ข้อมูลงานก่อสร้าง',['สถานีไฟฟ้า','สายส่งไฟฟ้า','หม้อแปลงไฟฟ้า','เบรคเกอร์','คาปาซิเตอร์']],important:['ข้อมูลงานสำคัญ อปก.',['BESS','LPLC','TSLC','Data Center']]};
 
- const constructionEquipmentTypes=["หม้อแปลงไฟฟ้า", "สายส่งไฟฟ้า", "เซอร์กิตเบรกเกอร์", "Disconnecting SW", "คาปาซิเตอร์แบงค์", "รีเลย์ระบบป้องกัน", "ระบบสื่อสาร"];
+ const constructionEquipmentTypes=["สถานีไฟฟ้า", "หม้อแปลงไฟฟ้า", "สายส่งไฟฟ้า", "เซอร์กิตเบรกเกอร์", "Disconnecting SW", "คาปาซิเตอร์แบงค์", "รีเลย์ระบบป้องกัน", "ระบบสื่อสาร"];
  const constructionSections=[
  ['ข้อมูลโครงการ',[
  ['projectId','เลขที่โครงการ (Project ID)'],['title','ชื่อโครงการ'],['scope','ขอบเขตงาน','long'],['category','ประเภทงาน','constructionType']]],
@@ -22,6 +22,19 @@
   const [title,choices]=groups[kind];
   let savedId=record?.id||null,pending=false;const online=kind==='construction'&&!!window.GRID_CONSTRUCTION_STORE;const dialog=document.createElement('dialog');dialog.className='work-draft-dialog';
   dialog.innerHTML=`<form class="work-draft-form"><!-- All construction fields are optional. --><div class="work-draft-title"><h2>${title}</h2><button type="button" class="work-draft-close" data-cancel aria-label="ปิดหน้าต่าง">✕</button></div><p>${online?'บันทึกข้อมูลใน Firebase · สรุปยอดงานก่อสร้างอัตโนมัติ':'แบบทดลองออฟไลน์ · เก็บเฉพาะในเบราว์เซอร์เครื่องนี้ ยังไม่รวมยอด Dashboard'}</p>${kind==='construction'?constructionForm():`<label>ประเภท<select name="category"><option value="">ยังไม่ระบุ</option>${choices.map(x=>`<option>${x}</option>`).join('')}</select></label><label>ชื่อโครงการ / งาน<input name="title" maxlength="250"></label><label>สถานีไฟฟ้า / พื้นที่<input name="station" maxlength="250"></label><label>รายละเอียด<textarea name="details" maxlength="4000"></textarea></label><label>ผู้รับผิดชอบ<input name="owner" maxlength="250"></label>`}<p role="status"></p><div class="work-action-buttons"><button type="button" data-cancel>ปิด</button><button class="primary">${online?'บันทึกข้อมูล':'บันทึกฉบับร่างในเครื่อง'}</button></div></form>`;
+  if(record?.id&&online&&window.GRID_CONSTRUCTION_STORE.canDelete?.()){
+   const actions=dialog.querySelector('.work-action-buttons');
+   const remove=document.createElement('button');remove.type='button';remove.className='danger delete-record';remove.textContent='ลบรายการ';actions.prepend(remove);
+   remove.onclick=async()=>{
+    if(pending||!window.GRID_CONSTRUCTION_STORE.canDelete())return;
+    if(!dialog.ownerDocument.defaultView.confirm('ยืนยันลบรายการงานก่อสร้างนี้ออกจาก Firebase ถาวรหรือไม่?'))return;
+    const message=dialog.querySelector('[role=status]');pending=true;
+    const buttons=[...actions.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);message.textContent='กำลังลบ…';
+    try{await window.GRID_CONSTRUCTION_STORE.remove(record.id,record.revision);dialog.close();dialog.ownerDocument.defaultView.alert('ลบข้อมูลใน Firebase แล้ว')}
+    catch(error){message.textContent='ลบไม่สำเร็จ: '+(error.code==='permission-denied'?'ไม่มีสิทธิ์ลบรายการ กรุณาตรวจสิทธิ์ Firebase':error.message)}
+    finally{pending=false;buttons.forEach(b=>b.disabled=false)}
+   };
+  }
   if(record?.data)for(const [name,value] of Object.entries(record.data)){const input=dialog.querySelector('form').elements.namedItem(name);if(input)input.value=value??'';}
   document.body.append(dialog);dialog.querySelectorAll('[data-cancel]').forEach(b=>b.onclick=()=>dialog.close());
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});

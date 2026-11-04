@@ -231,3 +231,5 @@ aside #members-nav{font-size:12px;line-height:1.5}
 .severity-criteria-image{max-width:800px;margin-bottom:14px}
 .severity-button{font-size:13px;padding:10px 8px}
 .followup-now{display:block;white-space:nowrap;font-size:11px!important;padding:6px 8px!important;margin-top:8px;border-radius:7px;color:#087f83;background:#eaf7f8}
+
+.work-action-buttons > .delete-record{margin-right:auto;white-space:nowrap;width:max-content;flex-shrink:0}
