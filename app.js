@@ -1,4 +1,4 @@
-import {encodeSeverityRecord,decodeSeverityRecord} from './severity-record.js?v=20261104';
+import {encodeSeverityRecord,decodeSeverityRecord} from './severity-record.js?v=20261104-legacy-levels';
 import {createIdleSession} from './idle-session.js?v=20261103';
 import {createConstructionStore} from './construction-store.js?v=20261103-construction';
 import {createAlarmStore} from './alarm-store.js?v=20261103-super-delete';
@@ -172,7 +172,7 @@ function setupCategory(value='') {
  main.onchange=()=>refresh();sub.onchange=sync;voltage.onchange=sync;refresh(true);
 }
 const criticalities={extreme:'รุนแรงมาก',severe:'รุนแรง',moderate:'ปานกลาง',minor:'เล็กน้อย'};
-const legacyCriticalities={high:'สูง (เกณฑ์เดิม)',medium:'ปานกลาง (เกณฑ์เดิม)',low:'ต่ำ (เกณฑ์เดิม)'};
+const legacyCriticalities={high:'รุนแรง',medium:'ปานกลาง',low:'เล็กน้อย'};
 function criticalityBadge(value){if(legacyCriticalities[value])return `<span class="badge criticality-unassessed">${legacyCriticalities[value]}</span>`;const level=Object.hasOwn(criticalities,value)?value:'unassessed';return `<span class="badge criticality-badge criticality-${level}"><span aria-hidden="true">●</span> ${level==='unassessed'?'ยังไม่ประเมิน':criticalities[level]}</span>`}
 const severityCriteriaImage=new URL('./assets/severity-criteria.webp',import.meta.url).href;
 function criticalityControl(value='') {
