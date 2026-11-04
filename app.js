@@ -1,3 +1,4 @@
+import {encodeSeverityRecord,decodeSeverityRecord} from './severity-record.js?v=20261104';
 import {createIdleSession} from './idle-session.js?v=20261103';
 import {createConstructionStore} from './construction-store.js?v=20261103-construction';
 import {createAlarmStore} from './alarm-store.js?v=20261103-super-delete';
@@ -5,7 +6,7 @@ import {createPresence} from './presence.js?v=20261029-presence';
 import {createMembersPage} from './members.js?v=20261029-members3';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261030-optional';
-import {dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261103-fault-heading';
+import {dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261104-severity-four';
 import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261031-abnormal-local';
 import {rotateLogins,loginEntries,loginTime,nextLoginStat,rotatePublicLogins} from './login-history.js?v=20261104-stats';
 'use strict';
@@ -110,8 +111,8 @@ function compareTableRows(a,b){
  const {key,direction}=tableSort;
  if(key==='date')return direction==='desc'?compareEventDates(a,b):compareEventDates(b,a);
  const value=r=>key==='equipment'?mergedEquipment(r):key==='eventType'?(r.eventType==='Power Flow Control'?'ข้อจำกัด ระบบส่ง':r.eventType||'ยังไม่ระบุ'):String(r[key]||'');
- const rank={high:0,medium:1,low:2};
- const result=key==='criticality'?(rank[a.criticality]??3)-(rank[b.criticality]??3):String(value(a)).localeCompare(String(value(b)),'th',{numeric:true});
+ const rank={extreme:0,severe:1,moderate:2,minor:3};
+ const result=key==='criticality'?(rank[a.criticality]??4)-(rank[b.criticality]??4):String(value(a)).localeCompare(String(value(b)),'th',{numeric:true});
  return (direction==='asc'?result:-result)||compareEventDates(a,b);
 }
 document.querySelectorAll('[data-sort]').forEach(button=>button.addEventListener('click',()=>{
@@ -170,16 +171,14 @@ function setupCategory(value='') {
  };
  main.onchange=()=>refresh();sub.onchange=sync;voltage.onchange=sync;refresh(true);
 }
-const criticalities={high:'สูง',medium:'ปานกลาง',low:'ต่ำ'};
-function criticalityBadge(value){const level=Object.hasOwn(criticalities,value)?value:'unassessed';return `<span class="badge criticality-badge criticality-${level}"><span aria-hidden="true">●</span> ${level==='unassessed'?'ยังไม่ประเมิน':criticalities[level]}</span>`}
-const criticalityCriteria={
- high:'มีโอกาสทำให้ระบบหลักไม่มั่นคง เกิดเหตุขัดข้องต่อเนื่อง สูญเสียการเชื่อมโยงสำคัญ หรือสูญเสียระบบป้องกัน/ควบคุมที่จำเป็น โดยไม่มีระบบทดแทนที่เพียงพอ',
- medium:'ลดความสามารถส่งจ่ายหรือความสามารถรองรับเหตุขัดข้อง แต่ยังรักษาระบบได้ด้วยเส้นทางสำรอง การปรับระบบ หรือมาตรการที่ผ่านการประเมินแล้ว',
- low:'ผลกระทบจำกัดเฉพาะจุด ระบบทดแทนพร้อมและรองรับได้ โดยไม่กระทบเสถียรภาพหรือข้อจำกัดของระบบหลักตามผลประเมิน'
-};
+const criticalities={extreme:'รุนแรงมาก',severe:'รุนแรง',moderate:'ปานกลาง',minor:'เล็กน้อย'};
+const legacyCriticalities={high:'สูง (เกณฑ์เดิม)',medium:'ปานกลาง (เกณฑ์เดิม)',low:'ต่ำ (เกณฑ์เดิม)'};
+function criticalityBadge(value){if(legacyCriticalities[value])return `<span class="badge criticality-unassessed">${legacyCriticalities[value]}</span>`;const level=Object.hasOwn(criticalities,value)?value:'unassessed';return `<span class="badge criticality-badge criticality-${level}"><span aria-hidden="true">●</span> ${level==='unassessed'?'ยังไม่ประเมิน':criticalities[level]}</span>`}
+const severityCriteriaImage=new URL('./assets/severity-criteria.webp',import.meta.url).href;
 function criticalityControl(value='') {
- return `<fieldset class="criticality-field wide"><legend>ระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า</legend><div class="criticality-header" aria-hidden="true"><span>ระดับ</span><span>เกณฑ์พิจารณาเมื่ออุปกรณ์สูญเสียหน้าที่</span></div>${Object.entries(criticalities).map(([key,label])=>`<label class="criticality-option ${key}"><span class="criticality-choice"><input type="radio" name="criticality" value="${key}" ${value===key?'checked':''} aria-describedby="criticality-${key}-criteria"><span class="criticality-dot" aria-hidden="true"></span><strong>${label}</strong></span><span id="criticality-${key}-criteria" class="criticality-criteria">${criticalityCriteria[key]}</span></label>`).join('')}${!criticalities[value]?'<p class="criticality-unassessed">ยังไม่ประเมิน</p>':''}</fieldset>`;
+ return `<fieldset class="criticality-field wide"><legend>ระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า</legend><img class="severity-criteria-image" src="${severityCriteriaImage}" alt="หลักเกณฑ์การประเมินระดับความรุนแรงของเหตุการณ์ที่มีผลกระทบต่อระบบไฟฟ้า: พื้นที่ไฟดับ ระยะเวลา พลังงานไฟฟ้าที่หายไป และเหตุการณ์สำคัญ"><div class="severity-buttons" role="radiogroup" aria-label="เลือกระดับความสำคัญ">${Object.entries(criticalities).map(([key,label])=>`<label class="severity-button ${key}"><input type="radio" name="criticality" value="${key}" ${value===key?'checked':''}><span>${label}</span></label>`).join('')}</div>${!criticalities[value]?`<p class="criticality-unassessed">${legacyCriticalities[value]||'ยังไม่ประเมิน'}</p>`:''}</fieldset>`;
 }
+
 const assessmentFields={scope:['1. ขอบเขตผลกระทบ','เฉพาะอุปกรณ์ / สถานี / หลายสถานีหรือระบบหลัก'],replacement:['2. ระบบหรืออุปกรณ์ทดแทน','มีและรองรับได้ / มีแต่มีข้อจำกัด / ไม่มี'],effect:['3. ผลต่อระบบ','กระทบการส่งจ่ายไฟอย่างไร และที่ใด'],measures:['4. มาตรการรองรับเหตุการณ์','คืออะไร อย่างไร']};
 function assessmentControl(value={}) {
  return `<fieldset class="assessment-field wide"><legend>ประเมินผลกระทบต่อระบบไฟฟ้า</legend><p id="assessment-requirement" class="assessment-requirement" aria-live="polite"></p><label for="assessment-effect">ประเมินผลกระทบต่อระบบไฟฟ้า<textarea id="assessment-effect" name="assessment-effect" maxlength="4000" rows="5">${esc(value?.effect)}</textarea></label></fieldset>`;
@@ -247,10 +246,10 @@ $('#record-form').onsubmit=async e=>{
  const invalid=Array.from(e.target.elements).find(el=>el.willValidate&&!el.validity.valid);
  if(invalid){const label=invalid.getAttribute('aria-label')||invalid.closest('label')?.textContent?.trim().slice(0,120)||invalid.name||'ช่องข้อมูล';showSaveError('กรุณาตรวจสอบ '+label+' — '+invalid.validationMessage);invalid.scrollIntoView({block:'center'});invalid.focus();invalid.reportValidity();return}
  try{
-  const f=new FormData(e.target),r=Object.fromEntries(Object.keys(fields).map(k=>[k,retiredRecordFields.has(k)?(editing?.[k]??(k==='status'?'pending':k==='priority'?'normal':'')):['date','due'].includes(k)?formDate(f,k):String(f.get(k)||'').trim()]));
+  const f=new FormData(e.target),r=Object.fromEntries(Object.keys(fields).map(k=>[k,retiredRecordFields.has(k)?(editing?.[k]??(k==='status'?'pending':k==='priority'?'normal':'')):['date','due'].includes(k)?formDate(f,k):String(f.get(k)||(k==='criticality'?editing?.criticality:'')||'').trim()]));
   Object.assign(r,readStation(f));
   if(r.eventType&&!eventTypes.includes(r.eventType))throw Error('กรุณาเลือกประเภทเหตุการณ์');
-  if(r.criticality&&!Object.hasOwn(criticalities,r.criticality))throw Error('กรุณาเลือกระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า');
+  if(r.criticality&&!Object.hasOwn(criticalities,r.criticality)&&!Object.hasOwn(legacyCriticalities,r.criticality))throw Error('กรุณาเลือกระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า');
   const criticalityAssessment=Object.fromEntries(Object.keys(assessmentFields).map(key=>[key,String(key==='effect'?(f.get('assessment-effect')||''):(editing?.criticalityAssessment?.[key]||'')).trim()]));
   if(Object.values(criticalityAssessment).some(value=>value.length>4000))throw Error('ผลประเมินแต่ละข้อยาวได้ไม่เกิน 4,000 ตัวอักษร');
   const repairPlan={...Object.fromEntries(['approach','responsible','operatorName','operatorId','operatorMobile'].map(key=>[key,String(f.get('repair-'+key)||'').trim()])),schedule:editing?.repairPlan?.schedule||'',expectedDateUnknown:f.has('repair-unknown'),expectedDate:f.has('repair-unknown')?'':formDate(f,'repair-expected')};
@@ -267,7 +266,7 @@ $('#record-form').onsubmit=async e=>{
   if(editing?.time&&editing.time!==r.time&&!editing.originalTime)next.originalTime=editing.time;
   busy=true;$('#save').disabled=true;$('#save').textContent='กำลังบันทึก…';
   const ref=cloud.doc(cloud.db,'equipment',next.id),original=editing;
-  await cloud.runTransaction(cloud.db,async t=>{const snap=await t.get(ref);if(original&&(!snap.exists()||snap.data().revision!==original.revision))throw Error('ข้อมูลเปลี่ยนแปลงแล้ว กรุณาปิดและเปิดรายการใหม่');if(!original&&snap.exists())throw Error('รหัสซ้ำ กรุณาบันทึกอีกครั้ง');t.set(ref,next);t.set(cloud.doc(cloud.db,'telegramOutbox',next.id+'__'+next.revision),{recordId:next.id,revision:next.revision,record:next,createdBy:user.uid,createdAt:cloud.serverTimestamp(),readyAt:cloud.serverTimestamp(),status:'pending',nextPart:0,attempts:0})});
+  await cloud.runTransaction(cloud.db,async t=>{const snap=await t.get(ref);if(original&&(!snap.exists()||snap.data().revision!==original.revision))throw Error('ข้อมูลเปลี่ยนแปลงแล้ว กรุณาปิดและเปิดรายการใหม่');if(!original&&snap.exists())throw Error('รหัสซ้ำ กรุณาบันทึกอีกครั้ง');t.set(ref,encodeSeverityRecord(next));t.set(cloud.doc(cloud.db,'telegramOutbox',next.id+'__'+next.revision),{recordId:next.id,revision:next.revision,record:next,createdBy:user.uid,createdAt:cloud.serverTimestamp(),readyAt:cloud.serverTimestamp(),status:'pending',nextPart:0,attempts:0})});
     $('#editor').close();toast('บันทึกข้อมูลแล้ว กำลังส่ง Telegram…');
     void sendRecordNotification(next);
  }catch(err){const explanation=err.code==='permission-denied'?'Firebase ไม่อนุญาตให้บันทึก กรุณาตรวจสิทธิ์บัญชีหรือรูปแบบข้อมูล':err.code==='unavailable'?'เชื่อมต่อ Firebase ไม่ได้ กรุณาตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง':err.message;showSaveError('บันทึกไม่สำเร็จ: '+explanation+' (ข้อมูลที่กรอกยังอยู่ในฟอร์ม)');console.warn('Record save failed',{code:err.code||'validation',recordId:editing?.id||null});}finally{busy=false;$('#save').disabled=false;$('#save').textContent='บันทึกข้อมูล'}
@@ -300,7 +299,7 @@ function showWorkspace(){updateLoginSession();idleSession.start();
  if(role!=='guest')unsubscribeAlarms=cloud.onSnapshot(cloud.collection(cloud.db,'AbnormalAlarm'),snap=>{if(gen!==generation)return;alarmData=snap.docs.map(d=>({...d.data(),id:d.id})).filter(d=>[1,2,3].includes(d.section));alarmState='ready';render()},error=>{if(gen!==generation)return;alarmData=[];alarmState='error';render();console.warn('Alarm data unavailable:',error.code)});
  constructionState=role==='guest'?'guest':'loading';
  if(role!=='guest')unsubscribeConstruction=cloud.onSnapshot(cloud.collection(cloud.db,'ConstructionProjects'),snap=>{if(gen!==generation)return;constructionData=snap.docs.map(d=>({...d.data(),id:d.id})).filter(d=>d.type==='construction');constructionState='ready';render()},error=>{if(gen!==generation)return;constructionData=[];constructionState='error';render();console.warn('Construction data unavailable:',error.code)});
- unsubscribe=cloud.onSnapshot(cloud.collection(cloud.db,'equipment'),snap=>{if(gen!==generation)return;data=snap.docs.map(d=>({...d.data(),id:d.id}));cloudReady=true;$('#mode').textContent='Firebase · เชื่อมต่อแล้ว';$('#notice').hidden=true;$('#notice').textContent='';render()},err=>{if(gen!==generation)return;cloudReady=false;data=[];render();$('#notice').hidden=false;$('#notice').textContent='โหลดข้อมูลไม่สำเร็จ กรุณาตรวจการเชื่อมต่อและสิทธิ์';toast(err.code==='permission-denied'?'ยังไม่ได้รับสิทธิ์อ่านฐานข้อมูล':err.message)});
+ unsubscribe=cloud.onSnapshot(cloud.collection(cloud.db,'equipment'),snap=>{if(gen!==generation)return;data=snap.docs.map(d=>decodeSeverityRecord({...d.data(),id:d.id}));cloudReady=true;$('#mode').textContent='Firebase · เชื่อมต่อแล้ว';$('#notice').hidden=true;$('#notice').textContent='';render()},err=>{if(gen!==generation)return;cloudReady=false;data=[];render();$('#notice').hidden=false;$('#notice').textContent='โหลดข้อมูลไม่สำเร็จ กรุณาตรวจการเชื่อมต่อและสิทธิ์';toast(err.code==='permission-denied'?'ยังไม่ได้รับสิทธิ์อ่านฐานข้อมูล':err.message)});
 }
 $('#login').onsubmit=async e=>{
  e.preventDefault();if(!cloud||busy)return;busy=true;$('#login-submit').disabled=true;$('#guest').disabled=true;
@@ -339,7 +338,7 @@ render();init();
 
 // Export the complete loaded snapshot, independent of filters and pagination.
 function reportHtml(records) {
- const levels={high:'สูง',medium:'ปานกลาง',low:'ต่ำ'};
+ const levels={...criticalities,...legacyCriticalities};
  const rows=[...records].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||String(a.station||'').localeCompare(String(b.station||''),'th'));
  return `<!doctype html><html lang="th"><head><meta charset="utf-8"><title>CROD GRID CARE - รายการเหตุการณ์ทั้งหมด</title><style>
  @page{size:A4 landscape;margin:12mm}*{box-sizing:border-box}body{font-family:Tahoma,"Noto Sans Thai",sans-serif;color:#173540;margin:24px;font-size:11pt;line-height:1.6}h1{font-size:19pt;margin:0;color:#087f83}p{margin:4px 0 18px;color:#536b75}.toolbar{display:flex;align-items:center;gap:18px;padding:16px;background:#edf7f7;margin-bottom:24px}button{background:#087f83;color:white;border:0;border-radius:8px;padding:12px 20px;font:inherit;cursor:pointer}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #afc6ca;padding:9px 10px;text-align:left;vertical-align:top;overflow-wrap:anywhere;white-space:pre-wrap}th{background:#e3f1f1;font-weight:bold}tbody tr:nth-child(even){background:#f5f9fa}thead{display:table-header-group}tr{break-inside:avoid}col:nth-child(1){width:14%}col:nth-child(2){width:15%}col:nth-child(3){width:25%}col:nth-child(4){width:30%}col:nth-child(5){width:16%}@media print{body{margin:0;font-size:10pt}.toolbar{display:none}th,td{padding:7px 8px}h1{font-size:17pt}}
@@ -368,7 +367,7 @@ $('#dashboard').addEventListener('click',e=>{
  const rows=(construction?constructionRecordsForType(data,constructionData,type):assessment?assessmentRecordsForType(data,type):alarm?alarmRecordsForType([...data,...storedAlarmRecords(alarmData)],type):faultRecordsForType(data,type)).sort(compareEventDates).map(r=>({
   editId:canEdit()?((r.id.startsWith('alarm:')||r.id.startsWith('construction:'))?r.id:'equipment:'+r.id):'',
   date:dateLabel(r),station:r.station,category:r.category,equipment:mergedEquipment(r),cause:r.cause,
-  criticality:({high:'สูง',medium:'ปานกลาง',low:'ต่ำ'})[r.criticality]||'ยังไม่ประเมิน'
+  criticality:({...criticalities,...legacyCriticalities})[r.criticality]||'ยังไม่ประเมิน'
  }));
  const page=window.open('','_blank');
  if(!page){toast('กรุณาอนุญาตให้เปิดหน้าต่างใหม่เพื่อดูตาราง');return;}

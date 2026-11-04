@@ -208,3 +208,21 @@ aside #members-nav{font-size:12px;line-height:1.5}
 #login-session-label .login-session-user{display:inline-flex;align-items:center;gap:4px;padding:0;color:inherit}
 #login-session-label .login-session-text{padding:0;white-space:nowrap;color:inherit}
 #equipment-page>header{height:auto;min-height:76px;gap:16px;padding-block:12px;flex-wrap:wrap}
+
+/* Four incident severity levels, offline revision. */
+.criticality-option.extreme .criticality-dot{background:#ff0000}
+.criticality-option.severe .criticality-dot{background:#ff6600}
+.criticality-option.moderate .criticality-dot{background:#ffff00;border:1px solid #b8a800}
+.criticality-option.minor .criticality-dot{background:#00ee00}
+.criticality-badge.criticality-extreme{background:#ff0000;color:#fff}
+.criticality-badge.criticality-severe{background:#ff6600;color:#111}
+.criticality-badge.criticality-moderate{background:#ffff00;color:#111}
+.criticality-badge.criticality-minor{background:#00ee00;color:#111}
+
+.severity-criteria-image{display:block;width:100%;max-width:1024px;height:auto;margin:0 auto 20px;border-radius:12px}
+.severity-buttons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.severity-button{display:flex;align-items:center;justify-content:center;gap:10px;padding:14px 10px;border:2px solid transparent;border-radius:10px;cursor:pointer;font-weight:700;color:#111}
+.severity-button input{width:18px;height:18px;margin:0;accent-color:#183b56}
+.severity-button.extreme{background:#ff0000;color:white}.severity-button.severe{background:#ff6600}.severity-button.moderate{background:#ffff00}.severity-button.minor{background:#00ee00}
+.severity-button:has(input:checked){border-color:#123a5c;box-shadow:0 0 0 3px #8fd3ff}.severity-button:focus-within{outline:2px solid #123a5c;outline-offset:3px}
+@media(max-width:600px){.severity-buttons{grid-template-columns:repeat(2,minmax(0,1fr))}}
