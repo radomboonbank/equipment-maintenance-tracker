@@ -173,6 +173,7 @@ aside .brand{font-size:16px;letter-spacing:.3px;gap:9px}aside .brand>span{min-wi
 
 /* Compact transmission database navigation. */
 aside .nav.transmission-link{display:flex;align-items:center;gap:9px;font-size:12px;line-height:1.5;text-decoration:none}aside .transmission-link svg{flex:0 0 20px}aside .transmission-link span{min-width:0}
+aside .overview-link.active{background:none;color:#a6bdc7;box-shadow:none}aside .overview-link.active:hover{background:#244854}
 
 .inventory-transformers tr:first-child th:not(:first-child){font-size:9px;letter-spacing:-.25px}
 .inventory-voltage-table td{font-weight:400}
