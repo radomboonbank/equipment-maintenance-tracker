@@ -233,3 +233,13 @@ aside #members-nav{font-size:12px;line-height:1.5}
 .followup-now{display:block;white-space:nowrap;font-size:11px!important;padding:6px 8px!important;margin-top:8px;border-radius:7px;color:#087f83;background:#eaf7f8}
 
 .work-action-buttons > .delete-record{margin-right:auto;white-space:nowrap;width:max-content;flex-shrink:0}
+
+.line-stations{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:650px){.line-stations{grid-template-columns:1fr}}
+
+/* Offline: smaller assessment reference image. */
+.severity-criteria-image{max-width:600px;margin:0 auto 12px}
+
+/* Editors share the dashboard's font, including browser dialog defaults. */
+dialog,.work-draft-dialog,.member-dialog{font-family:'Noto Sans Thai',Tahoma,sans-serif}
+dialog button,dialog input,dialog select,dialog textarea{font-family:inherit}
