@@ -4,12 +4,12 @@ function manageMember_(input) {
  if(!input || !/^[a-f0-9-]{36}$/.test(input.requestId||'') || ['create','update','delete'].indexOf(input.action)<0)throw Error('Invalid request');
  var uid=authenticate_(input.idToken);
  var actor=memberDoc_(uid);
- if(actor.data.role!=='admin'||actor.data.duty!=='super admin')throw Error('Super admin required');
+ if(actor.data.role!=='admin'||['super admin','king admin'].indexOf(actor.data.duty)<0)throw Error('Super admin required');
  var lock=LockService.getScriptLock();lock.waitLock(20000);
  try{
   // Recheck privileges inside the lock, including after a concurrent demotion.
   actor=memberDoc_(uid);
-  if(actor.data.role!=='admin'||actor.data.duty!=='super admin')throw Error('Super admin required');
+  if(actor.data.role!=='admin'||['super admin','king admin'].indexOf(actor.data.duty)<0)throw Error('Super admin required');
   var path='/memberOperations/'+input.requestId,prior;
   try{prior=firestore_(path,null,'get')}catch(e){if(e.status!==404)throw e}
   if(prior){if(decode_({mapValue:{fields:prior.fields}}).actor!==uid)throw Error('Request conflict');return {ok:true};}
@@ -37,16 +37,16 @@ function applyMember_(action,m,actor,requestId){
  var current=action==='create'?null:memberDoc_(m.uid),old=current?.data;
  if(current && (old.memberVersion||'')!==(m.version||''))memberFail_('ข้อมูลสมาชิกเปลี่ยนแปลงแล้ว กรุณาโหลดใหม่');
  if(action==='delete'&&m.uid===actor)memberFail_('ไม่อนุญาตลบบัญชีตนเอง');
- var roles={'super admin':'admin','cac term':'editor','user':'viewer'};
+ var roles={'king admin':'admin','super admin':'admin','cac term':'editor','user':'viewer'};
  if(action!=='delete'){
   if(typeof m.employeeId!=='string'||!/^[a-z0-9_-]{1,64}$/.test(m.employeeId)||typeof m.displayName!=='string'||!m.displayName.trim()||m.displayName.length>250||typeof m.department!=='string'||m.department.length>250||!(Object.prototype.hasOwnProperty.call(roles,m.duty)||(current&&!old.duty&&m.duty===''&&['admin','editor','viewer'].indexOf(old.role)>=0)))memberFail_('ข้อมูลสมาชิกไม่ถูกต้อง');
   if(m.passwordHash!==undefined && !/^[a-f0-9]{64}$/.test(m.passwordHash))throw Error('Invalid password');
   if(action==='create'&&!m.passwordHash)memberFail_('กรุณากรอกรหัสผ่าน');
   if(current&&old.username!==m.employeeId)memberFail_('ไม่สามารถเปลี่ยนรหัสพนักงานของบัญชีเดิม');
-  if(current&&m.uid===actor&&m.duty!=='super admin')memberFail_('ไม่อนุญาตถอดสิทธิ์ตนเอง');
+  if(current&&m.uid===actor&&['super admin','king admin'].indexOf(m.duty)<0)memberFail_('ไม่อนุญาตถอดสิทธิ์ตนเอง');
  }
- if(current&&old.role==='admin'&&old.duty==='super admin'&&(action==='delete'||m.duty!=='super admin')){
-  var admins=firestore_(':runQuery',{structuredQuery:{from:[{collectionId:'DatabaseLogin'}],where:{fieldFilter:{field:{fieldPath:'duty'},op:'EQUAL',value:{stringValue:'super admin'}}}}}).filter(function(r){return r.document&&decode_({mapValue:{fields:r.document.fields}}).role==='admin'});
+ if(current&&old.role==='admin'&&['super admin','king admin'].indexOf(old.duty)>=0&&(action==='delete'||['super admin','king admin'].indexOf(m.duty)<0)){
+  var admins=firestore_(':runQuery',{structuredQuery:{from:[{collectionId:'DatabaseLogin'}],where:{fieldFilter:{field:{fieldPath:'duty'},op:'IN',value:{arrayValue:{values:[{stringValue:'super admin'},{stringValue:'king admin'}]}}}}}}).filter(function(r){return r.document&&decode_({mapValue:{fields:r.document.fields}}).role==='admin'});
   if(admins.length<=1)memberFail_('ต้องเหลือ super admin อย่างน้อยหนึ่งบัญชี');
  }
  if(action==='delete'){
