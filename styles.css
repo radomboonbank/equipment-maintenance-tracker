@@ -243,3 +243,6 @@ aside #members-nav{font-size:12px;line-height:1.5}
 /* Editors share the dashboard's font, including browser dialog defaults. */
 dialog,.work-draft-dialog,.member-dialog{font-family:'Noto Sans Thai',Tahoma,sans-serif}
 dialog button,dialog input,dialog select,dialog textarea{font-family:inherit}
+
+aside #members-nav:not([hidden]){display:flex;align-items:center;gap:9px}
+.members-menu-icon{display:block;width:24px;height:26px;object-fit:contain;flex-shrink:0;border-radius:3px}
