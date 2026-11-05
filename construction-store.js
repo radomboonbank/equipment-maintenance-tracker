@@ -1,10 +1,10 @@
 // Stores a construction project with server timestamps and editor attribution.
 export function createConstructionStore(getContext){
  return {
-  canDelete(){const {user,role,duty}=getContext();return !!user&&role==='admin'&&['super admin','king admin'].includes(duty)},
+  canDelete(){const {user,role,duty}=getContext();return !!user&&role==='admin'&&duty==='super admin'},
   async remove(id,revision){
    const {cloud,user,role,duty}=getContext();
-   if(!cloud||!user||role!=='admin'||!['super admin','king admin'].includes(duty))throw Error('เฉพาะ super admin เท่านั้นที่ลบได้');
+   if(!cloud||!user||role!=='admin'||duty!=='super admin')throw Error('เฉพาะ super admin เท่านั้นที่ลบได้');
    if(!id||id==='_schema')throw Error('รายการไม่ถูกต้อง');
    const ref=cloud.doc(cloud.db,'ConstructionProjects',id);
    await cloud.runTransaction(cloud.db,async transaction=>{

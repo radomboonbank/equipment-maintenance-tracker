@@ -1,6 +1,6 @@
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function createGenDispatchStore(context){
- const access=()=>{const c=context();return {...c,editable:!!c.user&&['admin','editor'].includes(c.role),deletable:!!c.user&&c.role==='admin'&&['super admin','king admin'].includes(c.duty)}};
+ const access=()=>{const c=context();return {...c,editable:!!c.user&&['admin','editor'].includes(c.role),deletable:!!c.user&&c.role==='admin'&&c.duty==='super admin'}};
  return {
   canEdit:()=>access().editable,canDelete:()=>access().deletable,
   listen(next,error){const c=access();if(!c.cloud||!c.user){error(Error('กรุณาเข้าสู่ระบบเพื่อดูข้อมูล Gen Dispatch'));return ()=>{}}return c.cloud.onSnapshot(c.cloud.collection(c.cloud.db,'GenDispatch'),s=>next(s.docs.map(d=>({...d.data(),id:d.id}))),error)},

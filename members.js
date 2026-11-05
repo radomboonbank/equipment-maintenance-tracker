@@ -1,6 +1,6 @@
 import {credential} from './utils.js';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const duties={'king admin':'สิทธิ์ super admin และไม่หมดเวลาเมื่อไม่ใช้งาน','super admin':'เพิ่ม / แก้ไข / ลบ และจัดการสมาชิก','cac term':'เพิ่ม / แก้ไข','user':'ดูอย่างเดียว'};
+const duties={'super admin':'เพิ่ม / แก้ไข / ลบ และจัดการสมาชิก','cac term':'เพิ่ม / แก้ไข','user':'ดูอย่างเดียว'};
 export function createMembersPage({session,endpoint}) {
  const root=document.querySelector('#members-page'),nav=document.querySelector('#members-nav'),equipment=document.querySelector('#equipment-page');
  let members=[],selected=null,working=false,epoch=0,allowed=false;
