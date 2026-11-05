@@ -253,3 +253,6 @@ svg.members-menu-icon{width:20px;height:24px;flex:0 0 20px;background:transparen
 
 /* Match overview navigation to the other sidebar links. */
 aside .overview-nav{display:flex;align-items:center;gap:9px;font-size:12px;line-height:1.5;font-weight:400}aside .overview-nav svg{flex:0 0 20px}aside .overview-nav.active{background:transparent;color:#a6bdc7;box-shadow:none}
+
+/* Sidebar menu emphasis on pointer hover and keyboard focus. */
+aside .nav{transition:color .15s ease,font-size .15s ease}aside .nav:hover,aside .nav:focus-visible,aside .overview-nav.active:hover,aside #members-nav:hover{color:#ef4444;font-weight:700;font-size:14px;background:transparent}
