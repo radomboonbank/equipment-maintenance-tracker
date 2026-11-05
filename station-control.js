@@ -1,7 +1,8 @@
+import {normalizeStation,stationCodes,validStation} from './record-quality.js?v=20261105-review';
 const escapeStation=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function stationControl(record={}){
  const c=record.stationConnection||{},line=c.mode==='line';
- return `<div class="station-control"><div class="station-heading"><span>สถานีไฟฟ้าแรงสูง</span><button type="button" class="station-line-toggle" aria-pressed="${line}" aria-controls="line-stations">สายส่งไฟฟ้า</button></div><div class="single-station" ${line?'hidden':''}><label><span class="sr-only">สถานีไฟฟ้าแรงสูง</span><input name="station" maxlength="250" value="${escapeStation(record.station)}" ${line?'disabled':''}></label></div><div id="line-stations" class="line-stations" ${line?'':'hidden'}><label>สถานีต้นทาง<input name="stationFrom" maxlength="120" value="${escapeStation(c.from)}" ${line?'':'disabled'}></label><label>สถานีปลายทาง<input name="stationTo" maxlength="120" value="${escapeStation(c.to)}" ${line?'':'disabled'}></label><label>วงจร<input name="stationCircuit" maxlength="120" value="${escapeStation(c.circuit)}" ${line?'':'disabled'}></label></div></div>`;
+ return `<div class="station-control"><datalist id="station-codes">${stationCodes.map(code=>`<option value="${code}"></option>`).join('')}</datalist><div class="station-heading"><span>สถานีไฟฟ้าแรงสูง</span><button type="button" class="station-line-toggle" aria-pressed="${line}" aria-controls="line-stations">สายส่งไฟฟ้า</button></div><div class="single-station" ${line?'hidden':''}><label><span class="sr-only">สถานีไฟฟ้าแรงสูง</span><input list="station-codes" name="station" maxlength="250" value="${escapeStation(record.station)}" ${line?'disabled':''}></label></div><div id="line-stations" class="line-stations" ${line?'':'hidden'}><label>สถานีต้นทาง<input list="station-codes" name="stationFrom" maxlength="120" value="${escapeStation(c.from)}" ${line?'':'disabled'}></label><label>สถานีปลายทาง<input list="station-codes" name="stationTo" maxlength="120" value="${escapeStation(c.to)}" ${line?'':'disabled'}></label><label>วงจร<input name="stationCircuit" maxlength="120" value="${escapeStation(c.circuit)}" ${line?'':'disabled'}></label></div></div>`;
 }
 export function setupStation(root,editable=true){
  const button=root.querySelector('.station-line-toggle'),single=root.querySelector('.single-station'),line=root.querySelector('.line-stations'),station=root.querySelector('[name=station]'),from=root.querySelector('[name=stationFrom]'),to=root.querySelector('[name=stationTo]'),circuit=root.querySelector('[name=stationCircuit]');
@@ -11,7 +12,7 @@ export function setupStation(root,editable=true){
  update(button.getAttribute('aria-pressed')==='true');
 }
 export function readStation(form){
- const from=String(form.get('stationFrom')||'').trim(),to=String(form.get('stationTo')||'').trim(),circuit=String(form.get('stationCircuit')||'').trim();
- if(form.has('stationFrom')||form.has('stationTo')){if(from&&to&&from.toLowerCase()===to.toLowerCase())throw Error('สถานีต้นทางและปลายทางต้องต่างกัน');return {station:[from,to].filter(Boolean).join(' – '),stationConnection:{mode:'line',from,to,circuit}}}
- const station=String(form.get('station')||'').trim();return {station,stationConnection:{mode:'single',from:'',to:'',circuit:''}};
+ const from=normalizeStation(form.get('stationFrom')),to=normalizeStation(form.get('stationTo')),circuit=String(form.get('stationCircuit')||'').trim();
+ if(form.has('stationFrom')||form.has('stationTo')){if(!from||!to)throw Error('กรุณาระบุสถานีต้นทางและปลายทางให้ครบ');if(!validStation(from)||!validStation(to))throw Error('กรุณาเลือกสถานีจากทะเบียนมาตรฐาน');if(from===to)throw Error('สถานีต้นทางและปลายทางต้องต่างกัน');return {station:[from,to].filter(Boolean).join(' – '),stationConnection:{mode:'line',from,to,circuit}}}
+ const station=normalizeStation(form.get('station'));if(!validStation(station))throw Error('กรุณาเลือกสถานีจากทะเบียนมาตรฐาน');return {station,stationConnection:{mode:'single',from:'',to:'',circuit:''}};
 }

@@ -256,3 +256,5 @@ aside .overview-nav{display:flex;align-items:center;gap:9px;font-size:12px;line-
 
 /* Sidebar menu emphasis on pointer hover and keyboard focus. */
 aside .nav{transition:color .15s ease,font-size .15s ease}aside .nav:hover,aside .nav:focus-visible,aside .overview-nav.active:hover,aside #members-nav:hover{color:#ef4444;font-weight:700;font-size:14px;background:transparent}
+
+.dashboard-details{margin:18px 0}.dashboard-details>summary{cursor:pointer;padding:14px;font-weight:700}.export-actions{display:flex;gap:8px;flex-wrap:wrap}.stats{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.list-panel table{min-width:1250px}.list-panel td{vertical-align:top}.warning{color:#a44709!important}.grid-summary-panel{padding:18px}.grid-summary-row{margin:8px 0}
