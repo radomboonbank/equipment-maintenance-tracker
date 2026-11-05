@@ -177,6 +177,10 @@ aside .overview-link.active{background:none;color:#a6bdc7;box-shadow:none}aside 
 aside .nav > span{display:inline-block;transition:color .15s ease,font-size .15s ease}
 aside .nav:hover > span,aside .nav:focus-visible > span{color:#ff5252;font-weight:800;font-size:14px;animation:sidebar-text-shake .3s ease-in-out infinite}
 @keyframes sidebar-text-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-1.5px)}75%{transform:translateX(1.5px)}}
+/* Keep the clickable area steady while dashboard bars and counts shake. */
+.grid-summary-six > .grid-summary-panel:nth-child(-n+4) .fault-drilldown:is(:hover,:focus-visible) > :is(.grid-summary-track,b){animation:dashboard-bar-shake .3s ease-in-out infinite}
+@keyframes dashboard-bar-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-1.5px)}75%{transform:translateX(1.5px)}}
+@media(prefers-reduced-motion:reduce){.grid-summary-six > .grid-summary-panel:nth-child(-n+4) .fault-drilldown:is(:hover,:focus-visible) > :is(.grid-summary-track,b){animation:none}}
 @media(prefers-reduced-motion:reduce){aside .nav > span{transition:none}aside .nav:hover > span,aside .nav:focus-visible > span{animation:none}}
 
 .inventory-transformers tr:first-child th:not(:first-child){font-size:9px;letter-spacing:-.25px}
