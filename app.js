@@ -1,3 +1,4 @@
+import {createGenDispatchStore,openGenDispatch} from './gen-dispatch.js?v=20261105';
 import {encodeSeverityRecord,decodeSeverityRecord} from './severity-record.js?v=20261104-legacy-levels';
 import {createIdleSession} from './idle-session.js?v=20261103';
 import {createConstructionStore} from './construction-store.js?v=20261104-delete';
@@ -6,7 +7,7 @@ import {createPresence} from './presence.js?v=20261029-presence';
 import {createMembersPage} from './members.js?v=20261029-members3';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261105-circuit';
-import {dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261105-table-heading';
+import {genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261105-table-heading';
 import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261031-abnormal-local';
 import {rotateLogins,loginEntries,loginTime,nextLoginStat,rotatePublicLogins} from './login-history.js?v=20261104-stats';
 'use strict';
@@ -131,6 +132,8 @@ if(cloud&&!cloudReady){document.querySelectorAll('.stat strong').forEach(el=>el.
 
 for(const sel of ['#search','#event-filter','#station','#equipment-filter'])$(sel).addEventListener(sel==='#search'?'input':'change',()=>{page=1;render()});
 $('.table-wrap').addEventListener('click',e=>{const b=e.target.closest('[data-edit]');if(b)edit(data.find(r=>r.id===b.dataset.edit))});
+const genDispatchStore=createGenDispatchStore(()=>({cloud,user,role,username,displayName,duty:memberDuty}));
+$('#gen-dispatch-nav').onclick=()=>openGenDispatch(genDispatchStore);
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{view=b.dataset.view;page=1;document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x===b));render()});
 $('#prev').onclick=()=>{page--;render()};$('#next').onclick=()=>{page++;render()};
 function dateControl(name,value=''){

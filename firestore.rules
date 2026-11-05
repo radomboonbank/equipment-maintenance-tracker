@@ -76,6 +76,33 @@ service cloud.firestore {
     && d.updatedByName == p.get('displayName',p.username) && d.updatedByUsername == p.username
     && d.revision is int && d.revision > 0;
   }
+  match /GenDispatch/{id} {
+   allow read: if account() && role() in ['admin','editor','viewer'];
+   allow create: if editor() && genDispatchValid() && request.resource.data.createdBy == request.auth.uid
+    && request.resource.data.createdAt == request.time && request.resource.data.revision == 1;
+   allow update: if editor() && genDispatchValid()
+    && request.resource.data.createdBy == resource.data.createdBy
+    && request.resource.data.createdAt == resource.data.createdAt
+    && request.resource.data.revision == resource.data.revision + 1;
+   allow delete: if superAdmin() && id != '_schema';
+  }
+  function genDispatchValid() {
+   let d=request.resource.data;
+   let v=d.data;
+   let p=get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data;
+   return d.keys().hasAll(['schemaVersion','type','data','createdBy','createdAt','updatedBy','updatedByName','updatedByUsername','updatedAt','revision'])
+    && d.keys().hasOnly(['schemaVersion','type','data','createdBy','createdAt','updatedBy','updatedByName','updatedByUsername','updatedAt','revision'])
+    && d.schemaVersion == 1 && d.type == 'gen-dispatch'
+    && v is map && v.keys().hasAll(['date','time','plant','unit','mw','details'])
+    && v.keys().hasOnly(['date','time','plant','unit','mw','details'])
+    && v.date is string && v.date.size() <= 10 && v.time is string && v.time.size() <= 5
+    && v.plant is string && v.plant.size() <= 500 && v.unit is string && v.unit.size() <= 250
+    && v.mw is string && v.mw.size() <= 40 && v.details is string && v.details.size() <= 4000
+    && d.createdBy is string && d.createdAt is timestamp
+    && d.updatedBy == request.auth.uid && d.updatedAt == request.time
+    && d.updatedByName == p.get('displayName',p.username) && d.updatedByUsername == p.username
+    && d.revision is int && d.revision > 0;
+  }
   match /ConstructionProjects/{id} {
    allow read: if account() && role() in ['admin','editor','viewer'];
    allow create: if editor() && constructionValid() && request.resource.data.createdBy == request.auth.uid
