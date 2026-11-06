@@ -1,14 +1,14 @@
 import {saveEquipmentWithTelegram} from './telegram-settings.js?v=20261106';
-import {openGenDispatchReference} from './gen-dispatch-reference.js?v=20261106-compact-icons';
+import {openGenDispatchReference} from './gen-dispatch-reference.js?v=20261106-edit-icons';
 import {encodeSeverityRecord,decodeSeverityRecord} from './severity-record.js?v=20261104-legacy-levels';
 import {createIdleSession} from './idle-session.js?v=20261103';
 import {createConstructionStore} from './construction-store.js?v=20261104-delete';
 import {createAlarmStore} from './alarm-store.js?v=20261103-super-delete';
 import {createPresence} from './presence.js?v=20261029-presence';
-import {createMembersPage} from './members.js?v=20261106-telegram';
+import {createMembersPage} from './members.js?v=20261106-edit-icons';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261105-circuit';
-import {genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261105-table-heading';
+import {genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261106-edit-icons';
 import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261031-abnormal-local';
 import {rotateLogins,loginEntries,loginTime,nextLoginStat,rotatePublicLogins} from './login-history.js?v=20261104-stats';
 'use strict';

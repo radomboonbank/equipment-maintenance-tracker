@@ -1,3 +1,4 @@
+import {editIconHtml} from './edit-icons.js?v=20261106';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function createGenDispatchStore(context){
  const access=()=>{const c=context();return {...c,editable:!!c.user&&['admin','editor'].includes(c.role),deletable:!!c.user&&c.role==='admin'&&c.duty==='super admin'}};
@@ -26,7 +27,7 @@ export function openGenDispatch(store){
  const status=page.querySelector('[data-load-status]'),add=page.querySelector('[data-add]'),search=page.querySelector('input');add.hidden=!store.canEdit();
  const stamp=d=>{const [day,month,year]=String(d.date||'').split('/');return `${year||'0000'}${month||'00'}${day||'00'}${d.time||''}`};
  const render=()=>{const q=search.value.toLowerCase().trim(),rows=records.filter(r=>['plant','unit','details'].some(k=>String(r.data[k]||'').toLowerCase().includes(q))||!q).sort((a,b)=>stamp(b.data).localeCompare(stamp(a.data)));
- page.querySelector('tbody').innerHTML=rows.map(r=>`<tr><td>${esc(r.data.date||'—')} ${esc(r.data.time)}</td><td>${esc(r.data.plant||'—')}</td><td>${esc(r.data.unit||'—')}</td><td>${esc(r.data.mw||'—')}</td><td>${esc(r.data.details||'—')}</td><td>${esc(r.updatedByName||'—')}</td><td>${store.canEdit()?`<button type="button" data-edit="${esc(r.id)}">แก้ไข</button>`:''}</td></tr>`).join('')||'<tr><td colspan="7">ยังไม่มีข้อมูลที่ตรงกับการค้นหา</td></tr>';status.textContent=`${rows.length} รายการ`;
+ page.querySelector('tbody').innerHTML=rows.map(r=>`<tr><td>${esc(r.data.date||'—')} ${esc(r.data.time)}</td><td>${esc(r.data.plant||'—')}</td><td>${esc(r.data.unit||'—')}</td><td>${esc(r.data.mw||'—')}</td><td>${esc(r.data.details||'—')}</td><td>${esc(r.updatedByName||'—')}</td><td>${store.canEdit()?`<button type="button" class="edit-action-button" data-edit="${esc(r.id)}" aria-label="แก้ไขรายการ" title="แก้ไขรายการ">${editIconHtml}</button>`:''}</td></tr>`).join('')||'<tr><td colspan="7">ยังไม่มีข้อมูลที่ตรงกับการค้นหา</td></tr>';status.textContent=`${rows.length} รายการ`;
  page.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editor(records.find(r=>r.id===b.dataset.edit)));
  };
  const editor=(record=null)=>{
