@@ -1,4 +1,4 @@
-import {openGenDispatchReference} from './gen-dispatch-reference.js?v=20261106-firebase63';
+import {openGenDispatchReference} from './gen-dispatch-reference.js?v=20261106-online-edit';
 import {encodeSeverityRecord,decodeSeverityRecord} from './severity-record.js?v=20261104-legacy-levels';
 import {createIdleSession} from './idle-session.js?v=20261103';
 import {createConstructionStore} from './construction-store.js?v=20261104-delete';
@@ -132,7 +132,7 @@ if(cloud&&!cloudReady){document.querySelectorAll('.stat strong').forEach(el=>el.
 
 for(const sel of ['#search','#event-filter','#station','#equipment-filter'])$(sel).addEventListener(sel==='#search'?'input':'change',()=>{page=1;render()});
 $('.table-wrap').addEventListener('click',e=>{const b=e.target.closest('[data-edit]');if(b)edit(data.find(r=>r.id===b.dataset.edit))});
-$('#gen-dispatch-nav').onclick=()=>openGenDispatchReference(cloud);
+$('#gen-dispatch-nav').onclick=()=>openGenDispatchReference(cloud,()=>({user,role,duty:memberDuty}));
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{view=b.dataset.view;page=1;document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x===b));render()});
 $('#prev').onclick=()=>{page--;render()};$('#next').onclick=()=>{page++;render()};
 function dateControl(name,value=''){
