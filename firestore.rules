@@ -76,6 +76,41 @@ service cloud.firestore {
     && d.updatedByName == p.get('displayName',p.username) && d.updatedByUsername == p.username
     && d.revision is int && d.revision > 0;
   }
+  match /GenDispatchEvents/{id} {
+   allow read: if account() && role() in ['admin','editor','viewer'];
+   allow create: if (id == '_schema' && superAdmin()
+     && request.resource.data.keys().hasAll(['schemaVersion','type','createdBy','createdAt'])
+     && request.resource.data.keys().hasOnly(['schemaVersion','type','createdBy','createdAt'])
+     && request.resource.data.schemaVersion == 1 && request.resource.data.type == 'gen-dispatch-events-schema'
+     && request.resource.data.createdBy == request.auth.uid && request.resource.data.createdAt == request.time)
+    || (id != '_schema' && editor() && genDispatchEventValid()
+     && request.resource.data.createdBy == request.auth.uid && request.resource.data.createdAt == request.time
+     && request.resource.data.revision == 1);
+   allow update: if id != '_schema' && editor() && genDispatchEventValid()
+    && request.resource.data.createdBy == resource.data.createdBy
+    && request.resource.data.createdAt == resource.data.createdAt
+    && request.resource.data.revision == resource.data.revision + 1;
+   allow delete: if id != '_schema' && superAdmin();
+  }
+  function genDispatchEventValid() {
+   let d=request.resource.data;
+   let v=d.data;
+   return d.keys().hasAll(['schemaVersion','type','data','revision','createdBy','createdAt','updatedBy','updatedAt'])
+    && d.keys().hasOnly(['schemaVersion','type','data','revision','createdBy','createdAt','updatedBy','updatedAt'])
+    && d.schemaVersion == 1 && d.type == 'gen-dispatch-event'
+    && v is map && v.keys().hasAll(['date','time','plant','event','reporter','phone'])
+    && v.keys().hasOnly(['date','time','plant','event','reporter','phone'])
+    && v.date is string && v.date.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+    && v.time is string && v.time.matches('([01][0-9]|2[0-3]):[0-5][0-9]')
+    && v.plant is string && v.plant.size() > 0 && v.plant.size() <= 500
+    && v.event is string && v.event.size() > 0 && v.event.size() <= 4000
+    && v.reporter is string && v.reporter.size() > 0 && v.reporter.size() <= 250
+    && v.phone is string && v.phone.size() > 0 && v.phone.size() <= 50
+    && d.createdBy is string && d.createdAt is timestamp
+    && d.updatedBy == request.auth.uid && d.updatedAt == request.time
+    && d.revision is int && d.revision > 0;
+  }
+
   match /GenDispatch/{id} {
    allow read: if account() && role() in ['admin','editor','viewer'];
    allow create: if editor() && genDispatchValid() && request.resource.data.createdBy == request.auth.uid
