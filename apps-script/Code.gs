@@ -25,6 +25,17 @@ function doPost(e) {
   } catch(err) { result={ok:false,error:'Request rejected or delivery unavailable'}; }
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
+function telegramSendingEnabled_() {
+  try {
+    var setting=firestore_('/metadata/telegramSending',null,'get');
+    return decode_({mapValue:{fields:setting.fields}}).enabled!==false;
+  } catch(error) { if(error.status===404)return true; throw error; }
+}
+function disableTelegramJob_(doc) {
+  patch_(doc,{status:{stringValue:'disabled'},readyAt:{timestampValue:NEVER}});
+  return {ok:true,status:'disabled'};
+}
+
 function dispatch_(input) {
   if(!input || !/^[A-Za-z0-9_-]{1,250}__[1-9][0-9]{0,9}$/.test(input.key||'') || typeof input.idToken!=='string' || input.idToken.length>8000)throw Error('Invalid request');
   var uid=authenticate_(input.idToken);
@@ -33,6 +44,7 @@ function dispatch_(input) {
   if(job.createdBy!==uid)throw Error('Not owner');
   if(job.status==='sent')return {ok:true,status:'sent'};
   if(job.status!=='pending' || job.attempts!==0)return {ok:false,status:job.status};
+  if(!telegramSendingEnabled_())return disableTelegramJob_(doc);
   // Historical pending records are never swept or dispatched on reload.
   if(Date.now()-Date.parse(job.createdAt)>300000)throw Error('Save request expired');
   return deliver_(doc,config_());
@@ -64,12 +76,14 @@ function deliver_(doc,config) {
   var job=decode_({mapValue:{fields:doc.fields}});
   if(job.status==='sent')return {ok:true,status:'sent'};
   if(job.status!=='pending'||job.attempts!==0)return {ok:false,status:job.status};
+  if(!telegramSendingEnabled_())return disableTelegramJob_(doc);
   // Atomic claim makes repeated POSTs and concurrent clicks a single attempt.
   try{doc=patch_(doc,{status:{stringValue:'sending'},readyAt:{timestampValue:NEVER},attempts:{integerValue:'1'}})}catch(e){if(e.status===409||e.status===412)return {ok:false,status:'sending'};throw e}
   try {
     var parts=messages(job.record,job.revision===1);
     if(parts.length>40)throw Error('Message too long');
     for(var i=0;i<parts.length;i++){
+      if(!telegramSendingEnabled_())return disableTelegramJob_(doc);
       var messageId=telegram_(config,parts[i]);
       doc=patch_(doc,{nextPart:{integerValue:String(i+1)},lastMessageId:{integerValue:String(messageId)}});
       if(i+1<parts.length)Utilities.sleep(3100);

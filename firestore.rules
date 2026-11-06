@@ -195,7 +195,17 @@ service cloud.firestore {
   }
 
   match /metadata/systemAssessment { allow get: if account(); }
-  match /metadata/{id} { allow read: if editor(); allow write: if admin(); }
+  match /metadata/telegramSending {
+   allow read: if editor();
+   allow create, update: if superAdmin()
+    && request.resource.data.keys().hasAll(['enabled','updatedBy','updatedAt'])
+    && request.resource.data.keys().hasOnly(['enabled','updatedBy','updatedAt'])
+    && request.resource.data.enabled is bool
+    && request.resource.data.updatedBy == request.auth.uid
+    && request.resource.data.updatedAt == request.time;
+   allow delete: if false;
+  }
+  match /metadata/{id} { allow read: if editor(); allow write: if id != 'telegramSending' && admin(); }
   // Presence is visible only to signed-in members; each session owns its write.
   match /onlineSessions/{id} {
    allow read: if account() && role() in ['admin','editor','viewer'];

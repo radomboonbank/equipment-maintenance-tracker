@@ -1,10 +1,11 @@
+import {saveEquipmentWithTelegram} from './telegram-settings.js?v=20261106';
 import {openGenDispatchReference} from './gen-dispatch-reference.js?v=20261106-compact-icons';
 import {encodeSeverityRecord,decodeSeverityRecord} from './severity-record.js?v=20261104-legacy-levels';
 import {createIdleSession} from './idle-session.js?v=20261103';
 import {createConstructionStore} from './construction-store.js?v=20261104-delete';
 import {createAlarmStore} from './alarm-store.js?v=20261103-super-delete';
 import {createPresence} from './presence.js?v=20261029-presence';
-import {createMembersPage} from './members.js?v=20261105-menu';
+import {createMembersPage} from './members.js?v=20261106-telegram';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261105-circuit';
 import {genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261105-table-heading';
@@ -268,9 +269,10 @@ $('#record-form').onsubmit=async e=>{
   if(editing?.time&&editing.time!==r.time&&!editing.originalTime)next.originalTime=editing.time;
   busy=true;$('#save').disabled=true;$('#save').textContent='กำลังบันทึก…';
   const ref=cloud.doc(cloud.db,'equipment',next.id),original=editing;
-  await cloud.runTransaction(cloud.db,async t=>{const snap=await t.get(ref);if(original&&(!snap.exists()||snap.data().revision!==original.revision))throw Error('ข้อมูลเปลี่ยนแปลงแล้ว กรุณาปิดและเปิดรายการใหม่');if(!original&&snap.exists())throw Error('รหัสซ้ำ กรุณาบันทึกอีกครั้ง');t.set(ref,encodeSeverityRecord(next));t.set(cloud.doc(cloud.db,'telegramOutbox',next.id+'__'+next.revision),{recordId:next.id,revision:next.revision,record:encodeSeverityRecord(next),createdBy:user.uid,createdAt:cloud.serverTimestamp(),readyAt:cloud.serverTimestamp(),status:'pending',nextPart:0,attempts:0})});
-    $('#editor').close();toast('บันทึกข้อมูลแล้ว กำลังส่ง Telegram…');
-    void sendRecordNotification(next);
+  const telegramEnabled=await saveEquipmentWithTelegram(cloud,ref,original,next,encodeSeverityRecord,user);
+  $('#editor').close();
+  if(telegramEnabled){toast('บันทึกข้อมูลแล้ว กำลังส่ง Telegram…');void sendRecordNotification(next);}
+  else toast('บันทึกข้อมูลแล้ว · ปิดการส่ง Telegram อยู่');
  }catch(err){const explanation=err.code==='permission-denied'?'Firebase ไม่อนุญาตให้บันทึก กรุณาตรวจสิทธิ์บัญชีหรือรูปแบบข้อมูล':err.code==='unavailable'?'เชื่อมต่อ Firebase ไม่ได้ กรุณาตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง':err.message;showSaveError('บันทึกไม่สำเร็จ: '+explanation+' (ข้อมูลที่กรอกยังอยู่ในฟอร์ม)');console.warn('Record save failed',{code:err.code||'validation',recordId:editing?.id||null});}finally{busy=false;$('#save').disabled=false;$('#save').textContent='บันทึกข้อมูล'}
 };
 async function sendRecordNotification(next){
@@ -279,7 +281,7 @@ async function sendRecordNotification(next){
   const idToken=await user.getIdToken(),key=next.id+'__'+next.revision;
   await fetch(window.GRID_TELEGRAM_URL,{method:'POST',mode:'no-cors',credentials:'omit',redirect:'follow',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({key,idToken}),signal:AbortSignal.timeout(150000)});
   const receipt=await cloud.getDocFromServer(cloud.doc(cloud.db,'telegramOutbox',key));
-  toast(receipt.exists()&&receipt.data().status==='sent'?'บันทึกข้อมูลและส่ง Telegram สำเร็จ':'บันทึกข้อมูลสำเร็จ แต่ Telegram ยังส่งไม่สำเร็จ — ไม่มีการส่งซ้ำอัตโนมัติ');
+  toast(receipt.exists()&&receipt.data().status==='disabled'?'บันทึกข้อมูลแล้ว · การส่ง Telegram ถูกปิด':receipt.exists()&&receipt.data().status==='sent'?'บันทึกข้อมูลและส่ง Telegram สำเร็จ':'บันทึกข้อมูลสำเร็จ แต่ Telegram ยังส่งไม่สำเร็จ — ไม่มีการส่งซ้ำอัตโนมัติ');
  }catch{toast('บันทึกข้อมูลสำเร็จ แต่ยังยืนยันการส่ง Telegram ไม่ได้ — ไม่มีการส่งซ้ำอัตโนมัติ')}
 }
 $('#delete').onclick=async()=>{
