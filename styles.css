@@ -259,3 +259,5 @@ aside #members-nav:not([hidden]){display:flex;align-items:center;gap:9px}
 svg.members-menu-icon{width:20px;height:24px;flex:0 0 20px;background:transparent;border-radius:0;stroke:currentColor}
 
 .gen-dispatch-page{width:95vw;max-width:1600px;padding:24px}.gen-dispatch-toolbar{display:flex;gap:14px;margin:20px 0}.gen-dispatch-toolbar input{flex:1}.gen-dispatch-toolbar button{white-space:nowrap}.gen-dispatch-page td{white-space:pre-wrap;vertical-align:top}
+
+.gen-dispatch-reference{width:min(1500px,96vw);max-width:96vw}.gen-dispatch-reference table{min-width:1170px;font-size:13px}.gen-dispatch-reference th{font-size:12px;font-weight:700;color:#21485c;padding:15px 12px;white-space:nowrap}.gen-dispatch-reference td{padding:16px 12px;white-space:nowrap;min-width:0;max-width:none}.gen-dispatch-reference tbody tr:nth-child(even){background:#f5fafc}.dispatch-mw{text-align:right;font-variant-numeric:tabular-nums}.dispatch-kv{display:inline-block;padding:4px 12px;border-radius:20px;font-weight:600}.dispatch-kv.available{color:#08734f;background:#e2f6eb}.dispatch-kv.unavailable{color:#657882;background:#edf1f3}
