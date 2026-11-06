@@ -1,5 +1,5 @@
 import {saveEquipmentWithTelegram} from './telegram-settings.js?v=20261106';
-import {openGenDispatchReference} from './gen-dispatch-reference.js?v=20261106-edit-icons';
+import {openGenDispatchReference} from './gen-dispatch-reference.js?v=20261106-editor-actions';
 import {encodeSeverityRecord,decodeSeverityRecord} from './severity-record.js?v=20261104-legacy-levels';
 import {createIdleSession} from './idle-session.js?v=20261103';
 import {createConstructionStore} from './construction-store.js?v=20261104-delete';
