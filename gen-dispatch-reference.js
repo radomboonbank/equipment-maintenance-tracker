@@ -51,3 +51,7 @@ export function openGenDispatchReference(cloud,session){
  if(!cloud){failed();return;}
  try{stop=cloud.onSnapshot(cloud.query(cloud.collection(cloud.db,'GenDispatch'),cloud.orderBy('rowOrder')),snapshot=>{records=snapshot.docs.map(d=>({id:d.id,...d.data()})).filter(d=>d.schemaVersion===2&&d.type==='gen-dispatch').map(d=>({...d.data,_rowId:d.id,_revision:d.revision}));ready=true;render();},failed);}catch{failed();}
 }
+
+export function openGenDispatchEvent(cloud,session){
+ createGenDispatchEvents(window,()=>[],editIconUrl,cloud,session).openEditor();
+}
