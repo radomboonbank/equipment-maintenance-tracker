@@ -1,4 +1,4 @@
-import {createGenDispatchEvents} from './gen-dispatch-events.js?v=20261106';
+import {createGenDispatchEvents} from './gen-dispatch-events.js?v=20261107-title';
 import {editIconUrl} from './edit-icons.js?v=20261106';
 export function openGenDispatchReference(cloud,session){
  const editIcon=editIconUrl;
