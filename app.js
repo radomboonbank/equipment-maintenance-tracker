@@ -1,7 +1,7 @@
 import {installThaiDateTime} from './thai-datetime.js?v=20261107-sitewide-selectors';
 installThaiDateTime(window);
 import {saveEquipmentWithTelegram} from './telegram-settings.js?v=20261107-king-admin';
-import {openGenDispatchReference,openGenDispatchEvent} from './gen-dispatch-reference.js?v=20261107-king-admin';
+import {openGenDispatchReference,openGenDispatchEvent} from './gen-dispatch-reference.js?v=20261107-optional-contact';
 import {encodeSeverityRecord,decodeSeverityRecord} from './severity-record.js?v=20261104-legacy-levels';
 import {createIdleSession} from './idle-session.js?v=20261107-king-admin';
 import {createConstructionStore} from './construction-store.js?v=20261107-king-admin';

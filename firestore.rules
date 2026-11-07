@@ -105,8 +105,8 @@ service cloud.firestore {
     && v.time is string && v.time.matches('([01][0-9]|2[0-3]):[0-5][0-9]')
     && v.plant is string && v.plant.size() > 0 && v.plant.size() <= 500
     && v.event is string && v.event.size() > 0 && v.event.size() <= 4000
-    && v.reporter is string && v.reporter.size() > 0 && v.reporter.size() <= 250
-    && v.phone is string && v.phone.size() > 0 && v.phone.size() <= 50
+    && v.reporter is string && v.reporter.size() <= 250
+    && v.phone is string && v.phone.size() <= 50
     && d.createdBy is string && d.createdAt is timestamp
     && d.updatedBy == request.auth.uid && d.updatedAt == request.time
     && d.revision is int && d.revision > 0;
