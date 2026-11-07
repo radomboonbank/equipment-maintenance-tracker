@@ -140,6 +140,7 @@ service cloud.firestore {
    allow update: if superAdmin() && genDispatchReferenceValid()
     && (!('phone' in resource.data.data) || 'phone' in request.resource.data.data)
     && (!('egatConnection' in resource.data.data) || 'egatConnection' in request.resource.data.data)
+    && (!('peaCenter' in resource.data.data) || 'peaCenter' in request.resource.data.data)
     && request.resource.data.createdBy == resource.data.createdBy
     && request.resource.data.createdAt == resource.data.createdAt
     && request.resource.data.rowOrder == resource.data.rowOrder
@@ -154,7 +155,8 @@ service cloud.firestore {
     && d.schemaVersion == 2 && d.type == 'gen-dispatch'
     && d.rowOrder is int && d.rowOrder > 0
     && v is map && v.keys().hasAll(['date','region','code','plant','mw','connection','kvControl','note'])
-    && v.keys().hasOnly(['date','region','code','plant','mw','connection','kvControl','note','phone','egatConnection'])
+    && v.keys().hasOnly(['date','region','code','plant','mw','connection','kvControl','note','phone','egatConnection','peaCenter'])
+    && (!('peaCenter' in v) || (v.peaCenter is string && v.peaCenter.size() <= 100))
     && (!('egatConnection' in v) || (v.egatConnection is string && v.egatConnection.size() <= 2000))
     && (!('phone' in v) || (v.phone is string && v.phone.size() <= 250))
     && v.date is string && v.date.size() <= 30
