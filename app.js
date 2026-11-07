@@ -1,5 +1,7 @@
+import {installThaiDateTime} from './thai-datetime.js?v=20261107';
+installThaiDateTime(window);
 import {saveEquipmentWithTelegram} from './telegram-settings.js?v=20261106';
-import {openGenDispatchReference,openGenDispatchEvent} from './gen-dispatch-reference.js?v=20261107-plants';
+import {openGenDispatchReference,openGenDispatchEvent} from './gen-dispatch-reference.js?v=20261107-thai-date';
 import {encodeSeverityRecord,decodeSeverityRecord} from './severity-record.js?v=20261104-legacy-levels';
 import {createIdleSession} from './idle-session.js?v=20261103';
 import {createConstructionStore} from './construction-store.js?v=20261104-delete';
