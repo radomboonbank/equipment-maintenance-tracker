@@ -39,7 +39,7 @@ export function openGenDispatchReference(cloud,session){
    if(!valid(data)){message.dataset.error='true';message.textContent='กรุณาตรวจข้อมูลกำลังผลิตและสถานะ kV Control';return;}
    busy=true;const buttons=[...form.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);message.textContent='กำลังบันทึกข้อมูลลง Firebase…';
    try{const ref=cloud.doc(cloud.db,'GenDispatch',row._rowId);const next=await cloud.runTransaction(cloud.db,async transaction=>{const snapshot=await transaction.get(ref);if(!snapshot.exists())throw Error('ไม่พบรายการนี้ในฐานข้อมูล');const current=snapshot.data();if(current.revision!==revision)throw Error('ข้อมูลถูกแก้ไขจากอีกหน้าแล้ว กรุณากลับตารางและเปิดแก้ไขใหม่');if(!canEdit()||session().user?.uid!==openedUid)throw Error('สิทธิ์หรือบัญชีเปลี่ยนแปลง กรุณาเข้าสู่ระบบใหม่');transaction.update(ref,{data,updatedBy:openedUid,updatedAt:cloud.serverTimestamp(),revision:current.revision+1});return current.revision+1;});
-    revision=next;Object.assign(row,data);message.dataset.success='true';message.textContent='บันทึกข้อมูลลง Firebase สำเร็จแล้ว';win.document.title='บันทึกแล้ว — '+data.code+' — Gen Dispatch';
+    revision=next;Object.assign(row,data);message.dataset.success='true';message.textContent='บันทึกข้อมูลลง Firebase สำเร็จแล้ว';win.close();if(!tableWindow.closed)tableWindow.focus();
    }catch(error){message.dataset.error='true';message.textContent=error.code==='permission-denied'?'บันทึกไม่ได้: เฉพาะบัญชี Super Admin เท่านั้นที่มีสิทธิ์แก้ไข':error.message||'บันทึกไม่สำเร็จ กรุณาตรวจการเชื่อมต่อ';}
    finally{busy=false;buttons.forEach(b=>b.disabled=false);}
   };
