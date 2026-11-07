@@ -88,6 +88,7 @@ service cloud.firestore {
      && request.resource.data.createdBy == request.auth.uid && request.resource.data.createdAt == request.time
      && request.resource.data.revision == 1);
    allow update: if id != '_schema' && editor() && genDispatchEventValid()
+    && (!('subEvents' in resource.data.data) || 'subEvents' in request.resource.data.data)
     && request.resource.data.createdBy == resource.data.createdBy
     && request.resource.data.createdAt == resource.data.createdAt
     && request.resource.data.revision == resource.data.revision + 1;
@@ -100,7 +101,8 @@ service cloud.firestore {
     && d.keys().hasOnly(['schemaVersion','type','data','revision','createdBy','createdAt','updatedBy','updatedAt'])
     && d.schemaVersion == 1 && d.type == 'gen-dispatch-event'
     && v is map && v.keys().hasAll(['date','time','plant','event','reporter','phone'])
-    && v.keys().hasOnly(['date','time','plant','event','reporter','phone'])
+    && v.keys().hasOnly(['date','time','plant','event','reporter','phone','subEvents'])
+    && (!('subEvents' in v) || genDispatchSubEventsValid(v.subEvents))
     && v.date is string && v.date.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
     && v.time is string && v.time.matches('([01][0-9]|2[0-3]):[0-5][0-9]')
     && v.plant is string && v.plant.size() > 0 && v.plant.size() <= 500
@@ -110,6 +112,24 @@ service cloud.firestore {
     && d.createdBy is string && d.createdAt is timestamp
     && d.updatedBy == request.auth.uid && d.updatedAt == request.time
     && d.revision is int && d.revision > 0;
+  }
+
+  function genDispatchSubEventValid(v) {
+   return v is map && v.keys().hasAll(['id','date','time','plant','event','reporter','phone'])
+    && v.keys().hasOnly(['id','date','time','plant','event','reporter','phone'])
+    && v.id.matches('(?s).{1,100}')
+    && v.date.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+    && v.time.matches('([01][0-9]|2[0-3]):[0-5][0-9]')
+    && v.plant.matches('(?s).{1,500}') && v.event.matches('(?s).+') && v.event.size() <= 4000
+    && v.reporter.matches('(?s).{0,250}') && v.phone.matches('(?s).{0,50}');
+  }
+  function genDispatchSubEventsValid(rows) {
+   return rows is list && rows.size() <= 5
+    && (rows.size() <= 0 || genDispatchSubEventValid(rows[0]))
+    && (rows.size() <= 1 || genDispatchSubEventValid(rows[1]))
+    && (rows.size() <= 2 || genDispatchSubEventValid(rows[2]))
+    && (rows.size() <= 3 || genDispatchSubEventValid(rows[3]))
+    && (rows.size() <= 4 || genDispatchSubEventValid(rows[4]));
   }
 
   match /GenDispatch/{id} {
