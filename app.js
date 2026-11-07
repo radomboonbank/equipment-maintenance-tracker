@@ -1,13 +1,13 @@
 import {installThaiDateTime} from './thai-datetime.js?v=20261107-sitewide-selectors';
 installThaiDateTime(window);
-import {saveEquipmentWithTelegram} from './telegram-settings.js?v=20261106';
-import {openGenDispatchReference,openGenDispatchEvent} from './gen-dispatch-reference.js?v=20261107-sitewide-selectors';
+import {saveEquipmentWithTelegram} from './telegram-settings.js?v=20261107-king-admin';
+import {openGenDispatchReference,openGenDispatchEvent} from './gen-dispatch-reference.js?v=20261107-king-admin';
 import {encodeSeverityRecord,decodeSeverityRecord} from './severity-record.js?v=20261104-legacy-levels';
-import {createIdleSession} from './idle-session.js?v=20261103';
-import {createConstructionStore} from './construction-store.js?v=20261104-delete';
-import {createAlarmStore} from './alarm-store.js?v=20261103-super-delete';
+import {createIdleSession} from './idle-session.js?v=20261107-king-admin';
+import {createConstructionStore} from './construction-store.js?v=20261107-king-admin';
+import {createAlarmStore} from './alarm-store.js?v=20261107-king-admin';
 import {createPresence} from './presence.js?v=20261029-presence';
-import {createMembersPage} from './members.js?v=20261106-edit-icons';
+import {createMembersPage} from './members.js?v=20261107-king-admin';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261105-circuit';
 import {genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261106-edit-icons';
@@ -36,7 +36,7 @@ function updateLoginSession(){
   const started=own?loginStartedAt:info.started;
   const name=own?username:(info.username||entry.displayName);
   const item=document.createElement('span');item.className='login-session-user';
-  if(own&&username==='559350'&&role==='admin'&&memberDuty==='super admin'){
+  if(own&&username==='559350'&&role==='admin'&&['super admin','king admin'].includes(memberDuty)){
    const avatar=document.createElement('img');avatar.className='login-session-avatar';avatar.src='admin-559350.ico';avatar.alt='';avatar.width=32;avatar.height=32;item.append(avatar);
   }
   const text=document.createElement('span');text.className='login-session-text';
@@ -236,7 +236,7 @@ function edit(r){
  document.querySelectorAll('#fields input,#fields textarea,#fields select,#followups input,#followups textarea,#followups select,#closure-fields input,#closure-fields textarea,#closure-fields select').forEach(el=>el.disabled=!canEdit());
  setupStation($('#fields .station-control'),canEdit());
  setupRepairPlan();
- $('#save').hidden=!canEdit();$('#delete').hidden=role!=='admin'||memberDuty!=='super admin'||!r;
+ $('#save').hidden=!canEdit();$('#delete').hidden=role!=='admin'||!['super admin','king admin'].includes(memberDuty)||!r;
  $('#editor').showModal();
 }
 $('#add').onclick=()=>edit();
@@ -288,7 +288,7 @@ async function sendRecordNotification(next){
  }catch{toast('บันทึกข้อมูลสำเร็จ แต่ยังยืนยันการส่ง Telegram ไม่ได้ — ไม่มีการส่งซ้ำอัตโนมัติ')}
 }
 $('#delete').onclick=async()=>{
- if(busy||role!=='admin'||memberDuty!=='super admin'||!editing)return;
+ if(busy||role!=='admin'||!['super admin','king admin'].includes(memberDuty)||!editing)return;
  if(!confirm('ลบรายการ #'+editing.code+' ถาวรหรือไม่?'))return;
  busy=true;$('#delete').disabled=true;
  try{const original=editing;await cloud.runTransaction(cloud.db,async t=>{const ref=cloud.doc(cloud.db,'equipment',original.id),snap=await t.get(ref);if(!snap.exists()||snap.data().revision!==original.revision)throw Error('ข้อมูลเปลี่ยนแปลง กรุณาเปิดใหม่');t.delete(ref)});$('#editor').close();toast('ลบรายการแล้ว')}catch(err){toast('ลบไม่สำเร็จ: '+err.message)}finally{busy=false;$('#delete').disabled=false}
@@ -297,7 +297,7 @@ function resetSession(){headerOnlineUsers=[];onlineLoginInfo.clear();loginStarte
 function showWorkspace(){updateLoginSession();idleSession.start();
  $('#current-account').textContent=role==='guest'?'ผู้ชมทั่วไป':`บัญชีของคุณ: ${displayName||username}`;
  presence.start(cloud,role==='guest'?null:user,displayName||username);
- membersPage.setAccess(role==='admin'&&memberDuty==='super admin');
+ membersPage.setAccess(role==='admin'&&['super admin','king admin'].includes(memberDuty));
  watchLogins();
  
  $('#workspace').hidden=false;$('#login-screen').hidden=true;
@@ -326,7 +326,7 @@ async function logoutSession(expired=false){
  try{await cloud.signOut(cloud.auth)}catch(err){toast(err.message)}
  await Promise.race([stopping,new Promise(resolve=>setTimeout(resolve,1500))]);
 }
-const idleSession=createIdleSession({onExpire:()=>{void logoutSession(true)}});
+const idleSession=createIdleSession({isExempt:()=>role==='admin'&&memberDuty==='king admin',onExpire:()=>{void logoutSession(true)}});
 for(const event of ['pointerdown','pointermove','keydown','input','scroll','touchstart'])document.addEventListener(event,e=>{if(e.isTrusted)idleSession.activity()},{capture:true,passive:true});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)idleSession.check()});
 window.addEventListener('focus',()=>idleSession.check());

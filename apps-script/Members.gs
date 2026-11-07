@@ -4,12 +4,12 @@ function manageMember_(input) {
  if(!input || !/^[a-f0-9-]{36}$/.test(input.requestId||'') || ['create','update','delete'].indexOf(input.action)<0)throw Error('Invalid request');
  var uid=authenticate_(input.idToken);
  var actor=memberDoc_(uid);
- if(actor.data.role!=='admin'||actor.data.duty!=='super admin')throw Error('Super admin required');
+ if(actor.data.role!=='admin'||['super admin','king admin'].indexOf(actor.data.duty)<0)throw Error('Super admin required');
  var lock=LockService.getScriptLock();lock.waitLock(20000);
  try{
   // Recheck privileges inside the lock, including after a concurrent demotion.
   actor=memberDoc_(uid);
-  if(actor.data.role!=='admin'||actor.data.duty!=='super admin')throw Error('Super admin required');
+  if(actor.data.role!=='admin'||['super admin','king admin'].indexOf(actor.data.duty)<0)throw Error('Super admin required');
   var path='/memberOperations/'+input.requestId,prior;
   try{prior=firestore_(path,null,'get')}catch(e){if(e.status!==404)throw e}
   if(prior){if(decode_({mapValue:{fields:prior.fields}}).actor!==uid)throw Error('Request conflict');return {ok:true};}
@@ -36,14 +36,26 @@ function applyMember_(action,m,actor,requestId){
  if(!m||typeof m!=='object')throw Error('Invalid member');
  var current=action==='create'?null:memberDoc_(m.uid),old=current?.data;
  if(current && (old.memberVersion||'')!==(m.version||''))memberFail_('ข้อมูลสมาชิกเปลี่ยนแปลงแล้ว กรุณาโหลดใหม่');
+ var actorProfile=memberDoc_(actor).data,isKing=actorProfile.role==='admin'&&actorProfile.duty==='king admin';
+ // One-time migration for the explicitly designated existing administrator.
+ var firstKingPromotion=false;
+ if(!isKing&&((old&&old.duty==='king admin')||m.duty==='king admin')){
+  var eligible=action==='update'&&old&&old.username==='559350'&&old.role==='admin'&&old.duty==='super admin'&&m.employeeId==='559350'&&m.duty==='king admin'&&actorProfile.role==='admin'&&actorProfile.duty==='super admin';
+  if(eligible){var existingKings=firestore_(':runQuery',{structuredQuery:{from:[{collectionId:'DatabaseLogin'}],where:{fieldFilter:{field:{fieldPath:'duty'},op:'EQUAL',value:{stringValue:'king admin'}}},limit:1}}).filter(function(r){return !!r.document});firstKingPromotion=existingKings.length===0;}
+  if(!firstKingPromotion)memberFail_('เฉพาะ King Admin เท่านั้นที่จัดการหน้าที่ King Admin ได้');
+ }
+ if(current&&old.duty==='king admin'&&(action==='delete'||m.duty!=='king admin')){
+  var kings=firestore_(':runQuery',{structuredQuery:{from:[{collectionId:'DatabaseLogin'}],where:{fieldFilter:{field:{fieldPath:'duty'},op:'EQUAL',value:{stringValue:'king admin'}}}}}).filter(function(r){return r.document&&decode_({mapValue:{fields:r.document.fields}}).role==='admin'});
+  if(kings.length<=1)memberFail_('ต้องเหลือ king admin อย่างน้อยหนึ่งบัญชี');
+ }
  if(action==='delete'&&m.uid===actor)memberFail_('ไม่อนุญาตลบบัญชีตนเอง');
- var roles={'super admin':'admin','cac term':'editor','user':'viewer'};
+ var roles={'king admin':'admin','super admin':'admin','cac term':'editor','user':'viewer'};
  if(action!=='delete'){
   if(typeof m.employeeId!=='string'||!/^[a-z0-9_-]{1,64}$/.test(m.employeeId)||typeof m.displayName!=='string'||!m.displayName.trim()||m.displayName.length>250||typeof m.department!=='string'||m.department.length>250||!(Object.prototype.hasOwnProperty.call(roles,m.duty)||(current&&!old.duty&&m.duty===''&&['admin','editor','viewer'].indexOf(old.role)>=0)))memberFail_('ข้อมูลสมาชิกไม่ถูกต้อง');
   if(m.passwordHash!==undefined && !/^[a-f0-9]{64}$/.test(m.passwordHash))throw Error('Invalid password');
   if(action==='create'&&!m.passwordHash)memberFail_('กรุณากรอกรหัสผ่าน');
   if(current&&old.username!==m.employeeId)memberFail_('ไม่สามารถเปลี่ยนรหัสพนักงานของบัญชีเดิม');
-  if(current&&m.uid===actor&&m.duty!=='super admin')memberFail_('ไม่อนุญาตถอดสิทธิ์ตนเอง');
+  if(current&&m.uid===actor&&m.duty!==old.duty&&!firstKingPromotion)memberFail_('ไม่อนุญาตถอดสิทธิ์ตนเอง');
  }
  if(current&&old.role==='admin'&&old.duty==='super admin'&&(action==='delete'||m.duty!=='super admin')){
   var admins=firestore_(':runQuery',{structuredQuery:{from:[{collectionId:'DatabaseLogin'}],where:{fieldFilter:{field:{fieldPath:'duty'},op:'EQUAL',value:{stringValue:'super admin'}}}}}).filter(function(r){return r.document&&decode_({mapValue:{fields:r.document.fields}}).role==='admin'});

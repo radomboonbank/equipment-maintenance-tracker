@@ -1,4 +1,4 @@
-import {createGenDispatchEventStore} from './gen-dispatch-event-store.js?v=20261106';
+import {createGenDispatchEventStore} from './gen-dispatch-event-store.js?v=20261107-king-admin';
 export function createGenDispatchEvents(owner,plantsGetter,iconUrl,cloud,session){
  const store=createGenDispatchEventStore(cloud,session);
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

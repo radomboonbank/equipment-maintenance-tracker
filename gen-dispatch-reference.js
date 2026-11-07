@@ -1,4 +1,4 @@
-import {createGenDispatchEvents} from './gen-dispatch-events.js?v=20261107-thai-date';
+import {createGenDispatchEvents} from './gen-dispatch-events.js?v=20261107-king-admin';
 import {editIconUrl} from './edit-icons.js?v=20261106';
 export function openGenDispatchReference(cloud,session){
  const editIcon=editIconUrl;
@@ -6,7 +6,7 @@ export function openGenDispatchReference(cloud,session){
  const fields=[['date','วันที่เริ่ม'],['region','ภูมิภาค/ศูนย์'],['code','รหัสโรงไฟฟ้า'],['plant','ชื่อโรงไฟฟ้า'],['mw','กำลังผลิต (MW)'],['connection','จุดเชื่อมต่อ/เส้นทาง'],['kvControl','สถานะ kV Control'],['note','หมายเหตุ']];
  const valid=r=>r&&fields.every(([k])=>k==='mw'?(r[k]===null||typeof r[k]==='number'&&Number.isFinite(r[k])&&r[k]>=0):typeof r[k]==='string')&&['มี','ไม่มี'].includes(r.kvControl);
  let records=[],ready=false,stop=null;
- const canEdit=()=>{const c=session();return !!c.user&&c.role==='admin'&&c.duty==='super admin';};
+ const canEdit=()=>{const c=session();return !!c.user&&c.role==='admin'&&['super admin','king admin'].includes(c.duty);};
  const tableWindow=window.open('','_blank');if(!tableWindow){window.alert('เปิด Gen Dispatch ไม่ได้ กรุณาอนุญาตป๊อปอัปสำหรับเว็บไซต์นี้ แล้วลองอีกครั้ง');return;}
  const sharedStyles=[...document.styleSheets].flatMap(sheet=>{try{return [...sheet.cssRules].map(rule=>rule.cssText);}catch{return [];}}).join('\n');
  const fontImports=[...document.styleSheets].flatMap(sheet=>{try{return [...sheet.cssRules].filter(rule=>rule.type===3).map(rule=>rule.cssText);}catch{return [];}}).join('\n');

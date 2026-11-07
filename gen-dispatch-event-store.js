@@ -2,7 +2,7 @@ export function createGenDispatchEventStore(cloud,session){
  const collection='GenDispatchEvents',keys=['date','time','plant','event','reporter','phone'];
  const canRead=()=>{const c=session();return !!c.user&&['admin','editor','viewer'].includes(c.role);};
  const canEdit=()=>{const c=session();return !!c.user&&['admin','editor'].includes(c.role);};
- const canDelete=()=>{const c=session();return !!c.user&&c.role==='admin'&&c.duty==='super admin';};
+ const canDelete=()=>{const c=session();return !!c.user&&c.role==='admin'&&['super admin','king admin'].includes(c.duty);};
  function validate(data){if(!data||Object.keys(data).length!==keys.length||keys.some(k=>typeof data[k]!=='string'||!data[k].trim()))throw Error('กรุณากรอกข้อมูลให้ครบทุกช่อง');if(!/^\d{4}-\d{2}-\d{2}$/.test(data.date)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(data.time)||data.plant.length>500||data.event.length>4000||data.reporter.length>250||data.phone.length>50)throw Error('รูปแบบข้อมูลเหตุการณ์ไม่ถูกต้อง');}
  const normalize=d=>{const v=d.data();return {id:d.id,...v.data,revision:v.revision,createdAt:v.createdAt?.toDate?.().toISOString()||''};};
  return {canRead,canEdit,canDelete,
