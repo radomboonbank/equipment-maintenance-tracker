@@ -1,13 +1,13 @@
 import {installThaiDateTime} from './thai-datetime.js?v=20261107-sitewide-selectors';
 installThaiDateTime(window);
-import {saveEquipmentWithTelegram} from './telegram-settings.js?v=20261107-king-admin';
+import {saveEquipmentWithTelegram} from './telegram-settings.js?v=20261107-backup';
 import {openGenDispatchReference,openGenDispatchEvent} from './gen-dispatch-reference.js?v=20261107-optional-contact';
 import {encodeSeverityRecord,decodeSeverityRecord} from './severity-record.js?v=20261104-legacy-levels';
 import {createIdleSession} from './idle-session.js?v=20261107-king-admin';
 import {createConstructionStore} from './construction-store.js?v=20261107-king-admin';
 import {createAlarmStore} from './alarm-store.js?v=20261107-king-admin';
 import {createPresence} from './presence.js?v=20261029-presence';
-import {createMembersPage} from './members.js?v=20261107-king-admin';
+import {createMembersPage} from './members.js?v=20261107-backup';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261105-circuit';
 import {genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261106-edit-icons';

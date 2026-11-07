@@ -18,9 +18,9 @@ export function setupTelegramControl(root,session){
  const button=panel.querySelector('button'),label=panel.querySelector('[data-telegram-toggle-label]'),message=panel.querySelector('[data-telegram-status]');
  let allowed=false,ready=false,busy=false,enabled=true,stop=null,generation=0;
  const access=()=>{const c=session();return allowed&&!!c.user&&c.role==='admin'&&c.duty==='king admin';};
- function render(){button.disabled=!access()||!ready||busy;button.setAttribute('aria-checked',String(ready&&enabled));button.dataset.enabled=String(ready&&enabled);label.textContent=busy?'กำลังบันทึก…':!ready?'กำลังโหลด…':enabled?'เปิดอยู่ · กดเพื่อปิด':'ปิดอยู่ · กดเพื่อเปิด';}
+ function render(){panel.hidden=!access();button.disabled=!access()||!ready||busy;button.setAttribute('aria-checked',String(ready&&enabled));button.dataset.enabled=String(ready&&enabled);label.textContent=busy?'กำลังบันทึก…':!ready?'กำลังโหลด…':enabled?'เปิดอยู่ · กดเพื่อปิด':'ปิดอยู่ · กดเพื่อเปิด';}
  function reset(){generation++;stop?.();stop=null;allowed=false;ready=false;busy=false;enabled=true;panel.hidden=true;message.textContent='';render();}
- function setAccess(value){if(!value){reset();return;}allowed=true;panel.hidden=false;if(stop){render();return;}const mark=++generation;ready=false;message.textContent='กำลังโหลดสถานะ…';render();const {cloud}=session();
+ function setAccess(value){const c=session();if(!value||!c.user||c.role!=='admin'||c.duty!=='king admin'){reset();return;}allowed=true;panel.hidden=false;if(stop){render();return;}const mark=++generation;ready=false;message.textContent='กำลังโหลดสถานะ…';render();const {cloud}=session();
   stop=cloud.onSnapshot(cloud.doc(cloud.db,'metadata','telegramSending'),snapshot=>{if(mark!==generation)return;ready=true;enabled=!snapshot.exists()||snapshot.data().enabled!==false;message.textContent=enabled?'เปิดการส่งข้อความแจ้งเตือน Telegram อยู่':'ปิดการส่ง Telegram อยู่ · บันทึกข้อมูลได้ตามปกติ';render();},()=>{if(mark!==generation)return;ready=false;message.textContent='โหลดสถานะไม่ได้ กรุณาตรวจการเชื่อมต่อแล้วเปิดหน้านี้ใหม่';render();});
  }
  button.onclick=async()=>{if(!access()||!ready||busy)return;const {cloud,user}=session(),mark=generation,previous=enabled,desired=!enabled;busy=true;message.textContent='กำลังบันทึกสถานะ…';render();
