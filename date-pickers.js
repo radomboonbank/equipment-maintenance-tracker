@@ -5,7 +5,7 @@
   root.querySelectorAll('input[placeholder="วว/ดด/พ.ศ."]').forEach(input=>{
    if(input.dataset.dateEnhanced)return;
    input.dataset.dateEnhanced='true';
-   const initial=input.value.split('/').map(Number),current=Number(new Intl.DateTimeFormat('en-u-ca-buddhist-nu-latn',{timeZone:'Asia/Bangkok',year:'numeric'}).format(new Date()));
+   const initial=input.value.split('/').map(Number),current=Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Bangkok',year:'numeric'}).format(new Date()))+543;
    const group=document.createElement('span');group.className='local-date-picker';group.setAttribute('role','group');group.setAttribute('aria-label','วัน เดือน ปี พ.ศ.');
    const make=(label,values,selected)=>{
     const select=document.createElement('select');select.setAttribute('aria-label',label);select.id='local-date-'+(++sequence);

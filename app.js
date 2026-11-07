@@ -1,7 +1,7 @@
-import {installThaiDateTime} from './thai-datetime.js?v=20261107-selectors';
+import {installThaiDateTime} from './thai-datetime.js?v=20261107-sitewide-selectors';
 installThaiDateTime(window);
 import {saveEquipmentWithTelegram} from './telegram-settings.js?v=20261106';
-import {openGenDispatchReference,openGenDispatchEvent} from './gen-dispatch-reference.js?v=20261107-save-close';
+import {openGenDispatchReference,openGenDispatchEvent} from './gen-dispatch-reference.js?v=20261107-sitewide-selectors';
 import {encodeSeverityRecord,decodeSeverityRecord} from './severity-record.js?v=20261104-legacy-levels';
 import {createIdleSession} from './idle-session.js?v=20261103';
 import {createConstructionStore} from './construction-store.js?v=20261104-delete';
@@ -143,7 +143,7 @@ function dateControl(name,value=''){
  const [y,m,d]=value.split('-').map(Number),current=Number(dateParts().year)+543;
  const opts=(values,selected)=>'<option value="">—</option>'+values.map(([v,l])=>`<option value="${v}" ${v===selected?'selected':''}>${l}</option>`).join('');
  const years=Array.from({length:current+11-2400},(_,i)=>current+10-i);if(y&& !years.includes(y+543))years.push(y+543);
- return `<div class="date-control"><select name="${name}-day" aria-label="วัน ${name}">${opts(Array.from({length:31},(_,i)=>[i+1,i+1]),d)}</select><select name="${name}-month" aria-label="เดือน ${name}">${opts(['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'].map((v,i)=>[i+1,v]),m)}</select><select name="${name}-year" aria-label="ปี พ.ศ. ${name}">${opts(years.map(v=>[v,v]),y+543)}</select></div>`;
+ return `<div class="date-control"><select name="${name}-day" aria-label="วัน ${name}">${opts(Array.from({length:31},(_,i)=>[i+1,i+1]),d)}</select><select name="${name}-month" aria-label="เดือน ${name}">${opts(['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'].map((v,i)=>[i+1,v]),m)}</select><select name="${name}-year" aria-label="ปี พ.ศ. ${name}">${opts(years.map(v=>[v,v]),y+543)}</select></div>`;
 }
 function formDate(f,name){try{return readDate(f.get(name+'-day'),f.get(name+'-month'),f.get(name+'-year'))}catch(error){const label=name==='closure'?'วันที่ปิดงาน':name==='repair-expected'?'วันที่คาดว่าจะแก้ไขเสร็จ':name.startsWith('follow-')?'วันที่ติดตามครั้ง '+(Number(name.slice(7))+1):fields[name]||name;throw Error(label+': '+error.message)}}
 function eventTypeControl(value='') {
