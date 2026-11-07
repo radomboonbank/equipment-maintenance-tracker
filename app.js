@@ -1,4 +1,4 @@
-import {installThaiDateTime} from './thai-datetime.js?v=20261107';
+import {installThaiDateTime} from './thai-datetime.js?v=20261107-selectors';
 installThaiDateTime(window);
 import {saveEquipmentWithTelegram} from './telegram-settings.js?v=20261106';
 import {openGenDispatchReference,openGenDispatchEvent} from './gen-dispatch-reference.js?v=20261107-save-close';
