@@ -6,48 +6,116 @@ const transmissionContacts = [["1","556335","นายสำเริงศั�
 const lineContacts = [["1","540595","นายวิโรจน์ สุขรัตน์","กสก-ส.","","","0632134466"],["2","543144","นายประกอบ สมหวัง","วศ.10","","วศ.10 ทกท.กสก-ส.","0818484760"],["3","557072","นายชัยธนันท์ วรรณรวีวัฒน์","วศ.10","","","0615989145"],["4","568597","น.ส.ณหทัย พิมเสน","วศ.8","","","0891992591"],["5","590663","นายภาณุพงศ์ ต่วนภูษา","หวสก-ส.","","หัวหน้าแผนกวิศวกรรมสายส่ง","0650496665"],["6","468657","นายสุนทร แพรบำรุง","ช.8","หวสก-ส.","ช่างอาวุโส หวสก-ส. ทนท.มปสกต-ปส.นสกต-ปส. อค-ปส.","0870217775"],["7","594907","นายวิศรุต ตรีเดชา","วศ.7","หวสก-ส.","","0952475017"],["8","592173","นายเอกภาพ หลังชาย","วศ.7","หวสก-ส.","","0846404286"],["9","590221","นายไพศาล นาคปาน","ช.6","หวสก-ส.","หน.กลุ่มงานวิศวกรรมโยธา","0614192345"],["10","498262","นายณราวุฒิ เพียรสุขประเสริฐ","ช.7","หวสก-ส.","หน.กลุ่มงานกรรมสิทธิ์ที่ดิน","0865413441"],["11","541192","นายสุรงค์ สุนทราวงศ์","ช.7","หวสก-ส.","หน.กลุ่มงานบำรุงรักษาเครื่องมือบำรุงรักษาสายส่ง","0953965515"],["12","596513","นายภาสกร ต้อนรับ","ช.5","หวสก-ส.","หน.กลุ่มงานบริหารอุปกรณ์สายส่ง","0823868614"],["13","597906","นายสุรเชษฐ์ ชมใจ","วศ.4","หวสก-ส.","หน.กลุ่มงานวิศวกรรมสายส่ง","0839631498"],["12","468525","นายคณิต เกิดปัญญา","ช.9","หสก1-ส.","ช.9 ทนท.หสก1-ส.","0817568856"],["13","469211","นายสงขลา บุรีรักษ์","ช.8","หสก1-ส.","ช.8 ทกท.หสก1-ส.","0818521591"],["33","599158","นายกรณวัฒน์ นพศรี","วศ.4","หสก1-ส.","","0983602847"],["14","502073","นายชาตรี พัดพิน","ช.7","หสก1-ส.","หน.บสส.บางปะอิน2","0971893793"],["15","528862","นายประมวล สุพรรณหนู","ช.7","หสก1-ส.","หน.บสส.อ่างทอง1","0860108396"],["16","569925","นายยุกาญจน์ ดิษฐ์กระจัน","ช.7","หสก1-ส.","หน.บสส.ท่าลาน 3-1","0851364101"],["17","592601","นายชำนาญ เจริญเกตุ","ช.6","หสก1-ส.","หน.บสส.ท่าลาน 3-2","0841251749"],["18","568112","นายวิสา บุญทรงกิตติ","ช.7","หสก1-ส.","หน.บสส.สิงห์บุรี","0854059453"],["34","513601","นายอมรชัย เปลี่ยนศรีเปล่ง","ช.7","หสก1-ส.","หน่วยจัดการเขต","0982857408"],["5","571504","นายธรรศพร นรังศิยา","หสก2-ส.","","หัวหน้าแผนกบำรุงรักษาสายส่ง 2","0851210644"],["20","547417","นายประเมษฐ วุฒิสินธุ์","ช.8","หสก2-ส.","ทกท.หสก2-ส.","0894571166"],["35","599320","นายธนารัชฏ์ จวนจรูญ","วศ.4","หสก2-ส.","","0957045446"],["21","591344","นายธันวา ศิริวรรณ","ช.6","หสก2-ส.","หน.บสส.สระบุรี 5","0865586514"],["22","547794","นายเกรียงศักดิ์ ธรรมธร","ช.7","หสก2-ส.","หน.บสส.คลองใหม่","0862014377"],["23","590220","นายประสิทธิ์ศักดิ์ ฉิมไทย","ช.6","หสก2-ส.","หน.บสส.ปราจีนบุรี1","0875356537"],["24","593718","นายทศพร ฟักน่วม","ช.5","หสก2-ส.","หน.บสส.ปราจีนบุรี2","0929025560"],["25","542237","นายศักดิ์ชาย นามสิมมา","หสก3-ส.","","หัวหน้าแผนกบำรุงรักษาสายส่ง 3","0855058390"],["26","529664","นายพิชินทร์ คล่องแคล่ว","ช.8","หสก3-ส.","ทกท.หสก3-ส","0818544771"],["36","597365","นายสุริยพงศ์ สินสุขเศรษฐ์ว","วศ.7","หสก3-ส.","","0951454652"],["27","590644","นายวิโรจน์ จันอินทร์","ช.6","หสก3-ส.","หน.บสส.อ่าวไผ่","0852633923"],["28","542245","นายไพโรจน์ ศรีปาน","ช.7","หสก3-ส.","หน.บสส.ปลวกแดง","0831367801"],["29","568104","นายศิวากร แย้มเกษร","ช.6","หสก3-ส.","หน.บสส.ระยอง 2","0922678606"],["30","563803","นายประถม ชมโฉม","ช.7","หสก3-ส.","หน.บสส.จันทบุรี","0909795572"],["37","541184","นายสมภูมิ จุติปัญญา","ช.7","หสก3-ส.","หน่วยจัดการเขต","0868186965"],["38","568139","นายรักษ์บุณย์ ประชุมสาย","ช.5","หสก3-ส.","หน่วยจัดการเขต","0899953940"]];
 const krContacts = [["1","489387","นายธาณินทร์ ศรีอ่อน","กรก-ส.","","","0891777898"],["2","471070","นายบุญเชิด คันธชุมภู","วศ.9","","","0818356501"],["3","536415","นายชาตรี เอี่ยมสอาด","ช.9","","","0982878282"],["4","560588","นายพีระ สวัสดิการ","หรก1-ส.","","","0898330386"],["5","554294","นางจอมขวัญ พานิล","ช.8","","","0990965934"],["6","591445","น.ส.วันวิสาข์ ศรีสงคราม","วศ.7","","","0830756560"],["7","592587","นายธนพัทธ์ ทัพกฤษณ์","ช.6","","หน.กรุ๊ป A","0873609677"],["8","593725","นายกฤตภาส ปันทรัตน์","ช.5","","หน.กรุ๊ป B","0864128579"],["9","531049","นายมนตรี ประดิษฐบุญ","หรก2-ส.","","","0819022285"],["10","575003","นายสรศักดิ์ ทองพวง","ช.6","","หน.กรุ๊ป A","0958782999"],["11","596597","ว่าที่ ร.ต.ณรงค์ชัย ประเสริฐสังข์","ช.5","","หน.กรุ๊ป B","0615512451"],["12","596492","นายสุพศิน เทพหัสดิน ณ อยุธยา","ช.5","","","0639297346"],["13","598013","นายธรรมศาสตร์ ไมตรี","ช.4","","","0819495367"],["14","471267","นายวิชาญ โตเจริญ","หรก3-ส.","","","0814335599"],["15","528005","นายบำรุง ทองนพคุณ","ช.8","","","0988312528"],["16","504378","นายนที โฉมงาม","ช.8","","","0818641788"],["17","511250","นายสุริวงค์ คงโฉลง","ช.7","","หน.กรุ๊ป A","0830121288"],["18","512621","นายนคร หน่ายคอน","ช.7","","หน.กรุ๊ป B","0868206799"],["19","543152","นายอภิสิทธิ์ ถวิลการ","หบดก3-ห.","","","0889159928"],["20","592599","นายธราธร บุญอยู่","ช.6","หบดก3-ห.","","0865196259"]];
 const adminContacts = [["1","-","ว่าง","กบหก-ส.","","","-"],["2","533505","นางญาณี เจียรนัยกุลวานิช","วก.9","","","0817412870"],["4","578797","น.ส.วราภรณ์ กุลอิ่ม","หธก-ส.","","งานบริการยานพาหนะ","0851328419"],["5","463620","นายอภิชาติ เกรียงไกรวณิช","หน.สนง.บางปะอิน","","","0812920311"],["6","531766","นายเฉลิมสุข เนียมโสภา","ช.7","","","0982682677"],["9","468932","นายสมฤทธิ์ ประดาวงศ์","หน.สนง.อ่าวไผ่","","","0836958278"],["10","547395","นายดนัย สาตรพันธุ์","ช.7","","","0811593355"],["13","593242","น.ส.ประกายดาว ดารานนท์","หงปก-ห.","อทบ. กบส-ห.","งานสวัสดิการ","0873328755"],["14","594367","นายจักราวุธ ศุขเขษม","หกภก-ห.","อกม. กกภ-ห.","งานกฎหมาย","0890680948"],["15","595543","น.ส.พิมพ์วลัญช์ เย็นใจ","หชสก-ย.","อกย. กชส-ย","งานประชาสัมพันธ์","0926416565"],["16","488429","นายวัชระ โพธิ์เกตุ","ศก.7","หชสก-ย.","","0819034779"]];
-const search = document.getElementById('standby-search');
-const body = document.getElementById('standby-rows');
-const buttons = [...document.querySelectorAll('[data-group]')];
-let group = 'กคก-ส';
-const normalize = value => value.toLocaleLowerCase('th').replace(/[\s-]/g, '');
-function render() {
- const source = group === 'กคก-ส' ? contacts : group === 'ผู้บริหาร อปก' ? executiveContacts : group === 'กถก-ส' ? transmissionContacts : group === 'กสก-ส' ? lineContacts : group === 'กรก-ส' ? krContacts : group === 'กบหก' ? adminContacts : [];
- const matches = source.filter(row => normalize(row.join(' ')).includes(normalize(search.value.trim())));
- document.getElementById('group-title').textContent = group;
 
- document.getElementById('standby-count').textContent = 'แสดง ' + matches.length + ' จาก ' + source.length + ' รายชื่อ';
- const empty = document.getElementById('standby-empty');
- empty.hidden = matches.length > 0;
- empty.textContent = source.length ? 'ไม่พบรายชื่อที่ตรงกับคำค้นหา' : 'ยังไม่มีข้อมูลรายชื่อ ' + group;
+const groups=['ผู้บริหาร อปก','กคก-ส','กถก-ส','กสก-ส','กรก-ส','กบหก'];
+const lists=[executiveContacts,contacts,transmissionContacts,lineContacts,krContacts,adminContacts];
+const channel=new BroadcastChannel('grid-standby-v1'),client=crypto.randomUUID(),pending=new Map();
+const overrides=new Map();
+let group='กคก-ส',mayEdit=false,server='',ready=false,editing=null,saving=false;
+const $=id=>document.getElementById(id),search=$('standby-search'),body=$('standby-rows');
+const buttons=[...document.querySelectorAll('[data-group]')],dialog=$('standby-editor'),form=$('standby-edit-form');
+const labels=['ลำดับที่','รหัสพนักงาน','ชื่อ - สกุล','ตำแหน่ง','สังกัด','รายละเอียด','โทรศัพท์มือถือ'];
+const normalize=v=>v.toLocaleLowerCase('th').replace(/[\s-]/g,'');
+function request(action,payload,timeout=5000) {
+ return new Promise((resolve,reject)=>{
+  const id=crypto.randomUUID(),timer=setTimeout(()=>{pending.delete(id);reject(Error('กรุณาเปิดแท็บหลักและเข้าสู่ระบบด้วย King Admin หรือ Super Admin'));},timeout);
+  pending.set(id,{resolve,reject,timer,action});
+  channel.postMessage({kind:'request',client,id,action,payload,server:action==='session'?'':server});
+ });
+}
+channel.onmessage=({data:m})=>{
+ if(m?.kind!=='response'||m.client!==client)return;
+ const p=pending.get(m.id);if(!p)return;
+ if(p.action==='session'&&!m.result?.canEdit)return;
+ if(p.action==='save'&&m.server!==server)return;
+ clearTimeout(p.timer);pending.delete(m.id);
+ if(m.error)p.reject(Error(m.error));else{if(p.action==='session')server=m.server;p.resolve(m.result);}
+};
+async function refreshAccess(){
+ try{const r=await request('session');mayEdit=!!r.canEdit;}catch{mayEdit=false;server='';}
+ if(!mayEdit&&dialog.open&&!saving)dialog.close();
+ render();
+}
+function entries(){
+ const i=groups.indexOf(group);
+ return lists[i].map((base,index)=>{const key='g'+i+'-'+index,stored=overrides.get(key);return{key,row:stored?.row||base,revision:stored?.revision||0};});
+}
+function render(){
+ $('standby-edit-heading').hidden=!(mayEdit&&ready);
+ const source=entries(),matches=source.filter(e=>normalize(e.row.join(' ')).includes(normalize(search.value.trim())));
+ $('group-title').textContent=group;
+ $('standby-count').textContent='แสดง '+matches.length+' จาก '+source.length+' รายชื่อ';
+ $('standby-empty').hidden=matches.length>0;
+ $('standby-empty').textContent='ไม่พบรายชื่อที่ตรงกับคำค้นหา';
  body.replaceChildren();
- for (const row of matches) {
-  const tr = document.createElement('tr');
-  row.forEach((value, index) => {
-   const td = document.createElement('td');
-   if (index === 6 && row[2] !== 'ว่าง') {
-    const link = document.createElement('a');
-    link.href = 'tel:' + value;
-    link.textContent = value.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
-    link.setAttribute('aria-label', 'โทรหา ' + row[2] + ' ' + value);
-    td.append(link);
-   } else td.textContent = value || '—';
+ for(const entry of matches){
+  const tr=document.createElement('tr');
+  entry.row.forEach((value,index)=>{
+   const td=document.createElement('td');
+   if(index===6&&/^0\d{9}$/.test(value)&&entry.row[2]!=='ว่าง'){
+    const a=document.createElement('a');a.href='tel:'+value;a.textContent=value.replace(/(\d{3})(\d{3})(\d{4})/,'$1-$2-$3');
+    a.setAttribute('aria-label','โทรหา '+entry.row[2]+' '+value);td.append(a);
+   }else td.textContent=value||'—';
    tr.append(td);
   });
+  if(mayEdit&&ready){
+   const td=document.createElement('td'),b=document.createElement('button');
+   b.type='button';b.textContent='แก้ไข';b.setAttribute('aria-label','แก้ไข '+entry.row[2]);
+   b.addEventListener('click',()=>openEditor(entry));td.append(b);tr.append(td);
+  }
   body.append(tr);
  }
- buttons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.group === group)));
+ buttons.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.group===group)));
 }
-buttons.forEach(button => button.addEventListener('click', () => {
- group = button.dataset.group;
- search.value = '';
- render();
-}));
-document.getElementById('standby-close').addEventListener('click', () => {
- window.close();
- // A directly opened tab may not allow script closing.
- window.setTimeout(() => window.location.assign('./'), 150);
+function openEditor(entry){
+ if(!mayEdit||!ready)return;
+ editing={...entry,group};$('standby-edit-title').textContent='แก้ไขข้อมูล · '+group;
+ $('standby-edit-message').textContent='';
+ const fields=$('standby-edit-fields');fields.replaceChildren();
+ labels.forEach((label,i)=>{
+  const wrap=document.createElement('label');wrap.textContent=label;
+  const input=document.createElement(i===5?'textarea':'input');
+  input.name='field'+i;input.maxLength=2000;input.value=entry.row[i];
+  if(i===2)input.required=true;
+  if(i===6){input.inputMode='tel';input.maxLength=50;}
+  wrap.append(input);fields.append(wrap);
+ });
+ dialog.showModal();
+}
+form.addEventListener('submit',async e=>{
+ e.preventDefault();if(saving||!editing||!mayEdit||!ready)return;
+ const row=labels.map((_,i)=>form.elements['field'+i].value.trim());
+ row[6]=row[6].replace(/[\s()-]/g,'')||(row[6].trim()==='-'?'-':'');
+ if(!row[2]||row[6]&&row[2]!=='ว่าง'&&!/^0\d{9}$/.test(row[6])){$('standby-edit-message').textContent='กรุณากรอกชื่อและเบอร์มือถือ 10 หลัก (เว้นว่างได้)';return;}
+ saving=true;$('standby-save').disabled=true;$('standby-cancel').disabled=true;
+ $('standby-edit-message').textContent='กำลังบันทึกออนไลน์…';
+ try{
+  const saved=await request('save',{key:editing.key,row,revision:editing.revision},20000);
+  overrides.set(editing.key,{row,revision:saved.revision});
+  dialog.close();$('standby-status').textContent='บันทึกข้อมูลออนไลน์แล้ว';render();
+ }catch(e){$('standby-edit-message').textContent=e.message;}
+ finally{saving=false;$('standby-save').disabled=false;$('standby-cancel').disabled=false;}
 });
-search.addEventListener('input', render);
-render();
+$('standby-cancel').addEventListener('click',()=>{if(!saving)dialog.close();});
+dialog.addEventListener('cancel',e=>{if(saving)e.preventDefault();});
+buttons.forEach(b=>b.addEventListener('click',()=>{group=b.dataset.group;search.value='';render();}));
+$('standby-close').addEventListener('click',()=>{window.close();window.setTimeout(()=>window.location.assign('./'),150);});
+search.addEventListener('input',render);
+render();void refreshAccess();const accessTimer=setInterval(refreshAccess,6000);
+window.addEventListener('focus',()=>void refreshAccess());
+window.addEventListener('pagehide',()=>{clearInterval(accessTimer);channel.close();},{once:true});
+async function connect(){
+ try{
+  const base='https://www.gstatic.com/firebasejs/13.0.0/';
+  const [app,f]=await Promise.all([import(base+'firebase-app.js'),import(base+'firebase-firestore.js')]);
+  const instance=app.initializeApp(window.GRID_FIREBASE_CONFIG,'standby-directory'),db=f.getFirestore(instance);
+  f.onSnapshot(f.collection(db,'StandbyContacts'),snapshot=>{
+   overrides.clear();
+   snapshot.docs.forEach(doc=>{const d=doc.data();if(Array.isArray(d.row)&&d.row.length===7&&d.row.every(v=>typeof v==='string'))overrides.set(doc.id,d);});
+   ready=true;$('standby-status').textContent='';render();
+  },()=>{ready=false;$('standby-status').textContent='โหลดข้อมูลออนไลน์ไม่ได้ กรุณารีเฟรชหน้าอีกครั้ง';render();});
+ }catch{ready=false;$('standby-status').textContent='เชื่อมต่อข้อมูลออนไลน์ไม่ได้ กรุณาตรวจอินเทอร์เน็ต';render();}
+}
+void connect();
+
 })();
