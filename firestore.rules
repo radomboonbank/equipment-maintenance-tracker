@@ -165,7 +165,7 @@ service cloud.firestore {
     && v.plant is string && v.plant.size() <= 500
     && (v.mw == null || (v.mw is number && v.mw >= 0))
     && v.connection is string && v.connection.size() <= 2000
-    && v.kvControl in ['','มี','ไม่มี']
+    && v.kvControl in ['','มี','ไม่มี','On','Off','ยังไม่มี kV Control']
     && v.note is string && v.note.size() <= 2000
     && d.createdBy is string && d.createdAt is timestamp
     && d.updatedBy == request.auth.uid && d.updatedAt == request.time
