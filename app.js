@@ -1,3 +1,4 @@
+import {installStandbyBridge} from './standby-bridge.js?v=20261108';
 import {installThaiDateTime} from './thai-datetime.js?v=20261107-sitewide-selectors';
 installThaiDateTime(window);
 import {saveEquipmentWithTelegram} from './telegram-settings.js?v=20261107-backup';
@@ -50,6 +51,7 @@ function rememberLogin(uid,entry){
  onlineLoginInfo.set(uid,{...previous,...(entry.username?{username:entry.username}:{}),...(started?{started:Math.max(previous.started||0,started)}:{})});
 }
 let memberDuty='';
+installStandbyBridge(()=>({cloud,user,role,duty:memberDuty}));
 const membersPage=createMembersPage({session:()=>({cloud,user,role,duty:memberDuty}),endpoint:()=>window.GRID_TELEGRAM_URL});
 
 let unsubscribeLogins=null;
