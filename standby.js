@@ -15,7 +15,7 @@ function render() {
  const source = group === 'กคก-ส' ? contacts : group === 'ผู้บริหาร อปก' ? executiveContacts : group === 'กถก-ส' ? transmissionContacts : group === 'กสก-ส' ? lineContacts : group === 'กรก-ส' ? krContacts : group === 'กบหก' ? adminContacts : [];
  const matches = source.filter(row => normalize(row.join(' ')).includes(normalize(search.value.trim())));
  document.getElementById('group-title').textContent = group;
- document.getElementById('standby-source').textContent = group === 'กบหก' ? 'ข้อมูลจากไฟล์ กบหก.xlsx' : group === 'กรก-ส' ? 'ข้อมูลจากไฟล์ กรก.xlsx' : group === 'กสก-ส' ? 'ข้อมูลจากไฟล์ กสก.xlsx' : group === 'กถก-ส' ? 'ข้อมูลจากไฟล์ กถก.xlsx' : group === 'ผู้บริหาร อปก' ? 'ข้อมูลจากไฟล์ ผู้บริหาร.xlsx' : source.length ? 'ข้อมูลจากรายชื่อ Standby กคก. วันที่ 30 ธ.ค. 2568' : '';
+
  document.getElementById('standby-count').textContent = 'แสดง ' + matches.length + ' จาก ' + source.length + ' รายชื่อ';
  const empty = document.getElementById('standby-empty');
  empty.hidden = matches.length > 0;
@@ -43,6 +43,11 @@ buttons.forEach(button => button.addEventListener('click', () => {
  search.value = '';
  render();
 }));
+document.getElementById('standby-close').addEventListener('click', () => {
+ window.close();
+ // A directly opened tab may not allow script closing.
+ window.setTimeout(() => window.location.assign('./'), 150);
+});
 search.addEventListener('input', render);
 render();
 })();
