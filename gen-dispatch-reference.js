@@ -1,5 +1,5 @@
 import {createGenDispatchEventStore} from './gen-dispatch-event-store.js?v=20261107-subevents';
-import {createGenDispatchEvents,sppFontFaces} from './gen-dispatch-events.js?v=20261108-spp-filtered-view';
+import {createGenDispatchEvents,sppFontFaces} from './gen-dispatch-events.js?v=20261108-spp-close-buttons';
 import {editIconUrl} from './edit-icons.js?v=20261106';
 const regions=['กลางบน - หถก1&2','กลางบน - หถก3','กลางตะวันออก - หถก4&5&6'];
 const kvStatuses=['On','Off','ยังไม่มี kV Control'];
