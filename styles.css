@@ -177,7 +177,8 @@ aside .overview-link.active{background:none;color:#a6bdc7;box-shadow:none}aside 
 aside #members-nav.active{background:none;color:#a6bdc7;box-shadow:none}aside #members-nav.active:hover{background:#244854}
 aside .nav > span{display:inline-block;transition:color .15s ease,font-size .15s ease}
 aside .nav:hover > span,aside .nav:focus-visible > span{color:#ff5252;font-weight:800;font-size:14px}
-aside .nav:is(:hover,:focus-visible),.grid-summary-six > .grid-summary-panel:nth-child(-n+4) .fault-drilldown:is(:hover,:focus-visible){outline:5px solid #dc2626;outline-offset:-5px}
+aside .nav:is(:hover,:focus-visible){outline:5px solid #dc2626;outline-offset:-5px}
+.grid-summary-six > .grid-summary-panel:nth-child(-n+4) .fault-drilldown:is(:hover,:focus-visible){outline:5px solid #dc2626;outline-offset:5px}
 @media(prefers-reduced-motion:reduce){aside .nav > span{transition:none}aside .nav:hover > span,aside .nav:focus-visible > span{animation:none}}
 
 .inventory-transformers tr:first-child th:not(:first-child){font-size:9px;letter-spacing:-.25px}
