@@ -21,7 +21,7 @@ channel.onmessage=({data:m})=>{
  if(m?.kind!=='response'||m.client!==client)return;
  const p=pending.get(m.id);if(!p)return;
  if(p.action==='session'&&!m.result?.canEdit)return;
- if(p.action==='save'&&m.server!==p.server)return;
+ if(p.action!=='session'&&m.server!==p.server)return;
  clearTimeout(p.timer);pending.delete(m.id);
  if(m.error)p.reject(Error(m.error));else{if(p.action==='session')server=m.server;p.resolve(m.result);}
 };
@@ -51,7 +51,7 @@ async function ensureImported(){
     if(overrides.has(entry.key)){completed++;return;}
     try{
      const saved=await request('save',{...entry,revision:0},30000);
-     overrides.set(entry.key,{row:entry.row,revision:saved.revision});completed++;
+     if(!saved.deleted)overrides.set(entry.key,{row:entry.row,revision:saved.revision});completed++;
     }catch(error){
      if(!overrides.has(entry.key))throw error;
      completed++;
@@ -212,7 +212,7 @@ form.addEventListener('submit',async e=>{
  if(saving)return;
  const message=$('standby-edit-message');
  if(!editing){message.textContent='ไม่พบรายการที่จะแก้ไข กรุณาปิดและเปิดรายการใหม่';return;}
- saving=true;$('standby-save').disabled=true;$('standby-cancel').disabled=true;
+ setEditorBusy(true);
  message.textContent='กำลังตรวจสิทธิ์และบันทึกออนไลน์…';
  const record={...editing,row:[...editing.row]};
  try{
@@ -237,8 +237,29 @@ form.addEventListener('submit',async e=>{
   message.textContent=error?.message||'บันทึกไม่สำเร็จ กรุณาลองอีกครั้ง';
   message.setAttribute('tabindex','-1');message.focus();
  }finally{
-  saving=false;$('standby-save').disabled=false;$('standby-cancel').disabled=false;
+  setEditorBusy(false);
  }
+});
+function setEditorBusy(busy){
+ saving=busy;
+ for(const id of ['standby-save','standby-cancel','standby-delete'])$(id).disabled=busy;
+}
+$('standby-delete').addEventListener('click',async()=>{
+ if(saving||!mayEdit||!editing)return;
+ const {key,row,revision}=editing;
+ const label=displayName(row[2])+' ('+row[1]+') กลุ่ม '+groups[Number(key.slice(1).split('-')[0])]+' ลำดับ '+row[0];
+ if(!window.confirm('ยืนยันลบ '+label+' ออกจาก Firebase?'))return;
+ const message=$('standby-edit-message');
+ setEditorBusy(true);message.textContent='กำลังลบรายการจาก Firebase…';
+ try{
+  const access=await request('session');
+  if(!access.canDelete)throw Error('กรุณารีเฟรชแท็บหลักเพื่อใช้ปุ่มลบรายการ');
+  const result=await request('delete',{key,revision},30000);
+  if(!result.deleted)throw Error('Firebase ยังไม่ยืนยันการลบ');
+  overrides.delete(key);editing=null;dialog.close();render();
+  $('standby-status').textContent='ลบรายการจาก Firebase แล้ว · '+label;
+ }catch(error){message.textContent='ลบรายการไม่สำเร็จ · '+error.message;}
+ finally{setEditorBusy(false);}
 });
 $('standby-cancel').addEventListener('click',()=>{if(!saving)dialog.close();});
 dialog.addEventListener('cancel',e=>{if(saving)e.preventDefault();});
