@@ -1,4 +1,4 @@
-import {installStandbyBridge} from './standby-bridge.js?v=20261109-delete';
+import {installStandbyBridge} from './standby-bridge.js?v=20261109-king-upload';
 import {installThaiDateTime} from './thai-datetime.js?v=20261107-sitewide-selectors';
 installThaiDateTime(window);
 import {saveEquipmentWithTelegram} from './telegram-settings.js?v=20261107-backup';

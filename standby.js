@@ -3,7 +3,7 @@
 const groups=['ผู้บริหาร อปก','กคก-ส','กถก-ส','กสก-ส','กรก-ส','กบหก'];
 const channel=new BroadcastChannel('grid-standby-v1'),client=crypto.randomUUID(),pending=new Map();
 const overrides=new Map();
-let group='ทั้งหมด',mayEdit=false,server='',ready=false,editing=null,saving=false,importing=false,importAttempted=false;
+let group='ทั้งหมด',mayEdit=false,mayUpload=false,server='',ready=false,editing=null,saving=false,importing=false,importAttempted=false;
 const $=id=>document.getElementById(id),search=$('standby-search'),body=$('standby-rows');
 const buttons=[...document.querySelectorAll('[data-group]')],dialog=$('standby-editor'),form=$('standby-edit-form');
 const labels=['ลำดับที่','รหัสพนักงาน','ชื่อ - สกุล','ตำแหน่ง','สังกัด','รายละเอียด','โทรศัพท์มือถือ'];
@@ -26,7 +26,7 @@ channel.onmessage=({data:m})=>{
  if(m.error)p.reject(Error(m.error));else{if(p.action==='session')server=m.server;p.resolve(m.result);}
 };
 async function refreshAccess(){
- try{const r=await request('session');mayEdit=!!r.canEdit;}catch{mayEdit=false;server='';}
+ try{const r=await request('session');mayEdit=!!r.canEdit;mayUpload=r.canUpload===true;}catch{mayEdit=false;mayUpload=false;server='';}
  if(!mayEdit&&dialog.open&&!saving)dialog.close();
  render();
  void ensureImported();
@@ -65,7 +65,7 @@ async function ensureImported(){
  }finally{importing=false;render();}
 }
 function render(){
- $('standby-upload').hidden=!mayEdit;
+ $('standby-upload').hidden=!mayUpload;
  $('standby-upload').disabled=!ready||importing;
  $('standby-edit-heading').hidden=!(mayEdit&&ready);
  const source=entries(),matches=source.filter(e=>normalize(e.row.join(' ')).includes(normalize(search.value.trim())));
@@ -170,7 +170,7 @@ const fileInput=$('standby-file');
 $('standby-upload').addEventListener('click',()=>fileInput.click());
 fileInput.addEventListener('change',async()=>{
  const file=fileInput.files[0];fileInput.value='';
- if(!file||!mayEdit||!ready||importing)return;
+ if(!file||!mayUpload||!ready||importing)return;
  const status=$('standby-status'),notice=$('standby-duplicates');
  notice.textContent='';
  let saved=0;
@@ -182,7 +182,7 @@ fileInput.addEventListener('change',async()=>{
   notice.textContent=notices.join('\n');
   for(const record of changes){
    status.textContent='กำลังอัปเดต Firebase '+(saved+1)+' / '+changes.length;
-   await request('save',record,30000);
+   await request('upload',record,30000);
    saved++;
   }
   status.textContent=(ambiguous.length?(saved?'อัปเดตได้บางส่วน':'ไม่มีรายการเปลี่ยนแปลง'):'อัปเดตสมบูรณ์')+' · บันทึก '+saved+' รายการ'+(skipped?' · ข้าม '+skipped+' รหัสที่ไม่พบในรายชื่อ':'')+
