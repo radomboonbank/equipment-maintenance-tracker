@@ -118,7 +118,7 @@ function planImport(book, xlsx) {
   }
  }
  if(!updates.size)throw Error('ไม่พบข้อมูล กรุณาใช้หัวคอลัมน์ รหัสพนักงาน ตำแหน่ง สังกัด และรายละเอียด');
- const byEmployee=new Map(),changes=[],ambiguous=[];
+ const byEmployee=new Map(),changes=[],ambiguous=[],notices=[];
  for(const [key,record] of overrides){
   const id=record.row[1].trim();
   if(!byEmployee.has(id))byEmployee.set(id,[]);
@@ -144,6 +144,19 @@ function planImport(book, xlsx) {
     assignments.set(target,input.values);
    }
   }
+  const ordersByGroup=new Map();
+  for(const {key,row} of records){
+   const groupName=groups[Number(key.slice(1).split('-')[0])];
+   if(!ordersByGroup.has(groupName))ordersByGroup.set(groupName,[]);
+   ordersByGroup.get(groupName).push(row[0]);
+  }
+  for(const [groupName,orders] of ordersByGroup){
+   if(orders.length<2)continue;
+   orders.sort((a,b)=>a.localeCompare(b,'th',{numeric:true}));
+   const list=orders.slice(0,-1).join(', ')+' และ '+orders.at(-1);
+   notices.push('รหัส '+id+' มี '+orders.length+' รายการในกลุ่ม '+groupName+' คือ ลำดับ '+list+
+    (assignments.size?'':' · ข้ามรหัสนี้เพราะจับคู่กับแถวใน Excel ไม่ได้'));
+  }
   for(const [{key,row,revision},values] of assignments){
    if(values.every((v,i)=>v===row[3+i]))continue;
    const next=[...row];next.splice(3,3,...values);
@@ -151,20 +164,22 @@ function planImport(book, xlsx) {
   }
  }
  if(skipped===updates.size)throw Error('ไม่พบรหัสพนักงานใน Excel ที่ตรงกับรายชื่อ Standby');
- return {changes,skipped,ambiguous};
+ return {changes,skipped,ambiguous,notices};
 }
 const fileInput=$('standby-file');
 $('standby-upload').addEventListener('click',()=>fileInput.click());
 fileInput.addEventListener('change',async()=>{
  const file=fileInput.files[0];fileInput.value='';
  if(!file||!mayEdit||!ready||importing)return;
- const status=$('standby-status');
+ const status=$('standby-status'),notice=$('standby-duplicates');
+ notice.textContent='';
  let saved=0;
  importing=true;render();status.textContent='กำลังอ่านไฟล์ Excel…';
  try{
   const xlsx=await import('https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs');
   const book=xlsx.read(await file.arrayBuffer(),{type:'array'});
-  const {changes,skipped,ambiguous}=planImport(book,xlsx);
+  const {changes,skipped,ambiguous,notices}=planImport(book,xlsx);
+  notice.textContent=notices.join('\n');
   for(const record of changes){
    status.textContent='กำลังอัปเดต Firebase '+(saved+1)+' / '+changes.length;
    await request('save',record,30000);
