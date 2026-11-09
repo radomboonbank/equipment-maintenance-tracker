@@ -43,6 +43,7 @@ async function ensureImported(){
  try{
   const {seedGroups}=await import('./standby-seed.js?v=20261108');
   const missing=seedGroups.flatMap((rows,i)=>rows.map((row,index)=>({key:'g'+i+'-'+index,row}))).filter(e=>!overrides.has(e.key));
+  if(!missing.length)return;
   let completed=0;
   for(let i=0;i<missing.length;i+=4){
    $('standby-status').textContent='กำลังนำเข้ารายชื่อไป Firebase '+completed+' / '+missing.length+' รายการ';
@@ -156,7 +157,7 @@ async function connect(){
   f.onSnapshot(f.collection(db,'StandbyContacts'),snapshot=>{
    overrides.clear();
    snapshot.docs.forEach(doc=>{const d=doc.data();if(Array.isArray(d.row)&&d.row.length===7&&d.row.every(v=>typeof v==='string'))overrides.set(doc.id,d);});
-   ready=true;if(!importing)$('standby-status').textContent=overrides.size?'':'ยังไม่มีรายชื่อใน Firebase · รอ King Admin หรือ Super Admin เข้าสู่ระบบเพื่อนำเข้าข้อมูล';render();void ensureImported();
+   ready=true;if(!importing&&!overrides.size)$('standby-status').textContent='ยังไม่มีรายชื่อใน Firebase · รอ King Admin หรือ Super Admin เข้าสู่ระบบเพื่อนำเข้าข้อมูล';render();void ensureImported();
   },()=>{ready=false;$('standby-status').textContent='โหลดข้อมูลออนไลน์ไม่ได้ กรุณารีเฟรชหน้าอีกครั้ง';render();});
  }catch{ready=false;$('standby-status').textContent='เชื่อมต่อข้อมูลออนไลน์ไม่ได้ กรุณาตรวจอินเทอร์เน็ต';render();}
 }
