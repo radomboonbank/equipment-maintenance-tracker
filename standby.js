@@ -13,7 +13,7 @@ const normalize=v=>v.toLocaleLowerCase('th').replace(/[\s-]/g,'');
 function request(action,payload,timeout=5000) {
  return new Promise((resolve,reject)=>{
   const id=crypto.randomUUID(),timer=setTimeout(()=>{pending.delete(id);reject(Error('กรุณาเปิดแท็บหลักและเข้าสู่ระบบด้วย King Admin หรือ Super Admin'));},timeout);
-  pending.set(id,{resolve,reject,timer,action});
+  pending.set(id,{resolve,reject,timer,action,server:action==='session'?'':server});
   channel.postMessage({kind:'request',client,id,action,payload,server:action==='session'?'':server});
  });
 }
@@ -21,7 +21,7 @@ channel.onmessage=({data:m})=>{
  if(m?.kind!=='response'||m.client!==client)return;
  const p=pending.get(m.id);if(!p)return;
  if(p.action==='session'&&!m.result?.canEdit)return;
- if(p.action==='save'&&m.server!==server)return;
+ if(p.action==='save'&&m.server!==p.server)return;
  clearTimeout(p.timer);pending.delete(m.id);
  if(m.error)p.reject(Error(m.error));else{if(p.action==='session')server=m.server;p.resolve(m.result);}
 };
@@ -108,20 +108,37 @@ function openEditor(entry){
  dialog.showModal();
 }
 form.addEventListener('submit',async e=>{
- e.preventDefault();if(saving||!editing||!mayEdit||!ready)return;
- const row=[...editing.row];
- visibleFields.forEach(i=>{row[i]=form.elements['field'+i].value.trim();});
- if(row[2]===displayName(editing.row[2]))row[2]=editing.row[2];
- row[6]=row[6].replace(/[\s()-]/g,'')||(row[6].trim()==='-'?'-':'');
- if(!row[2]||row[6]&&row[2]!=='ว่าง'&&!/^0\d{9}$/.test(row[6])){$('standby-edit-message').textContent='กรุณากรอกชื่อและเบอร์มือถือ 10 หลัก (เว้นว่างได้)';return;}
+ e.preventDefault();
+ if(saving)return;
+ const message=$('standby-edit-message');
+ if(!editing){message.textContent='ไม่พบรายการที่จะแก้ไข กรุณาปิดและเปิดรายการใหม่';return;}
  saving=true;$('standby-save').disabled=true;$('standby-cancel').disabled=true;
- $('standby-edit-message').textContent='กำลังบันทึกออนไลน์…';
+ message.textContent='กำลังตรวจสิทธิ์และบันทึกออนไลน์…';
+ const record={...editing,row:[...editing.row]};
  try{
-  const saved=await request('save',{key:editing.key,row,revision:editing.revision},20000);
-  overrides.set(editing.key,{row,revision:saved.revision});
-  dialog.close();$('standby-status').textContent='บันทึกข้อมูลออนไลน์แล้ว';render();
- }catch(e){$('standby-edit-message').textContent=e.message;}
- finally{saving=false;$('standby-save').disabled=false;$('standby-cancel').disabled=false;}
+  const row=[...record.row];
+  visibleFields.forEach(i=>{
+   const input=form.querySelector('[name="field'+i+'"]');
+   if(!input)throw Error('โหลดช่องแก้ไขไม่ครบ กรุณาปิดและเปิดรายการใหม่');
+   row[i]=input.value.trim();
+  });
+  if(row[2]===displayName(record.row[2]))row[2]=record.row[2];
+  row[6]=row[6].replace(/[\s()-]/g,'')||(row[6].trim()==='-'?'-':'');
+  if(!row[2]||row[6]&&row[6]!=='-'&&row[2]!=='ว่าง'&&!/^0\d{9}$/.test(row[6]))throw Error('กรุณากรอกชื่อและเบอร์มือถือ 10 หลัก (เว้นว่างได้)');
+  const access=await request('session');
+  if(!access.canEdit)throw Error('บัญชีนี้ไม่มีสิทธิ์แก้ไขข้อมูล');
+  const saved=await request('save',{key:record.key,row,revision:record.revision},30000);
+  overrides.set(record.key,{row,revision:saved.revision});
+  editing=null;
+  dialog.close();
+  $('standby-status').textContent='บันทึกข้อมูลออนไลน์แล้ว';
+  render();
+ }catch(error){
+  message.textContent=error?.message||'บันทึกไม่สำเร็จ กรุณาลองอีกครั้ง';
+  message.setAttribute('tabindex','-1');message.focus();
+ }finally{
+  saving=false;$('standby-save').disabled=false;$('standby-cancel').disabled=false;
+ }
 });
 $('standby-cancel').addEventListener('click',()=>{if(!saving)dialog.close();});
 dialog.addEventListener('cancel',e=>{if(saving)e.preventDefault();});
