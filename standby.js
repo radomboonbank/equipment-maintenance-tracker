@@ -7,7 +7,7 @@ let group='ทั้งหมด',mayEdit=false,server='',ready=false,editing=nu
 const $=id=>document.getElementById(id),search=$('standby-search'),body=$('standby-rows');
 const buttons=[...document.querySelectorAll('[data-group]')],dialog=$('standby-editor'),form=$('standby-edit-form');
 const labels=['ลำดับที่','รหัสพนักงาน','ชื่อ - สกุล','ตำแหน่ง','สังกัด','รายละเอียด','โทรศัพท์มือถือ'];
-const visibleFields=[1,2,3,4,6];
+const visibleFields=[1,2,3,4,5,6];
 const displayName=value=>value.replace(/^(?:นางสาว|น\.ส\.|นาย|นาง)\s*/,'');
 const normalize=v=>v.toLocaleLowerCase('th').replace(/[\s-]/g,'');
 function request(action,payload,timeout=5000) {
@@ -65,6 +65,8 @@ async function ensureImported(){
  }finally{importing=false;render();}
 }
 function render(){
+ $('standby-upload').hidden=!mayEdit;
+ $('standby-upload').disabled=!ready||importing;
  $('standby-edit-heading').hidden=!(mayEdit&&ready);
  const source=entries(),matches=source.filter(e=>normalize(e.row.join(' ')).includes(normalize(search.value.trim())));
  $('group-title').textContent=group==='ทั้งหมด'?'รายชื่อทั้งหมด':group;
@@ -92,6 +94,63 @@ function render(){
  }
  buttons.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.group===group)));
 }
+function planImport(book, xlsx) {
+ const updates=new Map(), fields=labels.slice(3,6);
+ const clean=value=>String(value??'').trim();
+ const header=value=>clean(value).replace(/\s+/g,'');
+ for(const name of book.SheetNames){
+  const rows=xlsx.utils.sheet_to_json(book.Sheets[name],{header:1,raw:false,defval:''});
+  const start=rows.findIndex(row=>row.some(cell=>header(cell)===labels[1]));
+  if(start<0)continue;
+  const titles=rows[start].map(header);
+  for(const field of [labels[1],...fields]){
+   if(titles.filter(v=>v===field).length!==1)throw Error('ชีต '+name+' ต้องมีหัวคอลัมน์ '+field+' เพียงหนึ่งคอลัมน์');
+  }
+  for(const cells of rows.slice(start+1)){
+   const id=clean(cells[titles.indexOf(labels[1])]);
+   if(!id||id===labels[1])continue;
+   const values=fields.map(field=>clean(cells[titles.indexOf(field)]));
+   if(values.some(v=>v.length>2000))throw Error('ข้อมูลยาวเกินกำหนดสำหรับรหัส '+id);
+   const previous=updates.get(id);
+   if(previous&&previous.some((v,i)=>v!==values[i]))throw Error('ข้อมูลใน Excel ขัดกันสำหรับรหัส '+id);
+   updates.set(id,values);
+  }
+ }
+ if(!updates.size)throw Error('ไม่พบข้อมูล กรุณาใช้หัวคอลัมน์ รหัสพนักงาน ตำแหน่ง สังกัด และรายละเอียด');
+ const changes=[], matched=new Set();
+ for(const [key,{row,revision}] of overrides){
+  const id=row[1].trim(),values=updates.get(id);
+  if(!values)continue;
+  matched.add(id);
+  if(values.every((v,i)=>v===row[3+i]))continue;
+  const next=[...row];next.splice(3,3,...values);
+  changes.push({key,row:next,revision});
+ }
+ if(!matched.size)throw Error('ไม่พบรหัสพนักงานใน Excel ที่ตรงกับรายชื่อ Standby');
+ return {changes,skipped:updates.size-matched.size};
+}
+const fileInput=$('standby-file');
+$('standby-upload').addEventListener('click',()=>fileInput.click());
+fileInput.addEventListener('change',async()=>{
+ const file=fileInput.files[0];fileInput.value='';
+ if(!file||!mayEdit||!ready||importing)return;
+ const status=$('standby-status');
+ let saved=0;
+ importing=true;render();status.textContent='กำลังอ่านไฟล์ Excel…';
+ try{
+  const xlsx=await import('https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs');
+  const book=xlsx.read(await file.arrayBuffer(),{type:'array'});
+  const {changes,skipped}=planImport(book,xlsx);
+  for(const record of changes){
+   status.textContent='กำลังอัปเดต Firebase '+(saved+1)+' / '+changes.length;
+   await request('save',record,30000);
+   saved++;
+  }
+  status.textContent='อัปเดตสมบูรณ์ · บันทึก '+saved+' รายการ'+(skipped?' · ข้าม '+skipped+' รหัสที่ไม่พบในรายชื่อ':'');
+ }catch(error){
+  status.textContent='อัปเดตไม่สำเร็จ · Firebase ยืนยันแล้ว '+saved+' รายการ · '+error.message;
+ }finally{importing=false;render();}
+});
 function openEditor(entry){
  if(!mayEdit||!ready||importing)return;
  editing={...entry,group};$('standby-edit-title').textContent='แก้ไขข้อมูล · '+groups[Number(entry.key.slice(1).split('-')[0])];
