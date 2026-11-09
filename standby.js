@@ -106,28 +106,52 @@ function planImport(book, xlsx) {
   for(const field of [labels[1],...fields]){
    if(titles.filter(v=>v===field).length!==1)throw Error('ชีต '+name+' ต้องมีหัวคอลัมน์ '+field+' เพียงหนึ่งคอลัมน์');
   }
+  const orderColumn=titles.findIndex(t=>[labels[0],'ลำดับ'].includes(t));
+  const groupIndex=groups.findIndex(g=>header(g)===header(name));
   for(const cells of rows.slice(start+1)){
    const id=clean(cells[titles.indexOf(labels[1])]);
    if(!id||id===labels[1])continue;
    const values=fields.map(field=>clean(cells[titles.indexOf(field)]));
    if(values.some(v=>v.length>2000))throw Error('ข้อมูลยาวเกินกำหนดสำหรับรหัส '+id);
-   const previous=updates.get(id);
-   if(previous&&previous.some((v,i)=>v!==values[i]))throw Error('ข้อมูลใน Excel ขัดกันสำหรับรหัส '+id);
-   updates.set(id,values);
+   if(!updates.has(id))updates.set(id,[]);
+   updates.get(id).push({values,order:clean(cells[orderColumn]),groupIndex});
   }
  }
  if(!updates.size)throw Error('ไม่พบข้อมูล กรุณาใช้หัวคอลัมน์ รหัสพนักงาน ตำแหน่ง สังกัด และรายละเอียด');
- const changes=[], matched=new Set();
- for(const [key,{row,revision}] of overrides){
-  const id=row[1].trim(),values=updates.get(id);
-  if(!values)continue;
-  matched.add(id);
-  if(values.every((v,i)=>v===row[3+i]))continue;
-  const next=[...row];next.splice(3,3,...values);
-  changes.push({key,row:next,revision});
+ const byEmployee=new Map(),changes=[],ambiguous=[];
+ for(const [key,record] of overrides){
+  const id=record.row[1].trim();
+  if(!byEmployee.has(id))byEmployee.set(id,[]);
+  byEmployee.get(id).push({...record,key});
  }
- if(!matched.size)throw Error('ไม่พบรหัสพนักงานใน Excel ที่ตรงกับรายชื่อ Standby');
- return {changes,skipped:updates.size-matched.size};
+ let skipped=0;
+ for(const [id,inputs] of updates){
+  const records=byEmployee.get(id);
+  if(!records){skipped++;continue;}
+  const assignments=new Map();
+  const sameValues=(a,b)=>a.every((v,i)=>v===b[i]);
+  if(inputs.every(input=>sameValues(input.values,inputs[0].values))){
+   for(const record of records)assignments.set(record,inputs[0].values);
+  }else{
+   // Different duties can share an employee ID. Resolve every source row before saving this ID.
+   for(const input of inputs){
+    const matches=records.filter(r=>(!input.order||input.order===r.row[0])&&
+     (input.groupIndex<0||r.key.startsWith('g'+input.groupIndex+'-')));
+    const target=matches[0];
+    if(matches.length!==1||(assignments.has(target)&&!sameValues(assignments.get(target),input.values))){
+     ambiguous.push(id);assignments.clear();break;
+    }
+    assignments.set(target,input.values);
+   }
+  }
+  for(const [{key,row,revision},values] of assignments){
+   if(values.every((v,i)=>v===row[3+i]))continue;
+   const next=[...row];next.splice(3,3,...values);
+   changes.push({key,row:next,revision});
+  }
+ }
+ if(skipped===updates.size)throw Error('ไม่พบรหัสพนักงานใน Excel ที่ตรงกับรายชื่อ Standby');
+ return {changes,skipped,ambiguous};
 }
 const fileInput=$('standby-file');
 $('standby-upload').addEventListener('click',()=>fileInput.click());
@@ -140,13 +164,14 @@ fileInput.addEventListener('change',async()=>{
  try{
   const xlsx=await import('https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs');
   const book=xlsx.read(await file.arrayBuffer(),{type:'array'});
-  const {changes,skipped}=planImport(book,xlsx);
+  const {changes,skipped,ambiguous}=planImport(book,xlsx);
   for(const record of changes){
    status.textContent='กำลังอัปเดต Firebase '+(saved+1)+' / '+changes.length;
    await request('save',record,30000);
    saved++;
   }
-  status.textContent='อัปเดตสมบูรณ์ · บันทึก '+saved+' รายการ'+(skipped?' · ข้าม '+skipped+' รหัสที่ไม่พบในรายชื่อ':'');
+  status.textContent=(ambiguous.length?(saved?'อัปเดตได้บางส่วน':'ไม่มีรายการเปลี่ยนแปลง'):'อัปเดตสมบูรณ์')+' · บันทึก '+saved+' รายการ'+(skipped?' · ข้าม '+skipped+' รหัสที่ไม่พบในรายชื่อ':'')+
+   (ambiguous.length?' · ข้ามรหัสที่จับคู่ไม่ได้: '+ambiguous.join(', ')+' · ตรวจคอลัมน์ ลำดับที่ ให้ตรงกับรายชื่อเดิม และใช้ชื่อกลุ่มเป็นชื่อชีตเมื่อมีหลายกลุ่ม':'');
  }catch(error){
   status.textContent='อัปเดตไม่สำเร็จ · Firebase ยืนยันแล้ว '+saved+' รายการ · '+error.message;
  }finally{importing=false;render();}
