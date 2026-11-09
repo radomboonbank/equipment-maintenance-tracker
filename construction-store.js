@@ -23,7 +23,12 @@ export function createConstructionStore(getContext){
    await cloud.runTransaction(cloud.db,async transaction=>{
     const existing=await transaction.get(ref),previous=existing.exists()?existing.data():null;
     
-    const next={schemaVersion:1,type:'construction',data,
+    // Keep values from retired form sections when an existing project is edited.
+    const savedData={...data};
+    for(const key of ['delayRisk','deliveryRisk','siteConstraints','systemRisk','openIssues','issueOwner','issueDue','testReport','protectionSetting','interlock','permit','actualEndDate','testResult','asBuilt','handoverStatus']){
+     if(previous?.data && Object.hasOwn(previous.data,key))savedData[key]=previous.data[key];
+    }
+    const next={schemaVersion:1,type:'construction',data:savedData,
      createdBy:previous?.createdBy||user.uid,createdAt:previous?.createdAt||cloud.serverTimestamp(),
      updatedBy:user.uid,updatedByName:displayName||username,updatedByUsername:username,
      updatedAt:cloud.serverTimestamp(),revision:(previous?.revision||0)+1};
