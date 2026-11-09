@@ -3,10 +3,12 @@
 const groups=['ผู้บริหาร อปก','กคก-ส','กถก-ส','กสก-ส','กรก-ส','กบหก'];
 const channel=new BroadcastChannel('grid-standby-v1'),client=crypto.randomUUID(),pending=new Map();
 const overrides=new Map();
-let group='กคก-ส',mayEdit=false,server='',ready=false,editing=null,saving=false,importing=false,importAttempted=false;
+let group='ทั้งหมด',mayEdit=false,server='',ready=false,editing=null,saving=false,importing=false,importAttempted=false;
 const $=id=>document.getElementById(id),search=$('standby-search'),body=$('standby-rows');
 const buttons=[...document.querySelectorAll('[data-group]')],dialog=$('standby-editor'),form=$('standby-edit-form');
 const labels=['ลำดับที่','รหัสพนักงาน','ชื่อ - สกุล','ตำแหน่ง','สังกัด','รายละเอียด','โทรศัพท์มือถือ'];
+const visibleFields=[1,2,3,4,6];
+const displayName=value=>value.replace(/^(?:นางสาว|น\.ส\.|นาย|นาง)\s*/,'');
 const normalize=v=>v.toLocaleLowerCase('th').replace(/[\s-]/g,'');
 function request(action,payload,timeout=5000) {
  return new Promise((resolve,reject)=>{
@@ -31,8 +33,8 @@ async function refreshAccess(){
 }
 function entries(){
  const prefix='g'+groups.indexOf(group)+'-';
- return [...overrides.entries()].filter(([key])=>key.startsWith(prefix))
-  .sort(([a],[b])=>Number(a.split('-')[1])-Number(b.split('-')[1]))
+ return [...overrides.entries()].filter(([key])=>group==='ทั้งหมด'||key.startsWith(prefix))
+  .sort(([a],[b])=>Number(a.slice(1).split('-')[0])-Number(b.slice(1).split('-')[0])||Number(a.split('-')[1])-Number(b.split('-')[1]))
   .map(([key,value])=>({key,row:value.row,revision:value.revision}));
 }
 async function ensureImported(){
@@ -64,24 +66,25 @@ async function ensureImported(){
 function render(){
  $('standby-edit-heading').hidden=!(mayEdit&&ready);
  const source=entries(),matches=source.filter(e=>normalize(e.row.join(' ')).includes(normalize(search.value.trim())));
- $('group-title').textContent=group;
+ $('group-title').textContent=group==='ทั้งหมด'?'รายชื่อทั้งหมด':group;
  $('standby-count').textContent='แสดง '+matches.length+' จาก '+source.length+' รายชื่อ';
  $('standby-empty').hidden=matches.length>0;
  $('standby-empty').textContent='ไม่พบรายชื่อที่ตรงกับคำค้นหา';
  body.replaceChildren();
  for(const entry of matches){
   const tr=document.createElement('tr');
-  entry.row.forEach((value,index)=>{
+  visibleFields.forEach(index=>{
+   const value=entry.row[index];
    const td=document.createElement('td');
    if(index===6&&/^0\d{9}$/.test(value)&&entry.row[2]!=='ว่าง'){
     const a=document.createElement('a');a.href='tel:'+value;a.textContent=value.replace(/(\d{3})(\d{3})(\d{4})/,'$1-$2-$3');
-    a.setAttribute('aria-label','โทรหา '+entry.row[2]+' '+value);td.append(a);
-   }else td.textContent=value||'—';
+    a.setAttribute('aria-label','โทรหา '+displayName(entry.row[2])+' '+value);td.append(a);
+   }else td.textContent=(index===2?displayName(value):value)||'—';
    tr.append(td);
   });
   if(mayEdit&&ready){
    const td=document.createElement('td'),b=document.createElement('button');
-   b.type='button';b.textContent='แก้ไข';b.disabled=importing;b.setAttribute('aria-label','แก้ไข '+entry.row[2]);
+   b.type='button';b.textContent='แก้ไข';b.disabled=importing;b.setAttribute('aria-label','แก้ไข '+displayName(entry.row[2]));
    b.addEventListener('click',()=>openEditor(entry));td.append(b);tr.append(td);
   }
   body.append(tr);
@@ -90,13 +93,14 @@ function render(){
 }
 function openEditor(entry){
  if(!mayEdit||!ready||importing)return;
- editing={...entry,group};$('standby-edit-title').textContent='แก้ไขข้อมูล · '+group;
+ editing={...entry,group};$('standby-edit-title').textContent='แก้ไขข้อมูล · '+groups[Number(entry.key.slice(1).split('-')[0])];
  $('standby-edit-message').textContent='';
  const fields=$('standby-edit-fields');fields.replaceChildren();
- labels.forEach((label,i)=>{
+ visibleFields.forEach(i=>{
+  const label=labels[i];
   const wrap=document.createElement('label');wrap.textContent=label;
   const input=document.createElement(i===5?'textarea':'input');
-  input.name='field'+i;input.maxLength=2000;input.value=entry.row[i];
+  input.name='field'+i;input.maxLength=2000;input.value=i===2?displayName(entry.row[i]):entry.row[i];
   if(i===2)input.required=true;
   if(i===6){input.inputMode='tel';input.maxLength=50;}
   wrap.append(input);fields.append(wrap);
@@ -105,7 +109,9 @@ function openEditor(entry){
 }
 form.addEventListener('submit',async e=>{
  e.preventDefault();if(saving||!editing||!mayEdit||!ready)return;
- const row=labels.map((_,i)=>form.elements['field'+i].value.trim());
+ const row=[...editing.row];
+ visibleFields.forEach(i=>{row[i]=form.elements['field'+i].value.trim();});
+ if(row[2]===displayName(editing.row[2]))row[2]=editing.row[2];
  row[6]=row[6].replace(/[\s()-]/g,'')||(row[6].trim()==='-'?'-':'');
  if(!row[2]||row[6]&&row[2]!=='ว่าง'&&!/^0\d{9}$/.test(row[6])){$('standby-edit-message').textContent='กรุณากรอกชื่อและเบอร์มือถือ 10 หลัก (เว้นว่างได้)';return;}
  saving=true;$('standby-save').disabled=true;$('standby-cancel').disabled=true;
