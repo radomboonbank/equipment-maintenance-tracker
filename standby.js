@@ -168,6 +168,10 @@ function planImport(book, xlsx) {
  if(skipped===updates.size)throw Error('ไม่พบรหัสพนักงานใน Excel ที่ตรงกับรายชื่อ Standby');
  return {changes,skipped,ambiguous,notices};
 }
+function cleanTxtField(value){
+ const cleaned=value.replace(/(?:รวส|ชสป|อปก)\./g,'');
+ return cleaned===value?value:cleaned.replace(/\s+/g,' ').trim();
+}
 const txtInput=$('txt-file');
 $('txt-upload').onclick=()=>txtInput.click();
 txtInput.onchange=async()=>{
@@ -184,8 +188,11 @@ txtInput.onchange=async()=>{
   for(let i=0;i<lines.length;i++){
    const match=lines[i].match(header);
    if(!match)continue;
-   const name=match[1].trim(),id=match[2],position=lines[i+1],department=lines[i+2];
-   if(!name||!position||!department||header.test(position)||header.test(department)||Math.max(name.length,position.length,department.length)>2000)
+   const id=match[2],rawPosition=lines[i+1],rawDepartment=lines[i+2];
+   if(!rawPosition||!rawDepartment||header.test(rawPosition)||header.test(rawDepartment))
+    throw Error('ตรวจตำแหน่งและสังกัดของรหัส '+id);
+   const name=cleanTxtField(match[1].trim()),position=cleanTxtField(rawPosition),department=cleanTxtField(rawDepartment);
+   if(!name||Math.max(name.length,position.length,department.length)>2000)
     throw Error('ตรวจตำแหน่งและสังกัดของรหัส '+id);
    const previous=entries.get(id);
    if(previous&&(previous.name!==name||previous.position!==position||previous.department!==department))
