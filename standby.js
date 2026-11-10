@@ -7,7 +7,9 @@ let group='ทั้งหมด',mayEdit=false,mayUpload=false,server='',ready=
 const $=id=>document.getElementById(id),search=$('standby-search'),body=$('standby-rows');
 const buttons=[...document.querySelectorAll('[data-group]')],dialog=$('standby-editor'),form=$('standby-edit-form');
 const labels=['ลำดับที่','รหัสพนักงาน','ชื่อ - สกุล','ตำแหน่ง','สังกัด','รายละเอียด','โทรศัพท์มือถือ'];
-const columnFilters=[...document.querySelectorAll('[data-filter-column]')];
+const sortButtons=[...document.querySelectorAll('[data-sort-column]')];
+const collator=new Intl.Collator('th',{numeric:true});
+let sortColumn=0,sortDirection=1;
 const visibleFields=[1,2,3,4,5,6];
 const displayName=value=>value.replace(/^(?:นางสาว|น\.ส\.|นาย|นาง)\s*/,'');
 const normalize=v=>v.toLocaleLowerCase('th').replace(/[\s-]/g,'');
@@ -72,11 +74,15 @@ function render(){
  $('standby-upload').disabled=!ready||importing;
  $('standby-edit-heading').hidden=!(mayEdit&&ready);
  const source=entries(),query=normalize(search.value);
- const filters=columnFilters.filter(input=>input.value.trim()).map(input=>({
-  index:Number(input.dataset.filterColumn),query:normalize(input.value)
- }));
- const matches=source.filter(({row})=>normalize(row.join(' ')).includes(query)&&
-  filters.every(filter=>normalize(row[filter.index]||'—').includes(filter.query)));
+ const matches=source.filter(({row})=>normalize(row.join(' ')).includes(query));
+ if(sortColumn){
+  const value=row=>sortColumn===2?displayName(row[2]).trim():row[sortColumn].trim();
+  matches.sort((a,b)=>{
+   const left=value(a.row),right=value(b.row);
+   if(!left||!right)return Number(!left)-Number(!right);
+   return sortDirection*collator.compare(left,right);
+  });
+ }
  $('group-title').textContent=group==='ทั้งหมด'?'รายชื่อทั้งหมด':group;
  $('standby-count').textContent='แสดง '+matches.length+' จาก '+source.length+' รายชื่อ';
  $('standby-empty').hidden=matches.length>0;
@@ -320,7 +326,18 @@ dialog.addEventListener('cancel',e=>{if(saving)e.preventDefault();});
 buttons.forEach(b=>b.addEventListener('click',()=>{group=b.dataset.group;search.value='';render();}));
 $('standby-close').addEventListener('click',()=>{window.close();window.setTimeout(()=>window.location.assign('./'),150);});
 search.addEventListener('input',render);
-columnFilters.forEach(input=>input.addEventListener('input',render));
+sortButtons.forEach(button=>button.addEventListener('click',()=>{
+ const column=Number(button.dataset.sortColumn);
+ sortDirection=column===sortColumn?-sortDirection:1;
+ sortColumn=column;
+ for(const header of sortButtons){
+  const active=header===button;
+  if(active)header.parentElement.setAttribute('aria-sort',sortDirection===1?'ascending':'descending');
+  else header.parentElement.removeAttribute('aria-sort');
+  header.querySelector('span').textContent=active?(sortDirection===1?'↑':'↓'):'↕';
+ }
+ render();
+}));
 render();void refreshAccess();const accessTimer=setInterval(refreshAccess,6000);
 window.addEventListener('focus',()=>void refreshAccess());
 window.addEventListener('pagehide',()=>{clearInterval(accessTimer);channel.close();},{once:true});
