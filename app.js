@@ -100,6 +100,52 @@ function watchLogins() {
 }
 
 let alarmData=[],alarmState='loading',unsubscribeAlarms=null;
+let reportTab=null;
+function showAllConstruction(){
+ if(!user||role==='guest')return;
+ if(reportTab&&!reportTab.closed){reportTab.focus();void updateReportTable();return;}
+ const tab=window.open('./construction-report.html','_blank');
+ if(!tab){toast('กรุณาอนุญาตให้เปิดแท็บใหม่');return;}
+ reportTab=tab;
+ // Wait for the report document itself; the initial about:blank can also fire load.
+ const timer=setInterval(()=>{
+  if(tab.closed){clearInterval(timer);return;}
+  try{if(tab.document.querySelector('#report-table')){clearInterval(timer);updateReportTable();}}catch{clearInterval(timer);}
+ },100);
+}
+async function updateReportTable(){
+ const tab=reportTab;if(!tab||tab.closed)return;
+ const {showConstructionRows}=await import('./construction-report.js');
+ if(!user||role==='guest'||tab!==reportTab||tab.closed)return;
+ try{
+  if(!tab.document.querySelector('#report-table'))return;
+  if(constructionState!=='ready'){tab.document.querySelector('#count').textContent=constructionState==='error'?'โหลดข้อมูล Firebase ไม่สำเร็จ':'กำลังโหลดรายการ…';return;}
+  showConstructionRows(tab.document,constructionData,canEdit()?record=>{reportTab=null;window.openConstructionDraft(record,tab)}:null);
+ }catch(error){console.warn('Construction table',error.message);}
+}
+$('#all-construction').onclick=showAllConstruction;
+async function importLinkedReport(gen){
+ const key=new URLSearchParams(location.hash.slice(1)).get('report');
+ if(!key||!user||!['admin','editor'].includes(role))return;
+ try{
+  const {readConstructionReport}=await import('./construction-report.js');
+  const records=await readConstructionReport(key);
+  if(gen!==generation||!user||!['admin','editor'].includes(role))return;
+  const uid=user.uid, editorName=displayName||username, editorUsername=username;
+  await cloud.runTransaction(cloud.db,async tx=>{
+   const refs=records.map(r=>cloud.doc(cloud.db,'ConstructionProjects',r.id));
+   const existing=await Promise.all(refs.map(ref=>tx.get(ref)));
+   if(gen!==generation||user?.uid!==uid)throw Error('กรุณาเข้าสู่ระบบใหม่');
+   records.forEach(({data},i)=>{
+    if(existing[i].exists())return;
+    const now=cloud.serverTimestamp();
+    tx.set(refs[i],{schemaVersion:1,type:'construction',data,revision:1,createdAt:now,updatedAt:now,createdBy:uid,updatedBy:uid,updatedByName:editorName,updatedByUsername:editorUsername});
+   });
+  });
+  history.replaceState(null,'',location.pathname+'?view=construction');
+  toast('รายงาน '+records.length+' รายการพร้อมใน Firebase · เปิดตารางงานก่อสร้างทั้งหมด');
+ }catch(error){toast('นำเข้ารายงานไม่สำเร็จ · '+error.message);}
+}
 let constructionData=[],constructionState='loading',unsubscribeConstruction=null;
 window.GRID_CONSTRUCTION_STORE=createConstructionStore(()=>({cloud,user,role,username,displayName,duty:memberDuty}));
 window.GRID_ALARM_STORE=createAlarmStore(()=>({cloud,user,role,username,displayName,duty:memberDuty}));
@@ -295,7 +341,7 @@ $('#delete').onclick=async()=>{
  busy=true;$('#delete').disabled=true;
  try{const original=editing;await cloud.runTransaction(cloud.db,async t=>{const ref=cloud.doc(cloud.db,'equipment',original.id),snap=await t.get(ref);if(!snap.exists()||snap.data().revision!==original.revision)throw Error('ข้อมูลเปลี่ยนแปลง กรุณาเปิดใหม่');t.delete(ref)});$('#editor').close();toast('ลบรายการแล้ว')}catch(err){toast('ลบไม่สำเร็จ: '+err.message)}finally{busy=false;$('#delete').disabled=false}
 };
-function resetSession(){headerOnlineUsers=[];onlineLoginInfo.clear();loginStartedAt=null;unsubscribeAlarms?.();unsubscribeAlarms=null;alarmData=[];alarmState='loading';idleSession.stop();document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());unsubscribeConstruction?.();unsubscribeConstruction=null;constructionData=[];constructionState='loading';presence.stop();membersPage.reset();memberDuty="";generation++;unsubscribeLogins?.();unsubscribeLogins=null;renderLogins(null);unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';displayName='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
+function resetSession(){if(reportTab&&!reportTab.closed)reportTab.close();reportTab=null;$('#all-construction').hidden=true;headerOnlineUsers=[];onlineLoginInfo.clear();loginStartedAt=null;unsubscribeAlarms?.();unsubscribeAlarms=null;alarmData=[];alarmState='loading';idleSession.stop();document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());unsubscribeConstruction?.();unsubscribeConstruction=null;constructionData=[];constructionState='loading';presence.stop();membersPage.reset();memberDuty="";generation++;unsubscribeLogins?.();unsubscribeLogins=null;renderLogins(null);unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';displayName='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
 function showWorkspace(){updateLoginSession();idleSession.start();
  $('#current-account').textContent=role==='guest'?'ผู้ชมทั่วไป':`บัญชีของคุณ: ${displayName||username}`;
  presence.start(cloud,role==='guest'?null:user,displayName||username);
@@ -304,10 +350,12 @@ function showWorkspace(){updateLoginSession();idleSession.start();
  
  $('#workspace').hidden=false;$('#login-screen').hidden=true;
  const gen=generation;
+ $('#all-construction').hidden=role==='guest';
+ void importLinkedReport(gen);
  alarmState=role==='guest'?'guest':'loading';
  if(role!=='guest')unsubscribeAlarms=cloud.onSnapshot(cloud.collection(cloud.db,'AbnormalAlarm'),snap=>{if(gen!==generation)return;alarmData=snap.docs.map(d=>({...d.data(),id:d.id})).filter(d=>[1,2,3].includes(d.section));alarmState='ready';render()},error=>{if(gen!==generation)return;alarmData=[];alarmState='error';render();console.warn('Alarm data unavailable:',error.code)});
  constructionState=role==='guest'?'guest':'loading';
- if(role!=='guest')unsubscribeConstruction=cloud.onSnapshot(cloud.collection(cloud.db,'ConstructionProjects'),snap=>{if(gen!==generation)return;constructionData=snap.docs.map(d=>({...d.data(),id:d.id})).filter(d=>d.type==='construction');constructionState='ready';render()},error=>{if(gen!==generation)return;constructionData=[];constructionState='error';render();console.warn('Construction data unavailable:',error.code)});
+ if(role!=='guest')unsubscribeConstruction=cloud.onSnapshot(cloud.collection(cloud.db,'ConstructionProjects'),snap=>{if(gen!==generation)return;constructionData=snap.docs.map(d=>({...d.data(),id:d.id})).filter(d=>d.type==='construction');constructionState='ready';render();void updateReportTable()},error=>{if(gen!==generation)return;constructionData=[];constructionState='error';render();void updateReportTable();console.warn('Construction data unavailable:',error.code)});
  unsubscribe=cloud.onSnapshot(cloud.collection(cloud.db,'equipment'),snap=>{if(gen!==generation)return;data=snap.docs.map(d=>decodeSeverityRecord({...d.data(),id:d.id}));cloudReady=true;$('#mode').textContent='Firebase · เชื่อมต่อแล้ว';$('#notice').hidden=true;$('#notice').textContent='';render()},err=>{if(gen!==generation)return;cloudReady=false;data=[];render();$('#notice').hidden=false;$('#notice').textContent='โหลดข้อมูลไม่สำเร็จ กรุณาตรวจการเชื่อมต่อและสิทธิ์';toast(err.code==='permission-denied'?'ยังไม่ได้รับสิทธิ์อ่านฐานข้อมูล':err.message)});
 }
 $('#login').onsubmit=async e=>{

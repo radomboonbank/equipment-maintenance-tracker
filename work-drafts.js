@@ -18,11 +18,11 @@
 <label>สถานะงานตามรายงาน<input name="workStatus" placeholder="เช่น ยกเลิกงาน"></label><label>โครงการที่รับงานต่อ<input name="successorProject" placeholder="เช่น TRP1"></label>
 <label class="wide">เหตุผลหรือหมายเหตุ<textarea name="remarks"></textarea></label></div></fieldset>
 <fieldset class="construction-section"><legend>ความคืบหน้าในรอบรายงาน</legend><p><small>ถ้ารายงานระบุ “-%” ให้เว้นว่าง ถ้าระบุ 0.00% ให้กรอก 0</small></p><div class="construction-grid">
-<label>ผลงานรวม (%)<input type="number" name="actualProgress" min="0" max="100" step="0.01" placeholder="88.08"></label>
+<label>ผลงานรวม (%)<input type="number" name="actualProgress" min="0" max="100" step="any" placeholder="88.08"></label>
 <label>เทียบกับแผนปฏิบัติการ<select name="varianceDirection"><option value="">ไม่ระบุ</option><option>เร็วกว่าแผน</option><option>ช้ากว่าแผน</option><option>ตามแผน</option></select></label>
-<label>ส่วนต่างจากแผนตามรายงาน (%)<input type="number" name="variancePercent" min="0" max="100" step="0.01" placeholder="5.92"></label>
-<label>เปอร์เซ็นต์งานโยธา (%)<input type="number" name="civilProgress" min="0" max="100" step="0.01" placeholder="91.80"></label>
-<label>เปอร์เซ็นต์งานไฟฟ้า (%)<input type="number" name="electricalProgress" min="0" max="100" step="0.01" placeholder="85.60"></label></div></fieldset>
+<label>ส่วนต่างจากแผนตามรายงาน (%)<input type="number" name="variancePercent" min="0" max="100" step="any" placeholder="5.92"></label>
+<label>เปอร์เซ็นต์งานโยธา (%)<input type="number" name="civilProgress" min="0" max="100" step="any" placeholder="91.80"></label>
+<label>เปอร์เซ็นต์งานไฟฟ้า (%)<input type="number" name="electricalProgress" min="0" max="100" step="any" placeholder="85.60"></label></div></fieldset>
 <fieldset class="construction-section"><legend>แหล่งข้อมูล</legend><div class="construction-grid"><label>รอบรายงาน / วันที่ข้อมูล (พ.ศ.)<input name="reportPeriod"></label><label>ไฟล์ต้นฉบับและจุดอ้างอิง<input name="source" placeholder="page 1-100.docx · รายการ 15"></label></div></fieldset>`;
  function openWorkDraft(kind,record=null,existingTab=null){
   const [title,choices]=groups[kind];
