@@ -267,3 +267,10 @@ svg.members-menu-icon{width:20px;height:24px;flex:0 0 20px;background:transparen
 
 /* Standby directory */
 #standby-dialog{width:min(1100px,96vw);max-height:90vh}#standby-dialog .dialog-title{align-items:flex-start}#standby-dialog h2{margin:0}#standby-source,#standby-count{font-size:12px;color:#647c88}#standby-search{width:100%;margin-top:8px}#standby-dialog table{min-width:850px}#standby-dialog td:nth-child(3){white-space:nowrap}#standby-dialog a{color:#087f83;font-weight:600;white-space:nowrap}#standby-dialog a:focus-visible{outline:2px solid #087f83;outline-offset:4px}
+
+.construction-report-dialog{width:min(920px,95vw);background:#f3f6f5;color:#18362e}
+.construction-report-dialog .construction-section{background:white;border-color:#c9d8d1}
+.construction-report-dialog .construction-section legend{color:#185d49}
+.construction-report-dialog .wide{grid-column:1/-1}
+.construction-report-dialog .construction-grid :is(input,textarea,select){width:100%;background:white}
+.construction-report-dialog .construction-section p{margin:0 0 12px}

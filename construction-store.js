@@ -14,7 +14,7 @@ export function createConstructionStore(getContext){
     transaction.delete(ref);
    });
   },
-  async save(data,id){
+  async save(data,id,revision){
    const {cloud,user,role,username,displayName}=getContext();
    if(!cloud||!user||!['admin','editor'].includes(role))throw Error('กรุณาเข้าสู่ระบบด้วยบัญชีที่มีสิทธิ์บันทึก');
    if(!data||Array.isArray(data)||typeof data!=='object')throw Error('รูปแบบข้อมูลไม่ถูกต้อง');
@@ -23,11 +23,8 @@ export function createConstructionStore(getContext){
    await cloud.runTransaction(cloud.db,async transaction=>{
     const existing=await transaction.get(ref),previous=existing.exists()?existing.data():null;
     
-    // Keep values from retired form sections when an existing project is edited.
-    const savedData={...data};
-    for(const key of ['delayRisk','deliveryRisk','siteConstraints','systemRisk','openIssues','issueOwner','issueDue','testReport','protectionSetting','interlock','permit','actualEndDate','testResult','asBuilt','handoverStatus']){
-     if(previous?.data && Object.hasOwn(previous.data,key))savedData[key]=previous.data[key];
-    }
+    if(id&&(!previous||(revision!==undefined&&previous.revision!==revision)))throw Error('รายการถูกแก้ไขหรือลบแล้ว กรุณาเปิดใหม่อีกครั้ง');
+    const savedData={...previous?.data,...data};
     const next={schemaVersion:1,type:'construction',data:savedData,
      createdBy:previous?.createdBy||user.uid,createdAt:previous?.createdAt||cloud.serverTimestamp(),
      updatedBy:user.uid,updatedByName:displayName||username,updatedByUsername:username,
