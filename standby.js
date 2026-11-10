@@ -179,18 +179,18 @@ txtInput.onchange=async()=>{
  try{
   if(!/\.txt$/i.test(file.name))throw Error('กรุณาเลือกไฟล์ .txt');
   const lines=new TextDecoder('utf-8',{fatal:true}).decode(await file.arrayBuffer()).split(/\r\n?|\n/).map(line=>line.trim());
-  const header=/^.+\((\d+)\)$/;
+  const header=/^(.+?)\s*\((\d+)\)$/;
   const entries=new Map();
   for(let i=0;i<lines.length;i++){
    const match=lines[i].match(header);
    if(!match)continue;
-   const id=match[1],position=lines[i+1],department=lines[i+2];
-   if(!position||!department||header.test(position)||header.test(department)||Math.max(position.length,department.length)>2000)
+   const name=match[1].trim(),id=match[2],position=lines[i+1],department=lines[i+2];
+   if(!name||!position||!department||header.test(position)||header.test(department)||Math.max(name.length,position.length,department.length)>2000)
     throw Error('ตรวจตำแหน่งและสังกัดของรหัส '+id);
    const previous=entries.get(id);
-   if(previous&&(previous.position!==position||previous.department!==department))
+   if(previous&&(previous.name!==name||previous.position!==position||previous.department!==department))
     throw Error('พบข้อมูลขัดกันสำหรับรหัส '+id);
-   entries.set(id,{position,department});i+=2;
+   entries.set(id,{name,position,department});i+=2;
   }
   if(!entries.size)throw Error('ไม่พบรหัสพนักงานในวงเล็บ');
   const matched=new Set();
@@ -198,8 +198,8 @@ txtInput.onchange=async()=>{
    const id=row[1].trim(),entry=entries.get(id);
    if(!entry)continue;
    matched.add(id);
-   if(row[3]===entry.position&&row[4]===entry.department)continue;
-   const next=[...row];next[3]=entry.position;next[4]=entry.department;
+   if(row[2]===entry.name&&row[3]===entry.position&&row[4]===entry.department)continue;
+   const next=[...row];next[2]=entry.name;next[3]=entry.position;next[4]=entry.department;
    status.textContent='กำลังบันทึกรหัส '+id;
    await request('upload',{key,row:next,revision},30000);saved++;
   }
