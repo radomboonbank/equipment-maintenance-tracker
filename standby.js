@@ -71,6 +71,7 @@ function render(){
  $('standby-upload').hidden=!mayUpload;
  $('sync-web').hidden=!mayUpload;
  $('sync-web').disabled=!ready||importing;
+ $('sync-actions').disabled=!ready||!mayUpload||importing;
  if(!mayUpload)$('sync-report').hidden=true;
  $('txt-upload').hidden=!mayUpload;
  $('txt-upload').disabled=!ready||importing;
@@ -211,6 +212,34 @@ function planWebSync(directory, contacts){
  }
  return {changes,matched:matched.size,missing:[...people.values()].filter(([id])=>!matched.has(id))};
 }
+function addContactControls(tr,person){
+ const cell=document.createElement('td'),select=document.createElement('select'),button=document.createElement('button');
+ select.setAttribute('aria-label','กลุ่ม Standby ของ '+person[1]);
+ select.add(new Option('เลือกกลุ่ม Standby',''));
+ groups.forEach((name,i)=>select.add(new Option(name,String(i))));
+ const group=groups.findIndex(name=>person[3].includes(name));
+ if(group>=0)select.value=String(group);
+ button.type='button';button.textContent='เพิ่มลง Firebase';
+ button.addEventListener('click',async()=>{
+  if(!mayUpload||!ready||importing||button.disabled)return;
+  if(select.value===''){select.reportValidity();return;}
+  select.disabled=true;button.disabled=true;button.textContent='กำลังเพิ่ม…';
+  const status=$('sync-add-status');
+  try{
+   const access=await request('session');
+   if(!access.canAddWeb)throw Error('กรุณารีเฟรชแท็บหลักและเข้าสู่ระบบด้วย King Admin');
+   const result=await request('addWebContact',{person,groupIndex:Number(select.value)},45000);
+   if(!result.already&&!result.added)throw Error('Firebase ยังไม่ยืนยันการเพิ่ม');
+   if(result.added)overrides.set(result.key,{row:result.row,revision:result.revision});
+   tr.remove();
+   $('sync-report-count').textContent='คงเหลือ '+$('sync-missing').rows.length+' รายชื่อจากเว็บที่ไม่มีใน Firebase';
+   status.textContent=(result.already?'มีใน Firebase แล้ว':'เพิ่มลง Firebase แล้ว')+' · '+person[0]+' '+person[1];
+   render();
+  }catch(error){status.textContent='เพิ่ม '+person[0]+' ไม่สำเร็จ · '+error.message;}
+  finally{select.disabled=false;button.disabled=false;button.textContent='เพิ่มลง Firebase';}
+ });
+ select.required=true;cell.append(select,button);tr.append(cell);
+}
 $('sync-web').addEventListener('click',async()=>{
  if(!mayUpload||!ready||importing)return;
  const status=$('standby-status'),report=$('sync-report');
@@ -233,11 +262,11 @@ $('sync-web').addEventListener('click',async()=>{
   for(const row of missing){
    const tr=document.createElement('tr');
    for(const value of row){const td=document.createElement('td');td.textContent=value||'—';tr.append(td);}
-   items.append(tr);
+   addContactControls(tr,row);items.append(tr);
   }
   $('sync-missing').replaceChildren(items);
   $('sync-report-count').textContent='พบ '+missing.length+' รายชื่อจากเว็บที่ไม่มีใน Firebase';
-  report.hidden=false;
+  $('sync-add-status').textContent='';report.hidden=false;
   for(const record of changes){
    status.textContent='อ่านครบ '+directory.pages+' หน้า · กำลังบันทึก '+(saved+1)+' / '+changes.length;
    await request('upload',record,30000);saved++;
