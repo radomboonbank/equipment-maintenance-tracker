@@ -66,6 +66,8 @@ async function ensureImported(){
 }
 function render(){
  $('standby-upload').hidden=!mayUpload;
+ $('txt-upload').hidden=!mayUpload;
+ $('txt-upload').disabled=!ready||importing;
  $('standby-upload').disabled=!ready||importing;
  $('standby-edit-heading').hidden=!(mayEdit&&ready);
  const source=entries(),matches=source.filter(e=>normalize(e.row.join(' ')).includes(normalize(search.value.trim())));
