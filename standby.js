@@ -69,6 +69,9 @@ async function ensureImported(){
 }
 function render(){
  $('standby-upload').hidden=!mayUpload;
+ $('sync-web').hidden=!mayUpload;
+ $('sync-web').disabled=!ready||importing;
+ if(!mayUpload)$('sync-report').hidden=true;
  $('txt-upload').hidden=!mayUpload;
  $('txt-upload').disabled=!ready||importing;
  $('standby-upload').disabled=!ready||importing;
@@ -180,6 +183,69 @@ function planImport(book, xlsx) {
  if(skipped===updates.size)throw Error('ไม่พบรหัสพนักงานใน Excel ที่ตรงกับรายชื่อ Standby');
  return {changes,skipped,ambiguous,notices};
 }
+function planWebSync(directory, contacts){
+ if(!Array.isArray(directory.rows)||!Number.isInteger(directory.pages)||directory.pages<1||
+    directory.total!==directory.rows.length||!directory.total)throw Error('ข้อมูลจากเว็บไม่ครบทุกหน้า');
+ const departments=value=>value.replace(/อปก\./g,'').replace(/\s+/g,' ').trim();
+ const people=new Map();
+ for(const row of directory.rows){
+  if(!Array.isArray(row)||row.length!==4||row.some(v=>typeof v!=='string'||v.length>2000)||
+     !/^\d+$/.test(row[0])||people.has(row[0]))throw Error('ข้อมูลรหัสพนักงานจากเว็บไม่ถูกต้อง');
+  const [id,name,position,department]=row;
+  const cleanName=displayName(name.trim()).trim();
+  if(!cleanName)throw Error('ไม่พบชื่อของรหัส '+id);
+  people.set(id,[id,cleanName,position.trim(),departments(department)]);
+ }
+ const changes=[],matched=new Set();
+ for(const [key,{row,revision}] of contacts){
+  const id=row[1].trim(),person=people.get(id),next=[...row];
+  if(person){
+   matched.add(id);
+   [next[2],next[3],next[4]]=person.slice(1);
+  }else{
+   next[2]=displayName(row[2].trim()).trim();
+   next[4]=departments(row[4]);
+  }
+  if(!next[2])throw Error('ตรวจชื่อใน Firebase ของรหัส '+id);
+  if(next.some((v,i)=>v!==row[i]))changes.push({key,row:next,revision});
+ }
+ return {changes,matched:matched.size,missing:[...people.values()].filter(([id])=>!matched.has(id))};
+}
+$('sync-web').addEventListener('click',async()=>{
+ if(!mayUpload||!ready||importing)return;
+ const status=$('standby-status'),report=$('sync-report');
+ let saved=0;
+ importing=true;report.hidden=true;$('sync-missing').replaceChildren();$('standby-duplicates').textContent='';render();
+ try{
+  if(!(await request('session')).canUpload)throw Error('ต้องใช้สิทธิ์ King Admin');
+  status.textContent='กำลังเปิดสารบบบุคลากร อปก. และอ่านรายชื่อทุกหน้า…';
+  let response;
+  try{
+   response=await fetch('http://127.0.0.1:48317/directory',{method:'POST',headers:{'X-Standby-Sync':'1'},signal:AbortSignal.timeout(180000)});
+  }catch{
+   throw Error('ติดต่อ Sync2Web ไม่ได้ กรุณาเปิด standby-sync.py บนเครื่องที่ใช้เบราว์เซอร์ เชื่อมต่อเครือข่าย กฟผ. และอนุญาตการเข้าถึงเครือข่ายภายในของเบราว์เซอร์');
+  }
+  const directory=await response.json();
+  if(!response.ok)throw Error(directory.error||'ตัวช่วยอ่านข้อมูลไม่สำเร็จ');
+  if(!ready||!(await request('session')).canUpload)throw Error('กรุณาตรวจการเชื่อมต่อ Firebase และสิทธิ์ King Admin');
+  const {changes,matched,missing}=planWebSync(directory,overrides);
+  const items=document.createDocumentFragment();
+  for(const row of missing){
+   const tr=document.createElement('tr');
+   for(const value of row){const td=document.createElement('td');td.textContent=value||'—';tr.append(td);}
+   items.append(tr);
+  }
+  $('sync-missing').replaceChildren(items);
+  $('sync-report-count').textContent='พบ '+missing.length+' รายชื่อจากเว็บที่ไม่มีใน Firebase';
+  report.hidden=false;
+  for(const record of changes){
+   status.textContent='อ่านครบ '+directory.pages+' หน้า · กำลังบันทึก '+(saved+1)+' / '+changes.length;
+   await request('upload',record,30000);saved++;
+  }
+  status.textContent='ซิงก์สมบูรณ์ · อ่าน '+directory.pages+' หน้า '+directory.total+' รายชื่อ · รหัสตรงกัน '+matched+' · บันทึก '+saved+' รายการ';
+ }catch(error){status.textContent='ซิงก์ไม่สำเร็จ · Firebase ยืนยันแล้ว '+saved+' รายการ · '+error.message;}
+ finally{importing=false;render();}
+});
 function cleanTxtField(value){
  const cleaned=value.replace(/(?:รวส|ชสป|อปก)\./g,'');
  return cleaned===value?value:cleaned.replace(/\s+/g,' ').trim();
