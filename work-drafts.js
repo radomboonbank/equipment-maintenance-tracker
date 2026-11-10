@@ -9,6 +9,7 @@
 <label>ระดับแรงดัน (kV)<select name="voltage"><option value="">เลือกระดับแรงดัน</option><option>500</option><option>230</option><option>115</option><option>22</option></select></label>
 <label>สถานีไฟฟ้า / สถานีต้นทาง<input name="station"></label><label>สถานีปลายทาง (สำหรับสายส่ง)<input name="stationTo"></label>
 <label class="wide">ขอบเขตงานและอุปกรณ์<textarea name="scope" placeholder="ระบุงานแต่ละส่วนแยกบรรทัด เช่น ติดตั้งหม้อแปลง ขนาด จำนวนชุด และวงจรที่เกี่ยวข้อง"></textarea></label>
+<label class="wide">รายละเอียดงาน<textarea name="workDetails" rows="4"></textarea></label>
 </div></fieldset>
 <fieldset class="construction-section"><legend>กำหนดเสร็จและเอกสารอ้างอิง</legend><div class="construction-grid">
 <label>กำหนดแล้วเสร็จ (พ.ศ.)<input name="plannedEndDate" placeholder="31 ธันวาคม 2569 หรือ มิถุนายน 2570"></label>
