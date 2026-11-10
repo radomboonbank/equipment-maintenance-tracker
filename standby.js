@@ -166,6 +166,45 @@ function planImport(book, xlsx) {
  if(skipped===updates.size)throw Error('ไม่พบรหัสพนักงานใน Excel ที่ตรงกับรายชื่อ Standby');
  return {changes,skipped,ambiguous,notices};
 }
+const txtInput=$('txt-file');
+$('txt-upload').onclick=()=>txtInput.click();
+txtInput.onchange=async()=>{
+ const file=txtInput.files[0];txtInput.value='';
+ if(!file||!mayUpload||!ready||importing)return;
+ const status=$('standby-status');
+ let saved=0;
+ importing=true;render();$('standby-duplicates').textContent='';
+ try{
+  if(!/\.txt$/i.test(file.name))throw Error('กรุณาเลือกไฟล์ .txt');
+  const lines=new TextDecoder('utf-8',{fatal:true}).decode(await file.arrayBuffer()).split(/\r\n?|\n/).map(line=>line.trim());
+  const header=/^.+\((\d+)\)$/;
+  const entries=new Map();
+  for(let i=0;i<lines.length;i++){
+   const match=lines[i].match(header);
+   if(!match)continue;
+   const id=match[1],position=lines[i+1],department=lines[i+2];
+   if(!position||!department||header.test(position)||header.test(department)||Math.max(position.length,department.length)>2000)
+    throw Error('ตรวจตำแหน่งและสังกัดของรหัส '+id);
+   const previous=entries.get(id);
+   if(previous&&(previous.position!==position||previous.department!==department))
+    throw Error('พบข้อมูลขัดกันสำหรับรหัส '+id);
+   entries.set(id,{position,department});i+=2;
+  }
+  if(!entries.size)throw Error('ไม่พบรหัสพนักงานในวงเล็บ');
+  const matched=new Set();
+  for(const [key,{row,revision}] of Array.from(overrides)){
+   const id=row[1].trim(),entry=entries.get(id);
+   if(!entry)continue;
+   matched.add(id);
+   if(row[3]===entry.position&&row[4]===entry.department)continue;
+   const next=[...row];next[3]=entry.position;next[4]=entry.department;
+   status.textContent='กำลังบันทึกรหัส '+id;
+   await request('upload',{key,row:next,revision},30000);saved++;
+  }
+  status.textContent='พบรหัสตรงกัน '+matched.size+' · บันทึก '+saved+' รายการ · ไม่พบรหัส '+(entries.size-matched.size);
+ }catch(error){status.textContent='บันทึกแล้ว '+saved+' รายการ · '+error.message;}
+ finally{importing=false;render();}
+};
 const fileInput=$('standby-file');
 $('standby-upload').addEventListener('click',()=>fileInput.click());
 fileInput.addEventListener('change',async()=>{
