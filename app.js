@@ -101,16 +101,17 @@ function watchLogins() {
 
 let alarmData=[],alarmState='loading',unsubscribeAlarms=null;
 let reportTab=null;
-function showAllConstruction(){
+function showAllConstruction(existingTab){
  if(!user||role==='guest')return;
- if(reportTab&&!reportTab.closed){reportTab.focus();void updateReportTable();return;}
- const tab=window.open('./construction-report.html','_blank');
+ if(!existingTab&&reportTab&&!reportTab.closed){reportTab.focus();void updateReportTable();return;}
+ const tab=existingTab||window.open('./construction-report.html','_blank');
  if(!tab){toast('กรุณาอนุญาตให้เปิดแท็บใหม่');return;}
+ if(existingTab)tab.location.replace(new URL('./construction-report.html',location.href).href);
  reportTab=tab;
  // Wait for the report document itself; the initial about:blank can also fire load.
  const timer=setInterval(()=>{
   if(tab.closed){clearInterval(timer);return;}
-  try{if(tab.document.querySelector('#report-table')){clearInterval(timer);updateReportTable();}}catch{clearInterval(timer);}
+  try{if(tab.document.readyState==='complete'&&tab.document.querySelector('#report-table')){clearInterval(timer);updateReportTable();}}catch{clearInterval(timer);}
  },100);
 }
 async function updateReportTable(){
@@ -123,7 +124,11 @@ async function updateReportTable(){
   showConstructionRows(tab.document,constructionData,canEdit()?record=>{reportTab=null;window.openConstructionDraft(record,tab)}:null);
  }catch(error){console.warn('Construction table',error.message);}
 }
-$('#all-construction').onclick=showAllConstruction;
+$('#all-construction').onclick=()=>showAllConstruction();
+window.returnToConstructionTable=tab=>{
+ if(!user||role==='guest'){tab.close();return;}
+ showAllConstruction(tab);
+};
 async function importLinkedReport(gen){
  const key=new URLSearchParams(location.hash.slice(1)).get('report');
  if(!key||!user||!['admin','editor'].includes(role))return;

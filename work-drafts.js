@@ -38,7 +38,7 @@
    const css=doc.createElement('link');css.rel='stylesheet';css.href=new URL('styles.css?v=20261110-construction-tab',location.href).href;doc.head.append(css);
   }
   const dialog=doc.createElement(tab?'main':'dialog');dialog.className=tab?'construction-page':'work-draft-dialog';
-  const closeForm=()=>tab?tab.close():dialog.close();
+  const closeForm=()=>tab?window.returnToConstructionTable(tab):dialog.close();
   if(kind==='construction')dialog.classList.add('construction-report-dialog');
   dialog.innerHTML=`<form class="work-draft-form"><div class="work-draft-title"><h2>${title}</h2><button type="button" class="work-draft-close" data-cancel aria-label="ปิดหน้าต่าง">✕</button></div><p>${online?'กรอกหนึ่ง Job No. ต่อหนึ่งรอบรายงาน ช่องที่มี * จำเป็นต้องกรอก':'แบบทดลองออฟไลน์ · เก็บเฉพาะในเบราว์เซอร์เครื่องนี้ ยังไม่รวมยอด Dashboard'}</p>${kind==='construction'?constructionForm:`<label>ประเภท<select name="category"><option value="">ยังไม่ระบุ</option>${choices.map(x=>`<option>${x}</option>`).join('')}</select></label><label>ชื่อโครงการ / งาน<input name="title" maxlength="250"></label><label>สถานีไฟฟ้า / พื้นที่<input name="station" maxlength="250"></label><label>รายละเอียด<textarea name="details" maxlength="4000"></textarea></label><label>ผู้รับผิดชอบ<input name="owner" maxlength="250"></label>`}<p role="status"></p><div class="work-action-buttons"><button type="button" data-cancel>ปิด</button><button class="primary">${online?'บันทึกข้อมูล':'บันทึกฉบับร่างในเครื่อง'}</button></div></form>`;
   if(online){
@@ -49,7 +49,7 @@
     if(!dialog.ownerDocument.defaultView.confirm('ยืนยันลบรายการงานก่อสร้างนี้ออกจาก Firebase ถาวรหรือไม่?'))return;
     const message=dialog.querySelector('[role=status]');pending=true;
     const buttons=[...actions.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);message.textContent='กำลังลบ…';
-    try{await window.GRID_CONSTRUCTION_STORE.remove(record.id,record.revision);tab.alert('ลบข้อมูลใน Firebase แล้ว');closeForm()}
+    try{await window.GRID_CONSTRUCTION_STORE.remove(record.id,record.revision);closeForm()}
     catch(error){message.textContent='ลบไม่สำเร็จ: '+(error.code==='permission-denied'?'ไม่มีสิทธิ์ลบรายการ กรุณาตรวจสิทธิ์ Firebase':error.message)}
     finally{pending=false;buttons.forEach(b=>b.disabled=false)}
    };
