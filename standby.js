@@ -7,6 +7,7 @@ let group='ทั้งหมด',mayEdit=false,mayUpload=false,server='',ready=
 const $=id=>document.getElementById(id),search=$('standby-search'),body=$('standby-rows');
 const buttons=[...document.querySelectorAll('[data-group]')],dialog=$('standby-editor'),form=$('standby-edit-form');
 const labels=['ลำดับที่','รหัสพนักงาน','ชื่อ - สกุล','ตำแหน่ง','สังกัด','รายละเอียด','โทรศัพท์มือถือ'];
+const columnFilters=[...document.querySelectorAll('[data-filter-column]')];
 const visibleFields=[1,2,3,4,5,6];
 const displayName=value=>value.replace(/^(?:นางสาว|น\.ส\.|นาย|นาง)\s*/,'');
 const normalize=v=>v.toLocaleLowerCase('th').replace(/[\s-]/g,'');
@@ -70,7 +71,12 @@ function render(){
  $('txt-upload').disabled=!ready||importing;
  $('standby-upload').disabled=!ready||importing;
  $('standby-edit-heading').hidden=!(mayEdit&&ready);
- const source=entries(),matches=source.filter(e=>normalize(e.row.join(' ')).includes(normalize(search.value.trim())));
+ const source=entries(),query=normalize(search.value);
+ const filters=columnFilters.filter(input=>input.value.trim()).map(input=>({
+  index:Number(input.dataset.filterColumn),query:normalize(input.value)
+ }));
+ const matches=source.filter(({row})=>normalize(row.join(' ')).includes(query)&&
+  filters.every(filter=>normalize(row[filter.index]||'—').includes(filter.query)));
  $('group-title').textContent=group==='ทั้งหมด'?'รายชื่อทั้งหมด':group;
  $('standby-count').textContent='แสดง '+matches.length+' จาก '+source.length+' รายชื่อ';
  $('standby-empty').hidden=matches.length>0;
@@ -314,6 +320,7 @@ dialog.addEventListener('cancel',e=>{if(saving)e.preventDefault();});
 buttons.forEach(b=>b.addEventListener('click',()=>{group=b.dataset.group;search.value='';render();}));
 $('standby-close').addEventListener('click',()=>{window.close();window.setTimeout(()=>window.location.assign('./'),150);});
 search.addEventListener('input',render);
+columnFilters.forEach(input=>input.addEventListener('input',render));
 render();void refreshAccess();const accessTimer=setInterval(refreshAccess,6000);
 window.addEventListener('focus',()=>void refreshAccess());
 window.addEventListener('pagehide',()=>{clearInterval(accessTimer);channel.close();},{once:true});
