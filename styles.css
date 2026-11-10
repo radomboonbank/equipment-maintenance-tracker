@@ -274,3 +274,5 @@ svg.members-menu-icon{width:20px;height:24px;flex:0 0 20px;background:transparen
 .construction-report-dialog .wide{grid-column:1/-1}
 .construction-report-dialog .construction-grid :is(input,textarea,select){width:100%;background:white}
 .construction-report-dialog .construction-section p{margin:0 0 12px}
+
+.construction-page.construction-report-dialog{width:100%;max-height:none;min-height:100vh;margin:0;background:white}.construction-page .work-draft-form{max-width:1240px;margin:auto;padding:clamp(16px,3vw,44px)}.construction-page .work-action-buttons{align-items:center;margin-top:28px}.construction-page .work-action-buttons button{padding:12px 20px}.construction-page .delete-record:disabled{opacity:.45;cursor:default}

@@ -384,7 +384,7 @@ $('#dashboard').addEventListener('click',e=>{
  page.document.querySelectorAll('[data-edit-alarm]').forEach(button=>button.addEventListener('click',()=>{
   if(!canEdit()){toast('กรุณาเข้าสู่ระบบด้วยบัญชีที่มีสิทธิ์แก้ไข');return;}
   const key=button.dataset.editAlarm;
-  if(key.startsWith('construction:')){const project=constructionData.find(r=>r.id===key.slice(13));if(!project){toast('ไม่พบรายการ กรุณาเปิดตารางใหม่');return;}window.focus();window.openConstructionDraft(project);page.close();return;}
+  if(key.startsWith('construction:')){const project=constructionData.find(r=>r.id===key.slice(13));if(!project){toast('ไม่พบรายการ กรุณาเปิดตารางใหม่');return;}window.openConstructionDraft(project,page);return;}
   const stored=key.startsWith('alarm:');
   const id=key.slice(stored?6:10);
   const record=(stored?alarmData:data).find(r=>r.id===id);
