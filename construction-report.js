@@ -19,6 +19,11 @@ const fields=[
 ];
 const collator = new Intl.Collator('th', { numeric: true, sensitivity: 'base' });
 const months = 'มกราคม กุมภาพันธ์ มีนาคม เมษายน พฤษภาคม มิถุนายน กรกฎาคม สิงหาคม กันยายน ตุลาคม พฤศจิกายน ธันวาคม'.split(' ');
+const shortMonths = 'ม.ค. ก.พ. มี.ค. เม.ย. พ.ค. มิ.ย. ก.ค. ส.ค. ก.ย. ต.ค. พ.ย. ธ.ค.'.split(' ');
+const monthPattern = new RegExp('(?:เดือน\\s*)?(' + months.join('|') + ')', 'g');
+function shortDate(value) {
+ return String(value ?? '').replace(monthPattern, (_, month) => shortMonths[months.indexOf(month)]);
+}
 const numericFields = new Set(['reportItem', 'actualProgress', 'variancePercent', 'civilProgress', 'electricalProgress']);
 
 function sortValue(data, key) {
@@ -29,7 +34,7 @@ function sortValue(data, key) {
   if (Number.isFinite(number)) return number;
  }
  if (key === 'plannedEndDate') {
-  const month = months.findIndex(name => value.includes(name));
+  const month = months.findIndex((name, index) => value.includes(name) || value.includes(shortMonths[index]));
   const year = value.match(/\d{4}/);
   if (month >= 0 && year) {
    const day = Number(value.match(/^\s*(\d{1,2})\s/)?.[1] || 1);
@@ -48,7 +53,7 @@ export function showConstructionRows(doc, records, openEditor) {
  function render() {
   const term = search.value.trim().toLocaleLowerCase('th');
   clear.hidden = search.value.length === 0;
-  const visible = records.filter(({data}) => !term || fields.some(([key]) =>
+  const visible = records.filter(({data}) => !term || shortDate(data.plannedEndDate).includes(term) || fields.some(([key]) =>
    String(data[key] ?? '').toLocaleLowerCase('th').includes(term)));
   const index = headers.findIndex(header => header.hasAttribute('aria-sort'));
   if (index >= 0) {
@@ -69,6 +74,7 @@ export function showConstructionRows(doc, records, openEditor) {
    button.textContent = header.textContent;
    header.replaceChildren(button);
   }
+  if (header === headers.at(-1)) button.textContent = openEditor ? 'แก้ไข' : 'รายละเอียด';
   button.onclick = () => {
    const ascending = header.getAttribute('aria-sort') !== 'ascending';
    headers.forEach(other => other.removeAttribute('aria-sort'));
@@ -87,17 +93,17 @@ function renderRows(doc,records,openEditor,total){
  for(const record of records){
   const tr=doc.createElement('tr');
   for(const [key] of fields.slice(0,10)){
-   const cell=tr.insertCell();cell.textContent=record.data[key]??'—';
+   const cell=tr.insertCell();
+   cell.textContent=key==='plannedEndDate' ? shortDate(record.data[key]) || '—' : record.data[key]??'—';
   }
-  const action=doc.createElement('button');action.textContent='ดูรายละเอียด';
-  action.onclick=()=>{
+  const action=doc.createElement('button');action.textContent=openEditor?'แก้ไข':'ดูรายละเอียด';
+  action.onclick=openEditor ? ()=>openEditor(record) : ()=>{
    const list=details.querySelector('dl');list.replaceChildren();
    for(const [key,label] of fields){
     const value=record.data[key];if(value==null||value==='')continue;
     const dt=doc.createElement('dt'),dd=doc.createElement('dd');dt.textContent=label;dd.textContent=value;list.append(dt,dd);
    }
-   const edit=details.querySelector('[data-edit]');edit.hidden=!openEditor;
-   edit.onclick=()=>openEditor(record);details.showModal();
+   details.showModal();
   };
   tr.insertCell().append(action);rows.append(tr);
  }
