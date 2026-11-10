@@ -2,28 +2,28 @@
  const groups={construction:['แบบบันทึกข้อมูลงานก่อสร้าง',['สถานีไฟฟ้า','สายส่งไฟฟ้า','หม้อแปลงไฟฟ้า','เบรคเกอร์','คาปาซิเตอร์']],important:['ข้อมูลงานสำคัญ อปก.',['BESS','LPLC','TSLC','Data Center']]};
 
  const constructionForm = `<fieldset class="construction-section"><legend>ข้อมูลโครงการ</legend><div class="construction-grid">
-<label>Job No. *<input name="projectId" placeholder="TS12-13-S02" required></label>
-<label>ลำดับในรายงาน<input name="reportItem" placeholder="15"></label>
-<label class="wide">โครงการก่อสร้างทำที่ สถานีไฟฟ้า *<input name="title" placeholder="กรอกชื่อย่อ สฟ." required></label>
-<label>ประเภทงาน<select name="category"><option value="">เลือกประเภท</option><option>สถานีไฟฟ้า</option><option>สายส่งไฟฟ้า</option><option>หม้อแปลงไฟฟ้า</option><option>เบรคเกอร์</option><option>คาปาซิเตอร์</option><option>อื่น ๆ</option></select></label>
-<label>ระดับแรงดัน (kV)<select name="voltage"><option value="">เลือกระดับแรงดัน</option><option>500</option><option>230</option><option>115</option><option>22</option></select></label>
+<label>Job No. *<input name="projectId" required></label>
+<label>ลำดับในรายงาน<input name="reportItem"></label>
+<label class="wide">โครงการก่อสร้างทำที่ สถานีไฟฟ้า *<input name="title" required></label>
+<label>ประเภทงาน<select name="category"><option value=""></option><option>สถานีไฟฟ้า</option><option>สายส่งไฟฟ้า</option><option>หม้อแปลงไฟฟ้า</option><option>เบรคเกอร์</option><option>คาปาซิเตอร์</option><option>อื่น ๆ</option></select></label>
+<label>ระดับแรงดัน (kV)<select name="voltage"><option value=""></option><option>500</option><option>230</option><option>115</option><option>22</option></select></label>
 <label>สถานีไฟฟ้า / สถานีต้นทาง<input name="station"></label><label>สถานีปลายทาง (สำหรับสายส่ง)<input name="stationTo"></label>
-<label class="wide">ขอบเขตงานและอุปกรณ์<textarea name="scope" placeholder="ระบุงานแต่ละส่วนแยกบรรทัด เช่น ติดตั้งหม้อแปลง ขนาด จำนวนชุด และวงจรที่เกี่ยวข้อง"></textarea></label>
+<label class="wide">ขอบเขตงานและอุปกรณ์<textarea name="scope"></textarea></label>
 <label class="wide">รายละเอียดงาน<textarea name="workDetails" rows="4"></textarea></label>
 </div></fieldset>
 <fieldset class="construction-section"><legend>กำหนดเสร็จและเอกสารอ้างอิง</legend><div class="construction-grid">
-<label>กำหนดแล้วเสร็จ (พ.ศ.)<input name="plannedEndDate" placeholder="31 ธันวาคม 2569 หรือ มิถุนายน 2570"></label>
-<label>ที่มาของกำหนดเสร็จ<input name="scheduleBasis" placeholder="แผนปฏิบัติการ อกส. หรือบันทึกอนุมัติ"></label>
-<label>เลขที่เอกสาร / ฉบับแก้ไข<input name="referenceNumber" placeholder="WA-0088/2569 Rev.0"></label><label>วันที่เอกสาร (พ.ศ.)<input name="referenceDate" placeholder="13 กรกฎาคม 2569"></label>
-<label>สถานะงานตามรายงาน<input name="workStatus" placeholder="เช่น ยกเลิกงาน"></label><label>โครงการที่รับงานต่อ<input name="successorProject" placeholder="เช่น TRP1"></label>
+<label>กำหนดแล้วเสร็จ (พ.ศ.)<input name="plannedEndDate"></label>
+<label>ที่มาของกำหนดเสร็จ<input name="scheduleBasis"></label>
+<label>เลขที่เอกสาร / ฉบับแก้ไข<input name="referenceNumber"></label><label>วันที่เอกสาร (พ.ศ.)<input name="referenceDate"></label>
+<label>สถานะงานตามรายงาน<input name="workStatus"></label><label>โครงการที่รับงานต่อ<input name="successorProject"></label>
 <label class="wide">เหตุผลหรือหมายเหตุ<textarea name="remarks"></textarea></label></div></fieldset>
 <fieldset class="construction-section"><legend>ความคืบหน้าในรอบรายงาน</legend><p><small>ถ้ารายงานระบุ “-%” ให้เว้นว่าง ถ้าระบุ 0.00% ให้กรอก 0</small></p><div class="construction-grid">
-<label>ผลงานรวม (%)<input type="number" name="actualProgress" min="0" max="100" step="any" placeholder="88.08"></label>
-<label>เทียบกับแผนปฏิบัติการ<select name="varianceDirection"><option value="">ไม่ระบุ</option><option>เร็วกว่าแผน</option><option>ช้ากว่าแผน</option><option>ตามแผน</option></select></label>
-<label>ส่วนต่างจากแผนตามรายงาน (%)<input type="number" name="variancePercent" min="0" max="100" step="any" placeholder="5.92"></label>
-<label>เปอร์เซ็นต์งานโยธา (%)<input type="number" name="civilProgress" min="0" max="100" step="any" placeholder="91.80"></label>
-<label>เปอร์เซ็นต์งานไฟฟ้า (%)<input type="number" name="electricalProgress" min="0" max="100" step="any" placeholder="85.60"></label></div></fieldset>
-<fieldset class="construction-section"><legend>แหล่งข้อมูล</legend><div class="construction-grid"><label>รอบรายงาน / วันที่ข้อมูล (พ.ศ.)<input name="reportPeriod"></label><label>ไฟล์ต้นฉบับและจุดอ้างอิง<input name="source" placeholder="page 1-100.docx · รายการ 15"></label></div></fieldset>`;
+<label>ผลงานรวม (%)<input type="number" name="actualProgress" min="0" max="100" step="any"></label>
+<label>เทียบกับแผนปฏิบัติการ<select name="varianceDirection"><option value=""></option><option>เร็วกว่าแผน</option><option>ช้ากว่าแผน</option><option>ตามแผน</option></select></label>
+<label>ส่วนต่างจากแผนตามรายงาน (%)<input type="number" name="variancePercent" min="0" max="100" step="any"></label>
+<label>เปอร์เซ็นต์งานโยธา (%)<input type="number" name="civilProgress" min="0" max="100" step="any"></label>
+<label>เปอร์เซ็นต์งานไฟฟ้า (%)<input type="number" name="electricalProgress" min="0" max="100" step="any"></label></div></fieldset>
+<fieldset class="construction-section"><legend>แหล่งข้อมูล</legend><div class="construction-grid"><label>รอบรายงาน / วันที่ข้อมูล (พ.ศ.)<input name="reportPeriod"></label><label>ไฟล์ต้นฉบับและจุดอ้างอิง<input name="source"></label></div></fieldset>`;
  function openWorkDraft(kind,record=null,existingTab=null){
   const [title,choices]=groups[kind];
   let savedId=record?.id||null,pending=false;const online=kind==='construction';
