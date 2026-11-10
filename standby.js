@@ -44,7 +44,7 @@ async function ensureImported(){
  if(!mayEdit||!ready||importing||importAttempted)return;
  importAttempted=true;importing=true;
  try{
-  const {seedGroups}=await import('./standby-seed.js?v=20261108');
+  const {seedGroups}=await import('./standby-seed.js?v=20261110-gbhk');
   const missing=seedGroups.flatMap((rows,i)=>rows.map((row,index)=>({key:'g'+i+'-'+index,row}))).filter(e=>!overrides.has(e.key));
   if(!missing.length)return;
   let completed=0;
