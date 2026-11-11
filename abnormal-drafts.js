@@ -1,4 +1,29 @@
 (() => {
+function parseBessTransfer(text){
+ const raw=String(text||'').trim();if(!raw)throw Error('กรุณาวางข้อความ BESS');
+ if(raw.length>3500)throw Error('ข้อความยาวเกิน 3,500 ตัวอักษร กรุณาแยกเหตุการณ์');
+ const date=raw.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
+ let dateValue='';
+ if(date){let year=Number(date[3]);if(year<100)year+=2500;else if(year<2400)year+=543;
+ const day=Number(date[1]),month=Number(date[2]),check=new Date(Date.UTC(year-543,month-1,day));
+ if(check.getUTCDate()!==day||check.getUTCMonth()!==month-1)throw Error('วันที่ในข้อความไม่ถูกต้อง');
+ dateValue=String(day).padStart(2,'0')+'/'+String(month).padStart(2,'0')+'/'+year;}
+ const times=[...raw.matchAll(/(?:เวลา\s*)(\d{1,2})[:.](\d{2})/g)];
+ if(times.length>1)throw Error('พบหลายเวลา กรุณาวางครั้งละหนึ่งเหตุการณ์ทริป');
+ let time='';if(times[0]){const h=Number(times[0][1]),m=Number(times[0][2]);if(h>23||m>59)throw Error('เวลาไม่ถูกต้อง');time=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');}
+ const pb=new Set();for(const m of raw.matchAll(/\bPB\.?\s*(\d+(?:\s*(?:,|\/|-|และ)\s*\d+)*)/gi)){
+  for(const item of m[1].split(/[,/]|และ/)){const range=item.trim().match(/^(\d+)\s*-\s*(\d+)$/);if(range){const a=Number(range[1]),b=Number(range[2]);if(a>b||b>20)throw Error('ช่วง PB ไม่ถูกต้อง');for(let n=a;n<=b;n++)pb.add(n);}else pb.add(Number(item.trim()));}
+ }
+ if([...pb].some(n=>n<1||n>20))throw Error('หมายเลข PB ต้องอยู่ระหว่าง 1 ถึง 20');
+ if(!/\bBESS\b/i.test(raw)||!pb.size)throw Error('กรุณาระบุ BESS และหมายเลข PB ในข้อความ');
+ const line=label=>raw.match(new RegExp('^\\s*'+label+'\\s*[:：]\\s*(.*)$','im'))?.[1]?.trim()||'';
+ const breakerCodes=[...raw.matchAll(/\b(22(?:[2-9]|10|11)12)\b/g)].map(m=>m[1]);
+ const breakerLine=raw.match(/22\s*kV[^\n)]*/i)?.[0]||'';
+ const breakerTrip=breakerLine? !/(?:ไม่\s*(?:Trip|ทริป)|(?:no|not)\s*trip)/i.test(breakerLine)&&/(?:Trip|ทริป)/i.test(breakerLine):null;
+ const phone=raw.match(/(?:โทร|มือถือ|เบอร์|Tel)[^\d\n]*(0[\d -]{8,15})/i)?.[1]?.replace(/[ -]/g,'')||'';
+ return {raw,date:dateValue,time,pb:[...pb].sort((a,b)=>a-b).map(String),station:raw.match(/สฟ\.\s*([A-Za-z0-9-]+)/i)?.[1]||'',alarm:line('Alarm'),cause:line('สาเหตุ'),weather:line('สภาพอากาศ'),breakerTrip,breakerCodes,
+ reporter:line('ผู้แจ้ง'),phone:/^0\d{9}$/.test(phone)?phone:''};
+}
  const field=(name,label,hint='',long=false)=>`<label>${label}${long?`<textarea name="${name}" rows="3" maxlength="4000" placeholder="${hint}"></textarea>`:`<input name="${name}" maxlength="500" placeholder="${hint}">`}</label>`;
  const select=(name,label,values)=>`<label>${label}<select name="${name}"><option value="">ยังไม่ระบุ</option>${values.map(v=>`<option>${v}</option>`).join('')}</select></label>`;
  const reporterFields=prefix=>`<div class="construction-grid alarm-section-reporter">${field(prefix+'ReporterName','แจ้ง พนักงานประจำ สฟ. ชื่อ','ชื่อพนักงาน')}<label>เบอร์มือถือ<input type="tel" name="${prefix}ReporterPhone" maxlength="50" placeholder="เบอร์มือถือ"></label></div>`;
@@ -108,6 +133,47 @@
    bessRows.append(row);
   };
   addBess();
+
+  const bessBlock=d.querySelector('[data-alarm-section="2"]');
+  const txtButton=document.createElement('button');txtButton.type='button';txtButton.textContent='txt2web';txtButton.style.cssText='float:right;margin:0 0 12px 16px;font-weight:700';
+  bessBlock.querySelector('.bess-full').prepend(txtButton);
+  const stationWrap=document.createElement('label');stationWrap.textContent='สถานีไฟฟ้า BESS';
+  const stationInput=document.createElement('input');stationInput.name='bessStation';stationInput.maxLength=100;stationWrap.append(stationInput);txtButton.after(stationWrap);
+  const rawField=document.createElement('textarea');rawField.name='bessSourceText';rawField.hidden=true;rawField.maxLength=4000;stationWrap.after(rawField);
+  txtButton.onclick=()=>{
+   const popup=document.createElement('dialog');popup.style.cssText='width:min(760px,94vw);max-height:90vh;border:1px solid #c1d6da;border-radius:14px;padding:24px;font-family:"Noto Sans Thai",Tahoma,sans-serif';
+   popup.innerHTML='<h2>txt2web · BESS ทริป</h2><label>วางข้อความ BESS<textarea data-transfer-text rows="10" maxlength="3500" style="display:block;width:100%;box-sizing:border-box;margin-top:10px;font:inherit;padding:12px"></textarea></label><p data-transfer-summary style="white-space:pre-wrap" role="status">วางข้อความเพื่อตรวจข้อมูลก่อนบันทึก</p><div style="display:flex;justify-content:flex-end;gap:12px"><button type="button" data-transfer-close>ปิด</button><button type="button" class="primary" data-transfer-save disabled>Transfer to Web</button></div>';
+   document.body.append(popup);popup.addEventListener('close',()=>popup.remove(),{once:true});
+   const input=popup.querySelector('[data-transfer-text]'),summary=popup.querySelector('[data-transfer-summary]'),transfer=popup.querySelector('[data-transfer-save]'),close=popup.querySelector('[data-transfer-close]');
+   let parsed=null,working=false;
+   input.oninput=()=>{try{parsed=parseBessTransfer(input.value);summary.textContent='สถานี: '+(parsed.station||'ไม่ระบุ')+'\nวันที่: '+(parsed.date||'ไม่ระบุ')+' เวลา: '+(parsed.time||'ไม่ระบุ')+'\nPB: '+parsed.pb.join(', ')+'\nAlarm: '+(parsed.alarm||'ไม่ระบุ')+'\n22 kV เบรกเกอร์: '+(parsed.breakerTrip===false?'ไม่ทริป':parsed.breakerTrip===true?'ทริป':'ไม่ระบุ')+'\nกด Transfer to Web เพื่อกรอกและบันทึกลง Firebase';transfer.disabled=false;}catch(error){parsed=null;summary.textContent=error.message;transfer.disabled=true;}};
+   close.onclick=()=>{if(!working)popup.close();};
+   popup.addEventListener('cancel',e=>{if(working)e.preventDefault();});
+   transfer.onclick=async()=>{
+    if(working||!parsed)return;
+    working=true;transfer.disabled=true;close.disabled=true;input.disabled=true;
+    try{
+     if(!window.GRID_ALARM_STORE)throw Error('กรุณาเข้าสู่ระบบด้วยบัญชีที่มีสิทธิ์บันทึก');
+     if(existing?.data)throw Error('txt2web ใช้สำหรับเพิ่มเหตุการณ์ใหม่ กรุณาเปิด + Abnormal alarm เพื่อรักษาข้อมูลรายการเดิม');
+     const set=(name,value)=>{const el=form.elements.namedItem(name);if(!el)return;el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));};
+     set('bessStation',parsed.station);set('bessSourceText',parsed.raw);
+     set('bess-1-date',parsed.date);set('bess-1-time',parsed.time);
+     const selectValue=(name,value)=>{const el=form.elements.namedItem(name);if(!el)return;if(value&&![...el.options].some(o=>o.value===value)){const option=document.createElement('option');option.value=value;option.textContent=value;el.append(option);}set(name,value);};
+     selectValue('bess-1-alarm',parsed.alarm);selectValue('bess-1-cause',parsed.cause==='รอตรวจสอบ'?'รอตรวจสอบ':parsed.cause?'ตรวจสอบแล้ว (ระบุรายละเอียด)':'');selectValue('bess-1-weather',parsed.weather);
+     set('bess-1-causeDetails',parsed.cause&&parsed.cause!=='รอตรวจสอบ'?parsed.cause:'');
+     set('bessReporterName',parsed.reporter);set('bessReporterPhone',parsed.phone);
+     bessRows.querySelectorAll('[name="bess-1-pb"]').forEach(el=>el.checked=parsed.pb.includes(el.value));
+     const trip=bessRows.querySelector('[name="bess-1-breaker22Trip"]');trip.checked=parsed.breakerTrip===true;trip.dispatchEvent(new Event('change',{bubbles:true}));
+     bessRows.querySelectorAll('[name="bess-1-breaker22Codes"]').forEach(el=>el.checked=parsed.breakerCodes.includes(el.value));
+     summary.textContent='กำลังบันทึก BESS ลง Firebase…';
+     const save=bessBlock.querySelector('[data-save-section="2"]');await save.onclick();
+     if(!d.open)popup.close();else throw Error(bessBlock.querySelector('[data-section-status]').textContent||'บันทึกไม่สำเร็จ กรุณาตรวจข้อมูลในฟอร์ม');
+    }catch(error){summary.textContent=error.message;}
+    finally{working=false;transfer.disabled=false;close.disabled=false;input.disabled=false;}
+   };
+   popup.showModal();input.focus();
+  };
+
   const windingRows=d.querySelector('[data-winding-events]');let windingSequence=0;
   const addWinding=()=>{
    const id=++windingSequence,prefix='winding-'+id+'-';const row=document.createElement('div');row.className='bess-event';
