@@ -11,7 +11,7 @@ import {createPresence} from './presence.js?v=20261029-presence';
 import {createMembersPage} from './members.js?v=20261107-backup';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261105-circuit';
-import {genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261109-progress';
+import {genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261111-summary-all';
 import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261031-abnormal-local';
 import {rotateLogins,loginEntries,loginTime,nextLoginStat,rotatePublicLogins} from './login-history.js?v=20261104-stats';
 'use strict';
