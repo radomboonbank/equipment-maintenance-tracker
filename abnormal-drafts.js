@@ -26,6 +26,31 @@ function parseBessTransfer(text){
  return {raw,date:dateValue,time,pb:[...pb].sort((a,b)=>a-b).map(String),station:raw.match(/สฟ\.\s*([A-Za-z0-9-]+)/i)?.[1]||'',alarm:line('Alarm'),cause:line('สาเหตุ'),weather:line('สภาพอากาศ'),breakerTrip,breakerCodes,
  reporter:line('ผู้แจ้ง'),phone:/^0\d{9}$/.test(phone)?phone:''};
 }
+
+function parseBessBatch(text){
+ const raw=String(text||'').trim();
+ const starts=[...raw.matchAll(/เวลา\s*\d{1,2}[:.]\d{2}/g)];
+ if(starts.length<=1)return {raw,events:[parseBessTransfer(raw)]};
+ if(starts.length>20)throw Error('รองรับสูงสุด 20 เหตุการณ์ต่อครั้ง');
+ const date=raw.match(/\d{1,2}[/-]\d{1,2}[/-]\d{2,4}/)?.[0]||'';
+ const station=raw.match(/สฟ\.\s*([A-Za-z0-9-]+)/i)?.[0]||'';
+ const shared=[...raw.matchAll(/^\s*(Alarm|สาเหตุ|สภาพอากาศ|ผู้แจ้ง|เบอร์มือถือ)\s*[:：]\s*.*$/gim)].map(m=>m[0].trim());
+ const events=starts.map((m,i)=>{
+  const chunk=raw.slice(m.index,starts[i+1]?.index??raw.length);
+  const supplements=shared.filter(line=>!new RegExp('^\\s*'+line.split(/[:：]/)[0]+'\\s*[:：]','im').test(chunk));
+  return parseBessTransfer([date,station,chunk,...supplements].join('\n'));
+ });
+ return {raw,events};
+}
+function bessTransferRecord(p,raw){
+ return {bessStation:p.station,bessSourceText:raw,'bess-1-date':p.date,'bess-1-time':p.time,
+  'bess-1-pb':p.pb,'bess-1-alarm':p.alarm,'bess-1-cause':p.cause==='รอตรวจสอบ'?'รอตรวจสอบ':p.cause?'ตรวจสอบแล้ว (ระบุรายละเอียด)':'',
+  'bess-1-causeDetails':p.cause&&p.cause!=='รอตรวจสอบ'?p.cause:'',
+  'bess-1-weather':p.weather,'bess-1-breaker22Trip':p.breakerTrip===true,
+  'bess-1-breaker22Status':p.breakerTrip===true?'มี 22 kV เบรกเกอร์ ทริป':p.breakerTrip===false?'ไม่มี 22 kV เบรกเกอร์ ทริป':'',
+  'bess-1-breaker22Codes':p.breakerCodes,bessReporterName:p.reporter,bessReporterPhone:p.phone};
+}
+
  const field=(name,label,hint='',long=false)=>`<label>${label}${long?`<textarea name="${name}" rows="3" maxlength="4000" placeholder="${hint}"></textarea>`:`<input name="${name}" maxlength="500" placeholder="${hint}">`}</label>`;
  const select=(name,label,values)=>`<label>${label}<select name="${name}"><option value="">ยังไม่ระบุ</option>${values.map(v=>`<option>${v}</option>`).join('')}</select></label>`;
  const reporterFields=prefix=>`<div class="construction-grid alarm-section-reporter">${field(prefix+'ReporterName','แจ้ง พนักงานประจำ สฟ. ชื่อ','ชื่อพนักงาน')}<label>เบอร์มือถือ<input type="tel" name="${prefix}ReporterPhone" maxlength="50" placeholder="เบอร์มือถือ"></label></div>`;
@@ -147,8 +172,12 @@ function parseBessTransfer(text){
    popup.innerHTML='<h2>txt2web · BESS ทริป</h2><label>วางข้อความ BESS<textarea data-transfer-text rows="10" maxlength="3500" style="display:block;width:100%;box-sizing:border-box;margin-top:10px;font:inherit;padding:12px"></textarea></label><p data-transfer-summary style="white-space:pre-wrap" role="status">วางข้อความเพื่อตรวจข้อมูลก่อนบันทึก</p><div style="display:flex;justify-content:flex-end;gap:12px"><button type="button" data-transfer-close>ปิด</button><button type="button" class="primary" data-transfer-save disabled>Transfer to Web</button></div>';
    document.body.append(popup);popup.addEventListener('close',()=>popup.remove(),{once:true});
    const input=popup.querySelector('[data-transfer-text]'),summary=popup.querySelector('[data-transfer-summary]'),transfer=popup.querySelector('[data-transfer-save]'),close=popup.querySelector('[data-transfer-close]');
-   let parsed=null,working=false;
-   input.oninput=()=>{try{parsed=parseBessTransfer(input.value);summary.textContent='สถานี: '+(parsed.station||'ไม่ระบุ')+'\nวันที่: '+(parsed.date||'ไม่ระบุ')+' เวลา: '+(parsed.time||'ไม่ระบุ')+'\nPB: '+(parsed.pb.join(', ')||'ไม่ระบุ')+ '\nเบรกเกอร์: '+(parsed.breakerCodes.join(', ')||'ไม่ระบุ')+'\nAlarm: '+(parsed.alarm||'ไม่ระบุ')+'\n22 kV เบรกเกอร์: '+(parsed.breakerTrip===false?'ไม่ทริป':parsed.breakerTrip===true?'ทริป':'ไม่ระบุ')+'\nกด Transfer to Web เพื่อกรอกและบันทึกลง Firebase';transfer.disabled=false;}catch(error){parsed=null;summary.textContent=error.message;transfer.disabled=true;}};
+   let parsed=null,working=false,transferIds=[];
+   input.oninput=()=>{transferIds=[];try{
+    parsed=parseBessBatch(input.value);
+    summary.textContent=parsed.events.map((p,i)=>'เหตุการณ์ '+(i+1)+' · '+(p.date||'ไม่ระบุวันที่')+' '+(p.time||'ไม่ระบุเวลา')+'\nสถานี: '+(p.station||'ไม่ระบุ')+' · PB: '+(p.pb.join(', ')||'ไม่ระบุ')+' · เบรกเกอร์: '+(p.breakerCodes.join(', ')||'ไม่ระบุ')+'\nAlarm: '+(p.alarm||'ไม่ระบุ')+' · 22 kV: '+(p.breakerTrip===true?'ทริป':p.breakerTrip===false?'ไม่ทริป':'ไม่ระบุ')).join('\n\n')+'\n\nรวม '+parsed.events.length+' เหตุการณ์ · กด Transfer to Web เพื่อบันทึกทั้งหมดลง Firebase';
+    transfer.disabled=false;
+   }catch(error){parsed=null;summary.textContent=error.message;transfer.disabled=true;}};
    close.onclick=()=>{if(!working)popup.close();};
    popup.addEventListener('cancel',e=>{if(working)e.preventDefault();});
    transfer.onclick=async()=>{
@@ -157,19 +186,16 @@ function parseBessTransfer(text){
     try{
      if(!window.GRID_ALARM_STORE)throw Error('กรุณาเข้าสู่ระบบด้วยบัญชีที่มีสิทธิ์บันทึก');
      if(existing?.data)throw Error('txt2web ใช้สำหรับเพิ่มเหตุการณ์ใหม่ กรุณาเปิด + Abnormal alarm เพื่อรักษาข้อมูลรายการเดิม');
-     const set=(name,value)=>{const el=form.elements.namedItem(name);if(!el)return;el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));};
-     set('bessStation',parsed.station);set('bessSourceText',parsed.raw);
-     set('bess-1-date',parsed.date);set('bess-1-time',parsed.time);
-     const selectValue=(name,value)=>{const el=form.elements.namedItem(name);if(!el)return;if(value&&![...el.options].some(o=>o.value===value)){const option=document.createElement('option');option.value=value;option.textContent=value;el.append(option);}set(name,value);};
-     selectValue('bess-1-alarm',parsed.alarm);selectValue('bess-1-cause',parsed.cause==='รอตรวจสอบ'?'รอตรวจสอบ':parsed.cause?'ตรวจสอบแล้ว (ระบุรายละเอียด)':'');selectValue('bess-1-weather',parsed.weather);
-     set('bess-1-causeDetails',parsed.cause&&parsed.cause!=='รอตรวจสอบ'?parsed.cause:'');
-     set('bessReporterName',parsed.reporter);set('bessReporterPhone',parsed.phone);
-     bessRows.querySelectorAll('[name="bess-1-pb"]').forEach(el=>el.checked=parsed.pb.includes(el.value));
-     const trip=bessRows.querySelector('[name="bess-1-breaker22Trip"]');trip.checked=parsed.breakerTrip===true;trip.dispatchEvent(new Event('change',{bubbles:true}));
-     bessRows.querySelectorAll('[name="bess-1-breaker22Codes"]').forEach(el=>el.checked=parsed.breakerCodes.includes(el.value));
-     summary.textContent='กำลังบันทึก BESS ลง Firebase…';
-     const save=bessBlock.querySelector('[data-save-section="2"]');await save.onclick();
-     if(!d.open)popup.close();else throw Error(bessBlock.querySelector('[data-section-status]').textContent||'บันทึกไม่สำเร็จ กรุณาตรวจข้อมูลในฟอร์ม');
+     const batch=parseBessBatch(input.value);
+     if(!transferIds.length)transferIds=batch.events.map(()=>crypto.randomUUID());
+     if(!window.GRID_ALARM_STORE.saveMany)throw Error('กรุณารีเฟรชหน้าหลักและเข้าสู่ระบบใหม่เพื่อโหลดระบบบันทึกหลายเหตุการณ์');
+     summary.textContent='กำลังบันทึก '+batch.events.length+' เหตุการณ์ลง Firebase…';
+     await window.GRID_ALARM_STORE.saveMany(2,batch.events.map(p=>bessTransferRecord(p,batch.raw)),transferIds);
+     popup.close();d.close();
+     const notice=document.createElement('div');notice.setAttribute('role','status');
+     notice.textContent='บันทึก BESS ลง Firebase สำเร็จ '+batch.events.length+' เหตุการณ์';
+     notice.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:10000;background:#087f85;color:white;padding:16px 24px;border-radius:12px';
+     document.body.append(notice);setTimeout(()=>notice.remove(),8000);
     }catch(error){summary.textContent=error.message;}
     finally{working=false;transfer.disabled=false;close.disabled=false;input.disabled=false;}
    };
