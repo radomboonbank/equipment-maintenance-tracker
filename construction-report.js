@@ -10,8 +10,8 @@ export async function readConstructionReport(keyText){
 
 const fields=[
  ['reportItem','ลำดับในรายงาน'],['projectId','Job No.'],['title','สถานี / งานก่อสร้าง'],['category','ประเภทงาน'],
- ['plannedEndDate','กำหนดเสร็จ (พ.ศ.)'],['actualProgress','ผลงานรวม (%)'],['varianceDirection','เทียบกับแผน'],
- ['variancePercent','ส่วนต่าง (%)'],['civilProgress','โยธา (%)'],['electricalProgress','ไฟฟ้า (%)'],
+ ['plannedEndDate','กำหนดเสร็จ'],['variancePercent','ส่วนต่าง (%)'],['varianceDirection','เทียบกับแผน'],
+ ['actualProgress','ผลงานรวม (%)'],['civilProgress','โยธา (%)'],['electricalProgress','ไฟฟ้า (%)'],
  ['scope','ขอบเขตงานและอุปกรณ์'],['workDetails','รายละเอียดงาน'],['voltage','ระดับแรงดัน (kV)'],
  ['station','สถานีไฟฟ้า / ต้นทาง'],['stationTo','สถานีปลายทาง'],['scheduleBasis','ที่มาของกำหนดเสร็จ'],
  ['referenceNumber','เลขที่เอกสาร'],['referenceDate','วันที่เอกสาร'],['workStatus','สถานะงาน'],
@@ -49,13 +49,16 @@ export function showConstructionRows(doc, records, openEditor) {
  if (!search) return renderRows(doc, records, openEditor, records.length);
  const clear = doc.querySelector('#clear-search');
  const headers = Array.from(doc.querySelectorAll('#report-table th'));
- const keys = [...fields.slice(0, 10).map(([key]) => key), 'workDetails'];
+ const keys = fields.slice(0, 10).map(([key]) => key);
+ const actionHeader=headers.at(-1);
+ actionHeader.removeAttribute('aria-sort');
+ actionHeader.textContent=openEditor?'แก้ไข':'รายละเอียด';
  function render() {
   const term = search.value.trim().toLocaleLowerCase('th');
   clear.hidden = search.value.length === 0;
   const visible = records.filter(({data}) => !term || shortDate(data.plannedEndDate).includes(term) || fields.some(([key]) =>
    String(data[key] ?? '').toLocaleLowerCase('th').includes(term)));
-  const index = headers.findIndex(header => header.hasAttribute('aria-sort'));
+  const index = headers.findIndex((header,i) => i<keys.length && header.hasAttribute('aria-sort'));
   if (index >= 0) {
    const direction = headers[index].getAttribute('aria-sort') === 'ascending' ? 1 : -1;
    visible.sort((left, right) => {
@@ -66,7 +69,7 @@ export function showConstructionRows(doc, records, openEditor) {
   }
   renderRows(doc, visible, openEditor, records.length);
  }
- headers.forEach(header => {
+ headers.slice(0,-1).forEach(header => {
   let button = header.querySelector('button');
   if (!button) {
    button = doc.createElement('button');
@@ -111,6 +114,7 @@ function renderRows(doc,records,openEditor,total){
  doc.querySelector('#count').textContent=records.length===total
   ? 'ทั้งหมด '+total+' รายการ' : 'แสดง '+records.length+' จาก '+total+' รายการ';
 }
+document.querySelector('#close-report')?.addEventListener('click',()=>{window.close();setTimeout(()=>location.assign('./'),150);});
 if(document.querySelector('#report-table')){
  const key=new URLSearchParams(location.hash.slice(1)).get('report');
  const login=document.querySelector('#dashboard-link');
