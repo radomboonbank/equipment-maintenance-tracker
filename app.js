@@ -116,7 +116,7 @@ function showAllConstruction(existingTab){
 }
 async function updateReportTable(){
  const tab=reportTab;if(!tab||tab.closed)return;
- const {showConstructionRows}=await import('./construction-report.js');
+ const {showConstructionRows}=await import('./construction-report.js?v=20261111-columns-close');
  if(!user||role==='guest'||tab!==reportTab||tab.closed)return;
  try{
   if(!tab.document.querySelector('#report-table'))return;
@@ -133,7 +133,7 @@ async function importLinkedReport(gen){
  const key=new URLSearchParams(location.hash.slice(1)).get('report');
  if(!key||!user||!['admin','editor'].includes(role))return;
  try{
-  const {readConstructionReport}=await import('./construction-report.js');
+  const {readConstructionReport}=await import('./construction-report.js?v=20261111-columns-close');
   const records=await readConstructionReport(key);
   if(gen!==generation||!user||!['admin','editor'].includes(role))return;
   const uid=user.uid, editorName=displayName||username, editorUsername=username;
