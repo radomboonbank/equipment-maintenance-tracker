@@ -15,11 +15,13 @@ function parseBessTransfer(text){
   for(const item of m[1].split(/[,/]|และ/)){const range=item.trim().match(/^(\d+)\s*-\s*(\d+)$/);if(range){const a=Number(range[1]),b=Number(range[2]);if(a>b||b>20)throw Error('ช่วง PB ไม่ถูกต้อง');for(let n=a;n<=b;n++)pb.add(n);}else pb.add(Number(item.trim()));}
  }
  if([...pb].some(n=>n<1||n>20))throw Error('หมายเลข PB ต้องอยู่ระหว่าง 1 ถึง 20');
- if(!/\bBESS\b/i.test(raw)||!pb.size)throw Error('กรุณาระบุ BESS และหมายเลข PB ในข้อความ');
+ if(!/\bBESS\b/i.test(raw))throw Error('กรุณาระบุ BESS ในข้อความ');
  const line=label=>raw.match(new RegExp('^\\s*'+label+'\\s*[:：]\\s*(.*)$','im'))?.[1]?.trim()||'';
  const breakerCodes=[...raw.matchAll(/\b(22(?:[2-9]|10|11)12)\b/g)].map(m=>m[1]);
  const breakerLine=raw.match(/22\s*kV[^\n)]*/i)?.[0]||'';
- const breakerTrip=breakerLine? !/(?:ไม่\s*(?:Trip|ทริป)|(?:no|not)\s*trip)/i.test(breakerLine)&&/(?:Trip|ทริป)/i.test(breakerLine):null;
+ const codedBreakerTrip=breakerCodes.some(code=>raw.split(/\r?\n/).some(line=>line.includes(code)&&/(?:Trip|ทริป)/i.test(line)&&!/(?:ไม่\s*(?:Trip|ทริป)|(?:no|not)\s*trip)/i.test(line)));
+ if(!pb.size&&!breakerCodes.length)throw Error('กรุณาระบุหมายเลข PB หรือรหัสเบรกเกอร์ BESS ในข้อความ');
+ const breakerTrip=breakerLine? !/(?:ไม่\s*(?:Trip|ทริป)|(?:no|not)\s*trip)/i.test(breakerLine)&&/(?:Trip|ทริป)/i.test(breakerLine):codedBreakerTrip?true:null;
  const phone=raw.match(/(?:โทร|มือถือ|เบอร์|Tel)[^\d\n]*(0[\d -]{8,15})/i)?.[1]?.replace(/[ -]/g,'')||'';
  return {raw,date:dateValue,time,pb:[...pb].sort((a,b)=>a-b).map(String),station:raw.match(/สฟ\.\s*([A-Za-z0-9-]+)/i)?.[1]||'',alarm:line('Alarm'),cause:line('สาเหตุ'),weather:line('สภาพอากาศ'),breakerTrip,breakerCodes,
  reporter:line('ผู้แจ้ง'),phone:/^0\d{9}$/.test(phone)?phone:''};
@@ -146,7 +148,7 @@ function parseBessTransfer(text){
    document.body.append(popup);popup.addEventListener('close',()=>popup.remove(),{once:true});
    const input=popup.querySelector('[data-transfer-text]'),summary=popup.querySelector('[data-transfer-summary]'),transfer=popup.querySelector('[data-transfer-save]'),close=popup.querySelector('[data-transfer-close]');
    let parsed=null,working=false;
-   input.oninput=()=>{try{parsed=parseBessTransfer(input.value);summary.textContent='สถานี: '+(parsed.station||'ไม่ระบุ')+'\nวันที่: '+(parsed.date||'ไม่ระบุ')+' เวลา: '+(parsed.time||'ไม่ระบุ')+'\nPB: '+parsed.pb.join(', ')+'\nAlarm: '+(parsed.alarm||'ไม่ระบุ')+'\n22 kV เบรกเกอร์: '+(parsed.breakerTrip===false?'ไม่ทริป':parsed.breakerTrip===true?'ทริป':'ไม่ระบุ')+'\nกด Transfer to Web เพื่อกรอกและบันทึกลง Firebase';transfer.disabled=false;}catch(error){parsed=null;summary.textContent=error.message;transfer.disabled=true;}};
+   input.oninput=()=>{try{parsed=parseBessTransfer(input.value);summary.textContent='สถานี: '+(parsed.station||'ไม่ระบุ')+'\nวันที่: '+(parsed.date||'ไม่ระบุ')+' เวลา: '+(parsed.time||'ไม่ระบุ')+'\nPB: '+(parsed.pb.join(', ')||'ไม่ระบุ')+ '\nเบรกเกอร์: '+(parsed.breakerCodes.join(', ')||'ไม่ระบุ')+'\nAlarm: '+(parsed.alarm||'ไม่ระบุ')+'\n22 kV เบรกเกอร์: '+(parsed.breakerTrip===false?'ไม่ทริป':parsed.breakerTrip===true?'ทริป':'ไม่ระบุ')+'\nกด Transfer to Web เพื่อกรอกและบันทึกลง Firebase';transfer.disabled=false;}catch(error){parsed=null;summary.textContent=error.message;transfer.disabled=true;}};
    close.onclick=()=>{if(!working)popup.close();};
    popup.addEventListener('cancel',e=>{if(working)e.preventDefault();});
    transfer.onclick=async()=>{
