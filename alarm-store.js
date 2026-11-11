@@ -14,6 +14,28 @@ export function createAlarmStore(getContext){
     transaction.delete(ref);
    });
   },
+  async saveMany(section,rows,ids){
+   const {cloud,user,role,username,displayName}=getContext();
+   if(!cloud||!user||!['admin','editor'].includes(role))throw Error('กรุณาเข้าสู่ระบบด้วยบัญชีที่มีสิทธิ์บันทึก');
+   if(section!==2||!Array.isArray(rows)||!rows.length||rows.length>20||!Array.isArray(ids)||ids.length!==rows.length||new Set(ids).size!==ids.length)throw Error('ชุดเหตุการณ์ไม่ถูกต้อง');
+   rows.forEach(data=>{if(!data||Array.isArray(data)||typeof data!=='object'||Object.keys(data).length>400||JSON.stringify(data).length>150000)throw Error('ข้อมูลเหตุการณ์ไม่ถูกต้อง');});
+   if(ids.some(id=>typeof id!=='string'||!/^[A-Za-z0-9-]{1,100}$/.test(id)))throw Error('รหัสเหตุการณ์ไม่ถูกต้อง');
+   const refs=ids.map(id=>cloud.doc(cloud.db,'AbnormalAlarm',id));
+   await cloud.runTransaction(cloud.db,async tx=>{
+    const snapshots=await Promise.all(refs.map(ref=>tx.get(ref)));
+    const current=getContext();
+    if(current.user?.uid!==user.uid||!['admin','editor'].includes(current.role))throw Error('บัญชีหรือสิทธิ์เปลี่ยนแปลง กรุณาเข้าสู่ระบบใหม่');
+    snapshots.forEach((snapshot,i)=>{
+     const previous=snapshot.exists()?snapshot.data():null;
+     if(previous&&(previous.section!==section||previous.createdBy!==user.uid))throw Error('รหัสเหตุการณ์ซ้ำ กรุณาเปิด txt2web ใหม่');
+     tx.set(refs[i],{schemaVersion:1,section,type:'bess',data:rows[i],
+      createdBy:previous?.createdBy||user.uid,createdAt:previous?.createdAt||cloud.serverTimestamp(),
+      updatedBy:user.uid,updatedByName:displayName||username,updatedByUsername:username,
+      updatedAt:cloud.serverTimestamp(),revision:(previous?.revision||0)+1});
+    });
+   });
+   return ids;
+  },
   async save(section,data,id){
    const {cloud,user,role,username,displayName}=getContext();
    if(!cloud||!user||!['admin','editor'].includes(role))throw Error('กรุณาเข้าสู่ระบบด้วยบัญชีที่มีสิทธิ์บันทึก');
