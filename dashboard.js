@@ -50,7 +50,7 @@ export function storedAlarmRecords(documents){
   return {id:'alarm:'+x.id,updatedAt:x.updatedAt,createdAt:x.createdAt,updatedByName:x.updatedByName,updatedByUsername:x.updatedByUsername,date:iso(bess?d['bess-1-date']:winding?d.windingDate:d.receivedDate),
    eventType:winding||d.alarmGroup==='Winding Temp'?'Winding Temp Alarm':'Abnormal Alarm',
    category:bess?'BESS ทริป':types[d.alarmGroup]||d.alarmGroup||'',
-   station:winding?d.windingStation:d.station||'',
+   station:bess?d.bessStation||d.station||'':winding?d.windingStation:d.station||'',
    equipment:bess?['BESS',pb,d['bess-1-alarm']].filter(Boolean).join(' · '):winding?[d.windingTransformer,d.windingAnnunciator].filter(Boolean).join(' · '):[d.equipment,d.alarmText].filter(Boolean).join(' · '),
    cause:bess?[d['bess-1-cause'],d['bess-1-causeDetails']].filter(Boolean).join(' · '):winding?d.windingCause:d.symptoms,
    status:winding&&d['winding-1-resetState']==='reset'?'resolved':'pending'};
