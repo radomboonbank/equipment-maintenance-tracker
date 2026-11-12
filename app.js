@@ -1,3 +1,4 @@
+import {seedGroups} from './standby-seed.js';
 import {installStandbyBridge} from './standby-bridge.js?v=20261109-king-upload';
 import {installThaiDateTime} from './thai-datetime.js?v=20261112-compact-list-date';
 installThaiDateTime(window);
@@ -48,7 +49,7 @@ function updateLoginSession(){
 function rememberLogin(uid,entry){
  const previous=onlineLoginInfo.get(uid)||{};
  const started=entry.at?.toMillis?.()??entry.lastLoginAt?.toMillis?.();
- onlineLoginInfo.set(uid,{...previous,...(entry.username?{username:entry.username}:{}),...(started?{started:Math.max(previous.started||0,started)}:{})});
+ onlineLoginInfo.set(uid,{...previous,...(entry.username?{username:entry.username}:{}),...(entry.displayName?{displayName:entry.displayName}:{}),...(started?{started:Math.max(previous.started||0,started)}:{})});
 }
 let memberDuty='';
 installStandbyBridge(()=>({cloud,user,role,duty:memberDuty}));
@@ -200,6 +201,32 @@ $('#gen-dispatch-nav').onclick=()=>openGenDispatchReference(cloud,()=>({user,rol
 $('#create-gen-dispatch-event').onclick=()=>{if(!canEdit())return;openGenDispatchEvent(cloud,()=>({user,role,duty:memberDuty}));};
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{view=b.dataset.view;page=1;document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x===b));render()});
 $('#prev').onclick=()=>{page--;render()};$('#next').onclick=()=>{page++;render()};
+function historyNames(records) {
+ const names = new Map();
+ for (const group of seedGroups) {
+  for (const [,code,name] of group) {
+   if (name && name !== 'ว่าง') names.set(String(code), name.replace(/^(นางสาว|นาย|นาง|น\.ส\.)\s*/, ''));
+  }
+ }
+ for (const record of records) {
+  for (const entry of record.history || []) {
+   if (entry.by && entry.displayName && !/^\d+$/.test(entry.displayName)) names.set(String(entry.by),entry.displayName);
+  }
+ }
+ for (const login of onlineLoginInfo.values()) {
+  if (login.username && login.displayName && !/^\d+$/.test(login.displayName)) names.set(String(login.username),login.displayName);
+ }
+ if (username && displayName && displayName !== username) names.set(username,displayName);
+ return names;
+}
+function historyAuthor(entry,names) {
+ for (const value of [entry.displayName,names.get(String(entry.by)),entry.by]) {
+  const name = String(value ?? '').trim();
+  if (name && !/^\d+$/.test(name)) return name;
+ }
+ return 'ไม่พบชื่อผู้บันทึก';
+}
+
 function dateControl(name,value=''){
  const [y,m,d]=value.split('-').map(Number),current=Number(dateParts().year)+543;
  const opts=(values,selected)=>'<option value="">—</option>'+values.map(([v,l])=>`<option value="${v}" ${v===selected?'selected':''}>${l}</option>`).join('');
@@ -290,8 +317,9 @@ function edit(r){
  setupCategory(r?.category||'');
  setupAssessment();
  $('#legacy-tracking').textContent=r?.tracking?'ข้อมูลติดตามเดิม: '+r.tracking:'';
- $('#followups').innerHTML=Array.from({length:3},(_,i)=>{const v=r?.followups?.[i]||{};return `<tr><td>${i+1}<button type="button" class="followup-now" data-followup-now="${i}" aria-label="เติมเวลาปัจจุบัน ครั้ง ${i+1}">เวลาปัจจุบัน</button></td><td>${dateControl('follow-'+i,v.date)}<input type="time" step="60" name="follow-${i}-time" aria-label="เวลาติดตาม ครั้ง ${i+1}" value="${esc(v.time)}"></td>`+['informant','mobile','details'].map((k,j)=>`<td>${k==='details'?`<textarea name="follow-${i}-${k}" maxlength="4000" aria-label="${['ชื่อผู้ให้ข้อมูล','เบอร์มือถือผู้ให้ข้อมูล','รายละเอียด'][j]} ครั้ง ${i+1}">${esc(v[k])}</textarea>`:`<input name="follow-${i}-${k}" ${k==='mobile'?'type="tel" inputmode="tel"':''} maxlength="250" aria-label="${['ชื่อผู้ให้ข้อมูล','เบอร์มือถือผู้ให้ข้อมูล','รายละเอียด'][j]} ครั้ง ${i+1}" value="${esc(v[k])}">`}</td>`).join('')+'</tr>'}).join('');
- $('#history').innerHTML=(r?.history||[]).slice().reverse().map(h=>`<div class="history-item">${esc(String(h.note||'').replace(/แก้ปีวันที่ตามผู้ดูแล: 19\d{2}-\d{2}-\d{2} → พ.ศ. (25\d{2})-(\d{2})-(\d{2}) \(คงวันและเดือนเดิม\)/,'ตรวจแก้ปีวันที่เป็น $3/$2/$1 พ.ศ. (เก็บค่าต้นฉบับไว้แล้ว)'))}<small>${esc(dateText(h.at))} · ${esc(h.by)}</small></div>`).join('');
+ $('#followups').innerHTML=Array.from({length:3},(_,i)=>{const v=r?.followups?.[i]||{};return `<tr><td>${i+1}<button type="button" class="followup-now" data-followup-now="${i}" aria-label="เติมเวลาปัจจุบัน ครั้ง ${i+1}">เวลาปัจจุบัน</button></td><td><div class="followup-when">${dateControl('follow-'+i,v.date)}<input type="time" step="60" name="follow-${i}-time" aria-label="เวลาติดตาม ครั้ง ${i+1}" value="${esc(v.time)}"></div></td>`+['informant','mobile','details'].map((k,j)=>`<td>${k==='details'?`<textarea name="follow-${i}-${k}" maxlength="4000" aria-label="${['ชื่อผู้ให้ข้อมูล','เบอร์มือถือผู้ให้ข้อมูล','รายละเอียด'][j]} ครั้ง ${i+1}">${esc(v[k])}</textarea>`:`<input name="follow-${i}-${k}" ${k==='mobile'?'type="tel" inputmode="tel"':''} maxlength="250" aria-label="${['ชื่อผู้ให้ข้อมูล','เบอร์มือถือผู้ให้ข้อมูล','รายละเอียด'][j]} ครั้ง ${i+1}" value="${esc(v[k])}">`}</td>`).join('')+'</tr>'}).join('');
+ const authors = historyNames(data);
+ $('#history').innerHTML=(r?.history||[]).slice().reverse().map(h=>`<div class="history-item">${esc(String(h.note||'').replace(/แก้ปีวันที่ตามผู้ดูแล: 19\d{2}-\d{2}-\d{2} → พ.ศ. (25\d{2})-(\d{2})-(\d{2}) \(คงวันและเดือนเดิม\)/,'ตรวจแก้ปีวันที่เป็น $3/$2/$1 พ.ศ. (เก็บค่าต้นฉบับไว้แล้ว)'))}<small><time class="thai-date-display">${esc(dateText(h.at?.toDate?.()?.toISOString() || h.at))}</time> · ${esc(historyAuthor(h,authors))}</small></div>`).join('');
  document.querySelectorAll('#fields input,#fields textarea,#fields select,#followups input,#followups textarea,#followups select').forEach(el=>el.disabled=!canEdit());
  $('#fields [name="highlight"]').disabled=!canEdit()||!canHighlight();
  setupStation($('#fields .station-control'),canEdit());

@@ -304,3 +304,15 @@ svg.members-menu-icon{width:20px;height:24px;flex:0 0 20px;background:transparen
 .dashboard-highlights .highlight-record-link:hover{background:#fff3c4}
 .dashboard-highlights .highlight-record-link:focus-visible{outline:3px solid #087f85;outline-offset:3px}
 .dashboard-highlights .highlight-record-link:hover strong{color:#d52626}
+
+/* Equipment editor follow-up log */
+#editor .followup-table td{vertical-align:middle;padding:6px 9px}
+#editor .followup-table td:nth-child(2){min-width:310px}
+#editor .followup-when{display:grid;grid-template-columns:minmax(138px,1fr) minmax(134px,.85fr);align-items:center;gap:6px}
+#editor .followup-when .be-calendar,#editor .followup-when .time-picker-24,#editor .followup-when .thai-time-controls{margin:0}
+#editor .followup-when .thai-date-summary{display:none}
+#editor .followup-table textarea{display:block;min-height:42px;height:44px;resize:vertical}
+#editor .followup-table .followup-now{margin:2px 0}
+#editor #history{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,235px),1fr));gap:6px}
+#editor #history .history-item{margin:0;padding:6px 10px;background:#f4f9f9;overflow-wrap:anywhere}
+#editor #history small{display:block;margin-top:2px;color:#526773}
