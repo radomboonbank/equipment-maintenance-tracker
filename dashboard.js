@@ -89,7 +89,43 @@ export function highlightsHtml(records,projects=[],alarmDocuments=[]){
  const rows=highlightedRecords(records,projects,alarmDocuments);
  const date=value=>{const m=String(value||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?new Intl.DateTimeFormat('th-TH-u-ca-buddhist',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Bangkok'}).format(new Date(value+'T00:00:00+07:00')):value||''};
  return '<section class="dashboard-highlights" aria-label="เหตุการณ์ highlight"><header><h2>เหตุการณ์ highlight ล่าสุด</h2><span>'+rows.length+' รายการ</span></header>'+
- (rows.length?'<ul>'+rows.map(r=>'<li><img class="highlight-event-icon" src="assets/highlight-icon.svg?v=20261112" width="40" height="40" alt="" aria-hidden="true"><div class="highlight-content"><div class="highlight-meta"><span>'+esc(r.eventType||'เหตุการณ์')+'</span><time>'+esc(date(r.date))+'</time></div><strong>'+esc([r.station,r.equipment].filter(Boolean).join(' · ')||'ยังไม่ระบุอุปกรณ์')+'</strong>'+(r.cause?'<p>'+esc(r.cause)+'</p>':'')+'</div></li>').join('')+'</ul>':'<p class="highlight-empty">ยังไม่มีเหตุการณ์ที่เลือก highlight</p>')+'</section>';
+ (rows.length?'<ul>'+rows.map(r=>'<li><button type="button" class="highlight-record-link" data-highlight-record="'+esc(r.id)+'" aria-label="เปิดรายละเอียด '+esc([r.station,r.equipment].filter(Boolean).join(' · ')||'เหตุการณ์')+'"><img class="highlight-event-icon" src="assets/highlight-icon.svg?v=20261112" width="40" height="40" alt="" aria-hidden="true"><div class="highlight-content"><div class="highlight-meta"><span>'+esc(r.eventType||'เหตุการณ์')+'</span><time>'+esc(date(r.date))+'</time></div><strong>'+esc([r.station,r.equipment].filter(Boolean).join(' · ')||'ยังไม่ระบุอุปกรณ์')+'</strong>'+(r.cause?'<p>'+esc(r.cause)+'</p>':'')+'</div></button></li>').join('')+'</ul>':'<p class="highlight-empty">ยังไม่มีเหตุการณ์ที่เลือก highlight</p>')+'</section>';
+}
+
+
+export function highlightDetailPage(kind,record){
+ const value=v=>Array.isArray(v)?v.join(', '):typeof v==='boolean'?(v?'ใช่':'ไม่ใช่'):v==null||v===''?'—':String(v);
+ const date=v=>{const m=String(v||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?new Intl.DateTimeFormat('th-TH-u-ca-buddhist',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Bangkok'}).format(new Date(v+'T00:00:00+07:00')):value(v)};
+ const rows=(labels,data)=>Object.entries(labels).map(([key,label])=>[label,/(?:date|Date)$/.test(key)?date(data[key]):value(data[key])]);
+ let title,sections=[];
+ if(kind==='equipment'){
+  title='รายละเอียดเหตุการณ์ #'+(record.code||record.id);
+  const levels={extreme:'รุนแรงมาก',severe:'รุนแรง',moderate:'ปานกลาง',minor:'เล็กน้อย',high:'รุนแรง',medium:'ปานกลาง',low:'เล็กน้อย'};
+  sections.push(['ข้อมูลเหตุการณ์',rows({code:'รหัสอุปกรณ์ชำรุด',date:'วันที่ได้รับแจ้ง',time:'เวลาที่ได้รับแจ้ง',station:'สถานีไฟฟ้า',stationFrom:'สถานีต้นทาง',stationTo:'สถานีปลายทาง',circuit:'วงจร',eventType:'ประเภทเหตุการณ์',category:'ชนิดอุปกรณ์',equipment:'อุปกรณ์ที่ชำรุด',cause:'สาเหตุ'},record).concat([['ระดับความสำคัญ',levels[record.criticality]||'ยังไม่ประเมิน'],['highlight',record.highlight===true?'เลือก':'ไม่เลือก']])]);
+  sections.push(['ผลกระทบต่อระบบไฟฟ้า',rows({scope:'ขอบเขตผลกระทบ',replacement:'ระบบหรืออุปกรณ์ทดแทน',effect:'ผลต่อระบบ',measures:'มาตรการรองรับ'},record.criticalityAssessment||{})]);
+  sections.push(['แผนงานซ่อมแซมแก้ไข',rows({approach:'แนวทางการแก้ไข',responsible:'หน่วยงานที่รับผิดชอบ',operatorName:'ผู้ดำเนินการ',operatorId:'รหัสพนักงาน',operatorMobile:'เบอร์มือถือ',schedule:'แผนดำเนินการ',expectedDate:'วันที่คาดว่าจะแก้ไขเสร็จ'},record.repairPlan||{}).concat(record.repairPlan?.expectedDateUnknown?[['กำหนดเสร็จ','ยังไม่ทราบ']]:[])]);
+  (record.followups||[]).forEach((r,i)=>sections.push(['ติดตามข้อมูล ครั้งที่ '+(i+1),rows({date:'วันที่',time:'เวลา',informant:'ผู้ให้ข้อมูล',mobile:'เบอร์มือถือ',details:'รายละเอียด',follower:'ผู้ติดตามข้อมูล'},r)]));
+  if(record.tracking)sections.push(['ข้อมูลติดตามเดิม',[['รายละเอียด',value(record.tracking)]]]);
+  if(record.history?.length)sections.push(['ประวัติรายการ',record.history.slice().reverse().map(h=>[value(h.displayName||h.by),[h.at,h.note].filter(Boolean).join(' · ')])]);
+ }else if(kind==='construction'){
+  const data=record.data||{};title='รายละเอียดงานก่อสร้าง · '+(data.title||data.projectId||'');
+  sections.push(['ข้อมูลโครงการ',rows({projectId:'Job No.',reportItem:'ลำดับในรายงาน',title:'สถานี / งานก่อสร้าง',category:'ประเภทงาน',voltage:'ระดับแรงดัน (kV)',station:'สถานีไฟฟ้า',stationFrom:'สถานีต้นทาง',stationTo:'สถานีปลายทาง',scope:'ขอบเขตงานและอุปกรณ์',workDetails:'รายละเอียดงาน',plannedEndDate:'กำหนดเสร็จ',scheduleBasis:'ที่มาของกำหนดเสร็จ',referenceNumber:'เลขที่เอกสาร',referenceDate:'วันที่เอกสาร',workStatus:'สถานะงาน',successorProject:'โครงการที่รับงานต่อ',remarks:'หมายเหตุ',actualProgress:'ผลงานรวม (%)',varianceDirection:'เทียบกับแผน',variancePercent:'ส่วนต่าง (%)',civilProgress:'โยธา (%)',electricalProgress:'ไฟฟ้า (%)',reportPeriod:'รอบรายงาน',source:'แหล่งข้อมูล',highlight:'highlight'},data)]);
+ }else{
+  const data=record.data||{};title='รายละเอียด '+({1:'Abnormal Alarm',2:'BESS ทริป',3:'Winding Temp Alarm'}[record.section]||'Alarm');
+  const labels={highlight:'highlight',receivedDate:'วันที่ได้รับแจ้ง',receivedTime:'เวลาที่ได้รับแจ้ง',station:'สถานีไฟฟ้า',equipment:'ชื่อ / รหัสอุปกรณ์',alarmGroup:'กลุ่ม Alarm',alarmState:'สถานะ Alarm',alarmText:'ข้อความ Alarm',symptoms:'อาการและรายละเอียด',stationReporterName:'ผู้แจ้งประจำสถานี',reporterPhone:'เบอร์มือถือผู้แจ้ง',bessStation:'สถานีไฟฟ้า BESS',bessSourceText:'ข้อความต้นฉบับ',bessReporterName:'ผู้แจ้ง BESS',bessReporterPhone:'เบอร์มือถือผู้แจ้ง BESS',windingDate:'วันที่เกิด Alarm',windingTime:'เวลาที่เกิด Alarm',windingStation:'สถานีไฟฟ้า',windingTransformer:'หม้อแปลง',windingAnnunciator:'Annunciator Show',windingCause:'สาเหตุ / หมายเหตุ',windingReporterName:'ผู้แจ้ง',windingReporterPhone:'เบอร์มือถือผู้แจ้ง'};
+  const eventLabels={date:'วันที่',time:'เวลา',pb:'PB ที่ทริป',alarm:'Alarm',cause:'สาเหตุ',causeDetails:'รายละเอียดสาเหตุ',weather:'สภาพอากาศ',breaker22Trip:'22 kV เบรกเกอร์ทริป',breaker22Status:'สถานะ 22 kV เบรกเกอร์',breaker22Codes:'เบรกเกอร์ที่ทริป',resetState:'สถานะ Reset Alarm',mw:'กำลังจริง (MW)',mvar:'กำลังรีแอคทีฟ (MVAr)',mva:'กำลังปรากฏ (MVA)',loadPercent:'โหลด (%)',kv:'แรงดัน (kV)',ot:'OT (°C)',wtHv:'Wt. HV (°C)',wtLv:'Wt. LV (°C)',at:'AT (°C)'};
+  const groups=new Map([['ข้อมูลเหตุการณ์',[]]]);
+  for(const [key,v] of Object.entries(data)){
+   const m=key.match(/^(bess|winding)-(\d+)-(.+)$/),section=m?'เหตุการณ์ '+(m[1]==='bess'?'BESS':'Winding Temp')+' ครั้งที่ '+m[2]:'ข้อมูลเหตุการณ์';
+   if(!groups.has(section))groups.set(section,[]);
+   let shown=/(?:date|Date)$/.test(key)?date(v):value(v);
+   if(m?.[3]==='pb'&&Array.isArray(v))shown=v.map(n=>'PB.'+n).join(', ')||'—';
+   if(m?.[3]==='resetState')shown=v==='reset'?'Reset Alarm':v==='pending'?'รอ Reset Alarm':value(v);
+   groups.get(section).push([m?eventLabels[m[3]]||m[3]:labels[key]||key,shown]);
+  }
+  sections=[...groups];
+ }
+ return '<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(title)+' — CROD GRID CARE</title><style>@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap");*{box-sizing:border-box}body{margin:0;padding:28px;background:#f3f7fa;color:#193c50;font-family:"Noto Sans Thai",Tahoma,sans-serif}header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:24px}h1{font-size:26px;margin:6px 0}small{color:#087f85;letter-spacing:2px}button{font:inherit;font-weight:700;background:#087f85;color:#fff;border:0;border-radius:10px;padding:12px 22px;cursor:pointer;white-space:nowrap}button:hover,button:focus-visible{outline:4px solid #ef2929}section{background:#fff;border:1px solid #d7e5ea;border-radius:14px;padding:22px;margin:0 0 20px}h2{font-size:20px;margin:0 0 16px}dl{margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 28px}.field{min-width:0}dt{font-size:13px;color:#627c8c;margin-bottom:5px}dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}@media(max-width:650px){body{padding:16px}dl{grid-template-columns:1fr}h1{font-size:22px}}</style></head><body><header><div><small>CROD GRID CARE</small><h1>'+esc(title)+'</h1></div><button type="button" id="close-highlight-detail">ปิด ✕</button></header><main>'+sections.map(([name,entries])=>'<section><h2>'+esc(name)+'</h2><dl>'+entries.map(([label,v])=>'<div class="field"><dt>'+esc(label)+'</dt><dd>'+esc(v)+'</dd></div>').join('')+'</dl></section>').join('')+'</main></body></html>';
 }
 
 export function dashboardHtml(records,assessment=null,now=new Date(),projects=[],projectState='ready',alarmDocuments=[],alarmState='ready'){
