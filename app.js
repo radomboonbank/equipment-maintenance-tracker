@@ -11,7 +11,7 @@ import {createLoginGuard,createPresence} from './presence.js?v=20261112-single-l
 import {createMembersPage} from './members.js?v=20261107-backup';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261105-circuit';
-import {equipmentEventTypes,genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261112-highlight-latest3';
+import {equipmentEventTypes,genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261112-highlight-details';
 import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261112-other-equipment';
 import {rotateLogins,loginEntries,loginTime,nextLoginStat,rotatePublicLogins} from './login-history.js?v=20261104-stats';
 'use strict';
@@ -434,6 +434,23 @@ $('#export-pdf').onclick=()=>{
 
 
 $('#dashboard').addEventListener('click',e=>{
+ const highlighted=e.target.closest('[data-highlight-record]');
+ if(highlighted){
+  if(!cloudReady)return;
+  const key=highlighted.dataset.highlightRecord;
+  const kind=key.startsWith('alarm:')?'alarm':key.startsWith('construction:')?'construction':'equipment';
+  const id=kind==='alarm'?key.slice(6):kind==='construction'?key.slice(13):key;
+  const record=(kind==='alarm'?alarmData:kind==='construction'?constructionData:data).find(r=>r.id===id);
+  if(!record){toast('ไม่พบรายการ กรุณาโหลด Dashboard ใหม่');return;}
+  const token=crypto.randomUUID(),storageKey='grid-highlight-detail:'+token;
+  try{sessionStorage.setItem(storageKey,JSON.stringify({kind,record:kind==='equipment'?{...record,equipment:mergedEquipment(record)}:record}));}
+  catch{toast('เปิดรายละเอียดไม่ได้ กรุณาตรวจพื้นที่จัดเก็บของเบราว์เซอร์');return;}
+  const url=new URL('./highlight-detail.html',location.href);url.hash=token;
+  const page=window.open(url.href,'_blank');
+  if(!page){sessionStorage.removeItem(storageKey);toast('กรุณาอนุญาตให้เปิดแท็บใหม่เพื่อดูรายละเอียด');return;}
+  page.opener=null;page.focus();setTimeout(()=>sessionStorage.removeItem(storageKey),60000);return;
+ }
+
  if(e.target.closest('[data-construction-summary]')){showAllConstruction();return;}
  const button=e.target.closest('[data-fault-type]');if(!button||!cloudReady)return;
  const type=button.dataset.faultType;
