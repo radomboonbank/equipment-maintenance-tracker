@@ -279,3 +279,19 @@ svg.members-menu-icon{width:20px;height:24px;flex:0 0 20px;background:transparen
 
 /* Dashboard headings open the complete work tables. */
 #dashboard .summary-title-link:hover,#dashboard .summary-title-link:focus-visible{color:#ef2929!important;font-weight:900!important}
+
+/* Shared record highlight control and dashboard notice area. */
+.highlight-control{display:flex!important;align-items:center;justify-content:flex-start;gap:10px;font-weight:600}
+.highlight-control input[type="checkbox"]{width:19px!important;height:19px!important;min-height:0!important;flex:0 0 19px;margin:0;accent-color:#087f85}
+.dashboard-highlights{width:100%;box-sizing:border-box;margin:0 0 22px;padding:22px 26px;background:#fffbea;border:1px solid #e4d69c;border-left:5px solid #d5a522;border-radius:16px;color:#193c50}
+.dashboard-highlights>header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px}
+.dashboard-highlights h2{margin:0;font-size:21px}
+.dashboard-highlights>header>span,.highlight-meta{font-size:13px;color:#647581}
+.dashboard-highlights ul{list-style:none;padding:0;margin:0}
+.dashboard-highlights li{padding:12px 0;border-top:1px solid #e8dfbd}
+.dashboard-highlights li:first-child{border-top:0;padding-top:0}
+.highlight-meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin-bottom:4px}
+.dashboard-highlights strong{display:block;overflow-wrap:anywhere}
+.dashboard-highlights li p{margin:5px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.dashboard-highlights .highlight-empty{margin:0;color:#647581}
+@media(max-width:600px){.dashboard-highlights{padding:16px}}
