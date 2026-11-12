@@ -93,7 +93,7 @@
    const rect=wrapper.getBoundingClientRect();panel.style.left=Math.max(12,Math.min(rect.left,window.innerWidth-312))+'px';panel.style.top=Math.max(8,Math.min(rect.bottom+4,window.innerHeight-390))+'px';display.setAttribute('aria-expanded','true');toggle.setAttribute('aria-expanded','true');}
   display.onclick=toggle.onclick=()=>panel.hidden?open():close();
   wrapper.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();close();display.focus();}});
-  document.addEventListener('click',e=>{if(!wrapper.contains(e.target))close();});
+  document.addEventListener('click',e=>{if(!e.composedPath().includes(wrapper))close();});
   selects.forEach(s=>s.addEventListener('change',refresh));new MutationObserver(refresh).observe(group,{attributes:true,subtree:true,attributeFilter:['disabled']});
   const timer=setInterval(()=>{if(!group.isConnected){clearInterval(timer);wrapper.remove();return;}refresh();},400);
   refresh();
