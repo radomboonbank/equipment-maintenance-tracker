@@ -35,7 +35,7 @@ export function installThaiDateTime(win=window){
  });
  sync();
  const walker=doc.createTreeWalker(doc.body||doc.documentElement,win.NodeFilter.SHOW_TEXT);let node;const months=[...thaiMonths,...shortMonths].map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');const datePattern=new RegExp('(?<![0-9])(?:[0-9]{1,2}\\s+(?:'+months+')\\s+(?:พ\\.ศ\\.\\s*)?[0-9]{4}|[0-9]{1,2}/[0-9]{1,2}/25[0-9]{2}|20[0-9]{2}-[0-9]{2}-[0-9]{2})(?![0-9])','g');
- while(node=walker.nextNode()){if(node.parentElement?.closest('script,style,input,textarea,select,option,.thai-date-display,.thai-date-summary,[contenteditable]'))continue;const text=node.nodeValue;if(/วัน\s+\S+\s+ที่\s+/.test(text))continue;const next=text.replace(datePattern,date=>thaiLongDate(date)||date);if(next!==text)node.nodeValue=next;}
+ while(node=walker.nextNode()){if(node.parentElement?.closest('script,style,input,textarea,select,option,.event-date,.thai-date-display,.thai-date-summary,[contenteditable]'))continue;const text=node.nodeValue;if(/วัน\s+\S+\s+ที่\s+/.test(text))continue;const next=text.replace(datePattern,date=>thaiLongDate(date)||date);if(next!==text)node.nodeValue=next;}
  };
  const queue=()=>{if(scheduled)return;scheduled=true;win.queueMicrotask(refresh);};new win.MutationObserver(queue).observe(doc.documentElement,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['disabled','readonly']});doc.addEventListener('change',queue,true);doc.addEventListener('input',queue,true);refresh();
  }
