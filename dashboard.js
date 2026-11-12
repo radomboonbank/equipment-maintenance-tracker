@@ -83,7 +83,7 @@ export function highlightedRecords(records,projects=[],alarmDocuments=[]){
  }
  const millis=value=>{const raw=value?.toMillis?.()??value?.toDate?.()??(typeof value?.seconds==='number'?value.seconds*1000:value);const n=typeof raw==='number'?raw:Date.parse(raw||'');return Number.isFinite(n)?n:0};
  const latest=r=>millis(r.updatedAt)||millis(r.createdAt)||millis(r.date);
- return [...unique.values()].sort((a,b)=>latest(b)-latest(a)||String(a.id).localeCompare(String(b.id))).slice(0,3);
+ return [...unique.values()].sort((a,b)=>latest(b)-latest(a)||String(a.id).localeCompare(String(b.id))).slice(0,5);
 }
 export function highlightsHtml(records,projects=[],alarmDocuments=[]){
  const rows=highlightedRecords(records,projects,alarmDocuments);
