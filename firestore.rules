@@ -227,8 +227,8 @@ service cloud.firestore {
   }
   match /equipment/{id} {
    allow read: if true;
-   allow create: if editor() && valid() && (telegramDisabled() || queued(id)) && request.resource.data.id == id && request.resource.data.revision == 1;
-   allow update: if editor() && valid() && (telegramDisabled() || queued(id)) && request.resource.data.id == resource.data.id && request.resource.data.code == resource.data.code && request.resource.data.revision == resource.data.revision + 1;
+   allow create: if editor() && valid() && request.resource.data.id == id && request.resource.data.revision == 1;
+   allow update: if editor() && valid() && request.resource.data.id == resource.data.id && request.resource.data.code == resource.data.code && request.resource.data.revision == resource.data.revision + 1;
    allow delete: if superAdmin();
   }
   match /DatabaseLogin/{uid} {
@@ -327,10 +327,6 @@ service cloud.firestore {
   }
   match /members/{uid} { allow read, write: if false; }
   match /telegramDeliveries/{id} { allow read, write: if false; }
-  function telegramDisabled() {
-   return exists(/databases/$(database)/documents/metadata/telegramSending)
-    && get(/databases/$(database)/documents/metadata/telegramSending).data.enabled == false;
-  }
   function queued(id) {
    let key = id + '__' + string(request.resource.data.revision);
    let q = getAfter(/databases/$(database)/documents/telegramOutbox/$(key)).data;
@@ -350,7 +346,7 @@ service cloud.firestore {
     && q.createdBy == request.auth.uid && q.createdAt == request.time && q.readyAt == request.time
     && q.status == 'pending' && q.nextPart == 0 && q.attempts == 0
     && getAfter(path).data == q.record && q.record.revision == q.revision
-    && ((!exists(path) && q.revision == 1) || (exists(path) && get(path).data.revision + 1 == q.revision));
+    && exists(path) && get(path).data.revision == q.revision;
   }
  }
 }
