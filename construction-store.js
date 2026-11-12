@@ -1,6 +1,7 @@
 // Stores a construction project with server timestamps and editor attribution.
 export function createConstructionStore(getContext){
  return {
+  canHighlight(){const {role,duty}=getContext();return role==='admin'&&['super admin','king admin'].includes(duty)},
   canDelete(){const {user,role,duty}=getContext();return !!user&&role==='admin'&&['super admin','king admin'].includes(duty)},
   async remove(id,revision){
    const {cloud,user,role,duty}=getContext();
@@ -15,7 +16,7 @@ export function createConstructionStore(getContext){
    });
   },
   async save(data,id,revision){
-   const {cloud,user,role,username,displayName}=getContext();
+   const {cloud,user,role,duty,username,displayName}=getContext();
    if(!cloud||!user||!['admin','editor'].includes(role))throw Error('กรุณาเข้าสู่ระบบด้วยบัญชีที่มีสิทธิ์บันทึก');
    if(!data||Array.isArray(data)||typeof data!=='object')throw Error('รูปแบบข้อมูลไม่ถูกต้อง');
    if(Object.keys(data).length>400||JSON.stringify(data).length>150000)throw Error('ข้อมูลมากเกินไป กรุณาแยกบันทึก');
@@ -24,7 +25,10 @@ export function createConstructionStore(getContext){
     const existing=await transaction.get(ref),previous=existing.exists()?existing.data():null;
     
     if(id&&(!previous||(revision!==undefined&&previous.revision!==revision)))throw Error('รายการถูกแก้ไขหรือลบแล้ว กรุณาเปิดใหม่อีกครั้ง');
-    const savedData={...previous?.data,...data};
+    const previousHighlight=previous?.data?.highlight===true;
+    const highlight=typeof data.highlight==='boolean'?data.highlight:previousHighlight;
+    if(highlight!==previousHighlight&&!(role==='admin'&&['super admin','king admin'].includes(duty)))throw Error('เฉพาะ Super Admin หรือ King Admin เท่านั้นที่เปลี่ยน highlight ได้');
+    const savedData={...previous?.data,...data,highlight};
     const next={schemaVersion:1,type:'construction',data:savedData,
      createdBy:previous?.createdBy||user.uid,createdAt:previous?.createdAt||cloud.serverTimestamp(),
      updatedBy:user.uid,updatedByName:displayName||username,updatedByUsername:username,
