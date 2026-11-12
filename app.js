@@ -11,7 +11,7 @@ import {createPresence} from './presence.js?v=20261029-presence';
 import {createMembersPage} from './members.js?v=20261107-backup';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261105-circuit';
-import {equipmentEventTypes,genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261112-equipment-event-group';
+import {equipmentEventTypes,genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261112-highlight';
 import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261112-other-equipment';
 import {rotateLogins,loginEntries,loginTime,nextLoginStat,rotatePublicLogins} from './login-history.js?v=20261104-stats';
 'use strict';
@@ -285,7 +285,7 @@ function edit(r){
   const long=['equipment','cause'].includes(k);
   const input=['date','due'].includes(k)?dateControl(k,val):k==='status'||k==='priority'?`<select name="${k}">${options(k==='status'?statuses:priorities,val)}</select>`:long?`<textarea name="${k}" maxlength="4000" >${esc(val)}</textarea>`:`<input name="${k}" value="${esc(k==='time'?normalizeTime(val):val)}" ${k==='code'?'readonly placeholder="สร้างอัตโนมัติเมื่อบันทึก"':k==='time'?'type="time" step="60"':k==='station'?'':''} maxlength="250">`;
   return `<label class="${long?'wide':''}">${l}${input}</label>`;
- }).join('');
+ }).join('')+`<label class="wide highlight-control"><input type="checkbox" name="highlight" ${r?.highlight===true?'checked':''}> highlight</label>`;
  setupCategory(r?.category||'');
  setupAssessment();
  $('#legacy-tracking').textContent=r?.tracking?'ข้อมูลติดตามเดิม: '+r.tracking:'';
@@ -322,7 +322,7 @@ $('#record-form').onsubmit=async e=>{
   // Retain historical closure data; closing work is no longer an input or save condition.
   const closure=editing?.closure||{date:'',time:'',reporter:'',mobile:'',details:'',follower:''};
   const now=new Date(),at=now.toISOString(),code=editing?.code||stamp(now);
-  const next={...editing,...r,code,id:editing?.id||code,criticalityAssessment,repairPlan,followups,closure,history:[...(editing?.history||[]),{at,by:username,displayName:displayName||username,note:!editing?'สร้างรายการ':'บันทึกข้อมูล · '+statuses[r.status]}],updatedAt:at,revision:(editing?.revision||0)+1,...(!editing?{createdAt:at,dateNeedsReview:false}:{})};
+  const next={...editing,...r,code,id:editing?.id||code,highlight:f.has('highlight'),criticalityAssessment,repairPlan,followups,closure,history:[...(editing?.history||[]),{at,by:username,displayName:displayName||username,note:!editing?'สร้างรายการ':'บันทึกข้อมูล · '+statuses[r.status]}],updatedAt:at,revision:(editing?.revision||0)+1,...(!editing?{createdAt:at,dateNeedsReview:false}:{})};
   if(editing?.breaker){next.originalBreaker=editing.originalBreaker||editing.breaker;next.breaker='';}
   if(r.equipment.length>4000)throw Error('ข้อมูลอุปกรณ์ยาวเกิน 4,000 ตัวอักษร กรุณาปรับข้อความก่อนบันทึก');
   if(editing?.time&&editing.time!==r.time&&!editing.originalTime)next.originalTime=editing.time;
