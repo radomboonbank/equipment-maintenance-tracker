@@ -66,6 +66,7 @@ function bessTransferRecord(p,raw){
   '</form>';
   document.body.append(d);d.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>d.close());d.addEventListener('close',()=>d.remove(),{once:true});
   const form=d.querySelector('form');
+  d.querySelectorAll('[data-highlight]').forEach(el=>el.disabled=!window.GRID_ALARM_STORE?.canHighlight?.());
   if(offlinePreview){
    d.querySelector('.work-draft-title + p').textContent='หน้าตัวอย่างออฟไลน์ · บันทึกเฉพาะในเครื่อง ไม่ส่งข้อมูลไป Firebase';
    d.querySelectorAll('[data-save-section]').forEach(button=>button.textContent='บันทึกฉบับร่างในเครื่อง');
