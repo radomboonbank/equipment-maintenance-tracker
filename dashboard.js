@@ -88,7 +88,7 @@ export function highlightedRecords(records,projects=[],alarmDocuments=[]){
 export function highlightsHtml(records,projects=[],alarmDocuments=[]){
  const rows=highlightedRecords(records,projects,alarmDocuments);
  const date=value=>{const m=String(value||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?new Intl.DateTimeFormat('th-TH-u-ca-buddhist',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Bangkok'}).format(new Date(value+'T00:00:00+07:00')):value||''};
- return '<section class="dashboard-highlights" aria-label="เหตุการณ์ highlight"><header><h2>เหตุการณ์ highlight ล่าสุด</h2><span>'+rows.length+' รายการ</span></header>'+
+ return '<section class="dashboard-highlights" aria-label="เหตุการณ์ highlight"><header><h2>เหตุการณ์ highlight ล่าสุด</h2></header>'+
  (rows.length?'<ul>'+rows.map(r=>'<li><button type="button" class="highlight-record-link" data-highlight-record="'+esc(r.id)+'" aria-label="เปิดรายละเอียด '+esc([r.station,r.equipment].filter(Boolean).join(' · ')||'เหตุการณ์')+'"><img class="highlight-event-icon" src="assets/highlight-icon.svg?v=20261112" width="40" height="40" alt="" aria-hidden="true"><div class="highlight-content"><div class="highlight-meta"><span>'+esc(r.eventType||'เหตุการณ์')+'</span><time>'+esc(date(r.date))+'</time></div><strong>'+esc([r.station,r.equipment].filter(Boolean).join(' · ')||'ยังไม่ระบุอุปกรณ์')+'</strong>'+(r.cause?'<p>'+esc(r.cause)+'</p>':'')+'</div></button></li>').join('')+'</ul>':'<p class="highlight-empty">ยังไม่มีเหตุการณ์ที่เลือก highlight</p>')+'</section>';
 }
 
