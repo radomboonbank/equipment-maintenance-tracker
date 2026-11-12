@@ -1,3 +1,4 @@
+import './page-actions.js?v=20261113-page-footer';
 import {seedGroups} from './standby-seed.js';
 import {installStandbyBridge} from './standby-bridge.js?v=20261109-king-upload';
 import {installThaiDateTime} from './thai-datetime.js?v=20261112-compact-list-date';
