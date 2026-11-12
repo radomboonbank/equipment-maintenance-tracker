@@ -2,6 +2,7 @@
  const groups={construction:['แบบบันทึกข้อมูลงานก่อสร้าง',['สถานีไฟฟ้า','สายส่งไฟฟ้า','หม้อแปลงไฟฟ้า','เบรคเกอร์','คาปาซิเตอร์']],important:['ข้อมูลงานสำคัญ อปก.',['BESS','LPLC','TSLC','Data Center']]};
 
  const constructionForm = `<fieldset class="construction-section"><legend>ข้อมูลโครงการ</legend><div class="construction-grid">
+<label class="wide highlight-control"><input type="checkbox" name="highlight"> highlight</label>
 <label>Job No. *<input name="projectId" required></label>
 <label>ลำดับในรายงาน<input name="reportItem"></label>
 <label class="wide">โครงการก่อสร้างทำที่ สถานีไฟฟ้า *<input name="title" required></label>
@@ -35,7 +36,7 @@
    doc.open();
    doc.write('<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>แบบบันทึกข้อมูลงานก่อสร้าง · CROD GRID CARE</title></head><body></body></html>');
    doc.close();
-   const css=doc.createElement('link');css.rel='stylesheet';css.href=new URL('styles.css?v=20261110-construction-tab',location.href).href;doc.head.append(css);
+   const css=doc.createElement('link');css.rel='stylesheet';css.href=new URL('styles.css?v=20261112-highlight',location.href).href;doc.head.append(css);
   }
   const dialog=doc.createElement(tab?'main':'dialog');dialog.className=tab?'construction-page':'work-draft-dialog';
   const closeForm=()=>tab?window.returnToConstructionTable(tab):dialog.close();
@@ -59,7 +60,8 @@
     const previous=String(value).trim(),normalized=previous.replace(/\s*kV$/i,'').trim();
     if(['500','230','115','22'].includes(normalized)){input.value=normalized;continue;}
     input.add(new Option(previous+' (ค่าเดิม)',previous));input.value=previous;
-   }else input.value=value??'';
+   }else if(input.type==='checkbox')input.checked=value===true;
+   else input.value=value??'';
   }}
   doc.body.append(dialog);dialog.querySelectorAll('[data-cancel]').forEach(b=>b.onclick=()=>{if(!pending)closeForm()});
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});
@@ -68,7 +70,7 @@
   }
   dialog.querySelector('form').onsubmit=async e=>{
    e.preventDefault();if(pending)return;const message=dialog.querySelector('[role=status]');
-   if(online){const button=dialog.querySelector('button.primary');pending=true;button.disabled=true;message.textContent='กำลังบันทึก…';try{const data=Object.fromEntries(new FormData(e.target));
+   if(online){const button=dialog.querySelector('button.primary');pending=true;button.disabled=true;message.textContent='กำลังบันทึก…';try{const formData=new FormData(e.target),data=Object.fromEntries(formData);data.highlight=formData.has('highlight');
     for(const name of ['projectId','title']){
      data[name]=data[name].trim();
      if(!data[name])throw Error('กรุณากรอก Job No. และชื่อย่อ สฟ.');
