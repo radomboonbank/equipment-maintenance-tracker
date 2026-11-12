@@ -5,9 +5,9 @@ import {saveEquipmentWithTelegram,queueEquipmentNotification} from './telegram-s
 import {openGenDispatchReference,openGenDispatchEvent} from './gen-dispatch-reference.js?v=20261108-spp-table-title';
 import {encodeSeverityRecord,decodeSeverityRecord} from './severity-record.js?v=20261104-legacy-levels';
 import {createIdleSession} from './idle-session.js?v=20261107-king-admin';
-import {createConstructionStore} from './construction-store.js?v=20261110-report';
-import {createAlarmStore} from './alarm-store.js?v=20261111-bess-batch';
-import {createPresence} from './presence.js?v=20261029-presence';
+import {createConstructionStore} from './construction-store.js?v=20261112-highlight-access';
+import {createAlarmStore} from './alarm-store.js?v=20261112-highlight-access';
+import {createLoginGuard,createPresence} from './presence.js?v=20261112-single-login';
 import {createMembersPage} from './members.js?v=20261107-backup';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261105-circuit';
@@ -155,6 +155,7 @@ let constructionData=[],constructionState='loading',unsubscribeConstruction=null
 window.GRID_CONSTRUCTION_STORE=createConstructionStore(()=>({cloud,user,role,username,displayName,duty:memberDuty}));
 window.GRID_ALARM_STORE=createAlarmStore(()=>({cloud,user,role,username,displayName,duty:memberDuty}));
 const canEdit=()=>cloudReady&&['admin','editor'].includes(role);
+const canHighlight=()=>role==='admin'&&['super admin','king admin'].includes(memberDuty);
 function toast(message){$('#toast').textContent=message;$('#toast').classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('#toast').classList.remove('show'),6000)}
 function dateLabel(r){return dateText(r.date)||'ไม่ระบุวันที่'}
 function listDateLabel(r){
@@ -292,6 +293,7 @@ function edit(r){
  $('#followups').innerHTML=Array.from({length:3},(_,i)=>{const v=r?.followups?.[i]||{};return `<tr><td>${i+1}<button type="button" class="followup-now" data-followup-now="${i}" aria-label="เติมเวลาปัจจุบัน ครั้ง ${i+1}">เวลาปัจจุบัน</button></td><td>${dateControl('follow-'+i,v.date)}<input type="time" step="60" name="follow-${i}-time" aria-label="เวลาติดตาม ครั้ง ${i+1}" value="${esc(v.time)}"></td>`+['informant','mobile','details'].map((k,j)=>`<td>${k==='details'?`<textarea name="follow-${i}-${k}" maxlength="4000" aria-label="${['ชื่อผู้ให้ข้อมูล','เบอร์มือถือผู้ให้ข้อมูล','รายละเอียด'][j]} ครั้ง ${i+1}">${esc(v[k])}</textarea>`:`<input name="follow-${i}-${k}" ${k==='mobile'?'type="tel" inputmode="tel"':''} maxlength="250" aria-label="${['ชื่อผู้ให้ข้อมูล','เบอร์มือถือผู้ให้ข้อมูล','รายละเอียด'][j]} ครั้ง ${i+1}" value="${esc(v[k])}">`}</td>`).join('')+'</tr>'}).join('');
  $('#history').innerHTML=(r?.history||[]).slice().reverse().map(h=>`<div class="history-item">${esc(String(h.note||'').replace(/แก้ปีวันที่ตามผู้ดูแล: 19\d{2}-\d{2}-\d{2} → พ.ศ. (25\d{2})-(\d{2})-(\d{2}) \(คงวันและเดือนเดิม\)/,'ตรวจแก้ปีวันที่เป็น $3/$2/$1 พ.ศ. (เก็บค่าต้นฉบับไว้แล้ว)'))}<small>${esc(dateText(h.at))} · ${esc(h.by)}</small></div>`).join('');
  document.querySelectorAll('#fields input,#fields textarea,#fields select,#followups input,#followups textarea,#followups select').forEach(el=>el.disabled=!canEdit());
+ $('#fields [name="highlight"]').disabled=!canEdit()||!canHighlight();
  setupStation($('#fields .station-control'),canEdit());
  setupRepairPlan();
  $('#save').hidden=!canEdit();$('#delete').hidden=role!=='admin'||!['super admin','king admin'].includes(memberDuty)||!r;
@@ -322,7 +324,7 @@ $('#record-form').onsubmit=async e=>{
   // Retain historical closure data; closing work is no longer an input or save condition.
   const closure=editing?.closure||{date:'',time:'',reporter:'',mobile:'',details:'',follower:''};
   const now=new Date(),at=now.toISOString(),code=editing?.code||stamp(now);
-  const next={...editing,...r,code,id:editing?.id||code,highlight:f.has('highlight'),criticalityAssessment,repairPlan,followups,closure,history:[...(editing?.history||[]),{at,by:username,displayName:displayName||username,note:!editing?'สร้างรายการ':'บันทึกข้อมูล · '+statuses[r.status]}],updatedAt:at,revision:(editing?.revision||0)+1,...(!editing?{createdAt:at,dateNeedsReview:false}:{})};
+  const next={...editing,...r,code,id:editing?.id||code,highlight:canHighlight()?f.has('highlight'):editing?.highlight===true,criticalityAssessment,repairPlan,followups,closure,history:[...(editing?.history||[]),{at,by:username,displayName:displayName||username,note:!editing?'สร้างรายการ':'บันทึกข้อมูล · '+statuses[r.status]}],updatedAt:at,revision:(editing?.revision||0)+1,...(!editing?{createdAt:at,dateNeedsReview:false}:{})};
   if(editing?.breaker){next.originalBreaker=editing.originalBreaker||editing.breaker;next.breaker='';}
   if(r.equipment.length>4000)throw Error('ข้อมูลอุปกรณ์ยาวเกิน 4,000 ตัวอักษร กรุณาปรับข้อความก่อนบันทึก');
   if(editing?.time&&editing.time!==r.time&&!editing.originalTime)next.originalTime=editing.time;
@@ -356,7 +358,7 @@ $('#delete').onclick=async()=>{
  busy=true;$('#delete').disabled=true;
  try{const original=editing;await cloud.runTransaction(cloud.db,async t=>{const ref=cloud.doc(cloud.db,'equipment',original.id),snap=await t.get(ref);if(!snap.exists()||snap.data().revision!==original.revision)throw Error('ข้อมูลเปลี่ยนแปลง กรุณาเปิดใหม่');t.delete(ref)});$('#editor').close();toast('ลบรายการแล้ว')}catch(err){toast('ลบไม่สำเร็จ: '+err.message)}finally{busy=false;$('#delete').disabled=false}
 };
-function resetSession(){if(reportTab&&!reportTab.closed)reportTab.close();reportTab=null;$('#all-construction').hidden=true;headerOnlineUsers=[];onlineLoginInfo.clear();loginStartedAt=null;unsubscribeAlarms?.();unsubscribeAlarms=null;alarmData=[];alarmState='loading';idleSession.stop();document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());unsubscribeConstruction?.();unsubscribeConstruction=null;constructionData=[];constructionState='loading';presence.stop();membersPage.reset();memberDuty="";generation++;unsubscribeLogins?.();unsubscribeLogins=null;renderLogins(null);unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';displayName='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
+function resetSession(){void loginGuard.release();if(reportTab&&!reportTab.closed)reportTab.close();reportTab=null;$('#all-construction').hidden=true;headerOnlineUsers=[];onlineLoginInfo.clear();loginStartedAt=null;unsubscribeAlarms?.();unsubscribeAlarms=null;alarmData=[];alarmState='loading';idleSession.stop();document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());unsubscribeConstruction?.();unsubscribeConstruction=null;constructionData=[];constructionState='loading';presence.stop();membersPage.reset();memberDuty="";generation++;unsubscribeLogins?.();unsubscribeLogins=null;renderLogins(null);unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';displayName='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
 function showWorkspace(){updateLoginSession();idleSession.start();
  $('#current-account').textContent=role==='guest'?'ผู้ชมทั่วไป':`บัญชีของคุณ: ${displayName||username}`;
  presence.start(cloud,role==='guest'?null:user,displayName||username);
@@ -380,17 +382,18 @@ $('#login').onsubmit=async e=>{
   const result=await cloud.signInWithEmailAndPassword(cloud.auth,loginEmail(name),await credential(name,password));
   const profile=await cloud.getDoc(cloud.doc(cloud.db,'DatabaseLogin',result.user.uid));
   if(!profile.exists()||!['admin','editor','viewer'].includes(profile.data().role)||profile.data().username!==name)throw Error('บัญชีนี้ยังไม่ได้รับสิทธิ์ใช้งาน');
-  resetSession();loginStartedAt=Date.now();user=result.user;role=profile.data().role;memberDuty=profile.data().duty||'';username=name;displayName=profile.data().displayName||name;$('#password').value='';$('#login-status').textContent='';try{await recordLogin()}catch(historyError){console.warn('Login history unavailable')}showWorkspace();
+  resetSession();await loginGuard.acquire(cloud,result.user,profile.data().role==='admin'&&profile.data().duty==='king admin');loginStartedAt=Date.now();user=result.user;role=profile.data().role;memberDuty=profile.data().duty||'';username=name;displayName=profile.data().displayName||name;$('#password').value='';$('#login-status').textContent='';try{await recordLogin()}catch(historyError){console.warn('Login history unavailable')}showWorkspace();
  }catch(err){await cloud.signOut(cloud.auth);$('#login-status').textContent=err.code?.startsWith('auth/')?'รหัสพนักงานหรือรหัสผ่านไม่ถูกต้อง หรือยังไม่เปิดใช้งานบัญชี':err.message}
  finally{busy=false;$('#login-submit').disabled=false;$('#guest').disabled=false}
 };
 $('#guest').onclick=async()=>{if(!cloud||busy)return;try{await cloud.signOut(cloud.auth);resetSession();user=null;username='ผู้ชมทั่วไป';showWorkspace()}catch(err){toast(err.message)}};
 async function logoutSession(expired=false){
- const stopping=presence.stop();resetSession();user=null;$('#password').value='';
+ const stopping=Promise.all([presence.stop(),loginGuard.release()]);resetSession();user=null;$('#password').value='';
  if(expired)$('#login-status').textContent='ออกจากระบบเนื่องจากไม่มีการใช้งาน 15 นาที กรุณาเข้าสู่ระบบใหม่';
+ await Promise.race([stopping,new Promise(resolve=>setTimeout(resolve,5000))]);
  try{await cloud.signOut(cloud.auth)}catch(err){toast(err.message)}
- await Promise.race([stopping,new Promise(resolve=>setTimeout(resolve,1500))]);
 }
+const loginGuard=createLoginGuard({onLost:async message=>{await logoutSession();$('#login-status').textContent=message}});
 const idleSession=createIdleSession({isExempt:()=>role==='admin'&&memberDuty==='king admin',onExpire:()=>{void logoutSession(true)}});
 for(const event of ['pointerdown','pointermove','keydown','input','scroll','touchstart'])document.addEventListener(event,e=>{if(e.isTrusted)idleSession.activity()},{capture:true,passive:true});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)idleSession.check()});
