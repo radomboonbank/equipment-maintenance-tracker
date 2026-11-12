@@ -311,8 +311,8 @@ function edit(r){
   if(k==='category')return categoryControl(val);
   if(k==='criticality')return criticalityControl(val)+assessmentControl(r?.criticalityAssessment)+repairPlanControl(r||{});
   const long=['equipment','cause'].includes(k);
-  const input=['date','due'].includes(k)?dateControl(k,val):k==='status'||k==='priority'?`<select name="${k}">${options(k==='status'?statuses:priorities,val)}</select>`:long?`<textarea name="${k}" maxlength="4000" >${esc(val)}</textarea>`:`<input name="${k}" value="${esc(k==='time'?normalizeTime(val):val)}" ${k==='code'?'readonly placeholder="สร้างอัตโนมัติเมื่อบันทึก"':k==='time'?'type="time" step="60"':k==='station'?'':''} maxlength="250">`;
-  return `<label class="${long?'wide':''}">${l}${input}</label>`;
+  const input=['date','due'].includes(k)?dateControl(k,val):k==='status'||k==='priority'?`<select name="${k}">${options(k==='status'?statuses:priorities,val)}</select>`:long?`<textarea name="${k}" ${k==='equipment'?'rows="3"':''} maxlength="4000" >${esc(val)}</textarea>`:`<input name="${k}" value="${esc(k==='time'?normalizeTime(val):val)}" ${k==='code'?'readonly placeholder="สร้างอัตโนมัติเมื่อบันทึก"':k==='time'?'type="time" step="60"':k==='station'?'':''} maxlength="250">`;
+  return `<label data-field="${k}" class="${long?'wide':''}">${l}${input}</label>`;
  }).join('')+`<label class="wide highlight-control"><input type="checkbox" name="highlight" ${r?.highlight===true?'checked':''}> highlight</label>`;
  setupCategory(r?.category||'');
  setupAssessment();
@@ -434,7 +434,7 @@ async function init(){
  await auth.setPersistence(a,auth.inMemoryPersistence);await auth.signOut(a);
  // Retire the old offline database cache; records now come exclusively from Firebase.
  localStorage.removeItem('grid-care-v1');localStorage.removeItem('grid-care-mode');localStorage.removeItem('grid-care-config');
- $('#login-submit').disabled=false;$('#guest').disabled=false;$('#login-status').textContent='พร้อมใช้งาน · เชื่อมต่อฐานข้อมูลอัตโนมัติ';
+ $('#login-submit').disabled=false;$('#guest').disabled=false;$('#login-status').textContent='';
  }catch(err){$('#login-status').textContent='เชื่อมต่อไม่ได้ กรุณาตรวจอินเทอร์เน็ตและรีโหลดหน้า';}
 }
 render();init();

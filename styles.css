@@ -333,3 +333,27 @@ svg.members-menu-icon{width:20px;height:24px;flex:0 0 20px;background:transparen
 #editor .severity-picks input:checked{background:#087f83;border-color:#087f83}
 #editor .severity-picks input:checked::after{content:"✓";font:bold 14px/1 sans-serif;color:white}
 #editor .severity-picks input:focus-visible{outline:3px solid #1054be;outline-offset:2px}
+/* Compact equipment intake and repair plan */
+#editor #fields{align-items:start;gap:12px 16px}
+#editor #fields>[data-field="code"]{grid-column:1;grid-row:1}
+#editor #fields>[data-field="time"]{grid-column:1;grid-row:2}
+#editor #fields>[data-field="date"]{grid-column:2;grid-row:1}
+#editor #fields>.station-control{grid-column:2;grid-row:2}
+#editor #fields>[data-field="date"] .thai-date-summary{display:none}
+#editor #fields>[data-field="date"] .be-calendar{margin-top:5px}
+#editor #fields>[data-field="time"] .time-picker-24{margin-top:5px}
+#editor textarea[name="equipment"]{height:calc(3lh + 22px);min-height:calc(3lh + 22px)}
+#editor .repair-plan-field{padding:12px 16px}
+#editor .repair-plan-field>.form-grid{gap:12px 16px;align-items:start}
+#editor .repair-plan-field textarea{height:calc(3lh + 22px);min-height:calc(3lh + 22px)}
+#editor .repair-operator legend{margin-bottom:4px}
+#editor .repair-expected .be-calendar{margin-top:5px}
+#editor .repair-unknown{margin-top:8px}
+@media(max-width:720px){
+ #editor #fields>[data-field="code"],#editor #fields>[data-field="date"],#editor #fields>[data-field="time"],#editor #fields>.station-control{grid-column:auto;grid-row:auto}
+ #editor .repair-operator-row{grid-template-columns:1fr;gap:8px}
+}
+#editor #fields>.station-control .station-heading{min-height:20px;margin-bottom:5px}
+#editor #fields>.station-control .station-line-toggle{padding:2px 9px;font-size:11px}
+#editor #fields>.station-control .single-station input{margin-top:0}
+#editor #fields>[data-field="time"]{align-self:end}
