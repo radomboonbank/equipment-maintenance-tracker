@@ -1,6 +1,7 @@
 // Stores one independently saved alarm section per Firestore document.
 export function createAlarmStore(getContext){
  return {
+  canHighlight(){const {role,duty}=getContext();return role==='admin'&&['super admin','king admin'].includes(duty)},
   canDelete(){const {user,role,duty}=getContext();return !!user&&role==='admin'&&['super admin','king admin'].includes(duty)},
   async remove(id,revision){
    const {cloud,user,role,duty}=getContext();
@@ -15,7 +16,7 @@ export function createAlarmStore(getContext){
    });
   },
   async saveMany(section,rows,ids){
-   const {cloud,user,role,username,displayName}=getContext();
+   const {cloud,user,role,duty,username,displayName}=getContext();
    if(!cloud||!user||!['admin','editor'].includes(role))throw Error('กรุณาเข้าสู่ระบบด้วยบัญชีที่มีสิทธิ์บันทึก');
    if(section!==2||!Array.isArray(rows)||!rows.length||rows.length>20||!Array.isArray(ids)||ids.length!==rows.length||new Set(ids).size!==ids.length)throw Error('ชุดเหตุการณ์ไม่ถูกต้อง');
    rows.forEach(data=>{if(!data||Array.isArray(data)||typeof data!=='object'||Object.keys(data).length>400||JSON.stringify(data).length>150000)throw Error('ข้อมูลเหตุการณ์ไม่ถูกต้อง');});
@@ -28,7 +29,9 @@ export function createAlarmStore(getContext){
     snapshots.forEach((snapshot,i)=>{
      const previous=snapshot.exists()?snapshot.data():null;
      if(previous&&(previous.section!==section||previous.createdBy!==user.uid))throw Error('รหัสเหตุการณ์ซ้ำ กรุณาเปิด txt2web ใหม่');
-     tx.set(refs[i],{schemaVersion:1,section,type:'bess',data:rows[i],
+     const previousHighlight=previous?.data?.highlight===true,highlight=rows[i].highlight===true;
+     if(highlight!==previousHighlight&&!(role==='admin'&&['super admin','king admin'].includes(duty)))throw Error('เฉพาะ Super Admin หรือ King Admin เท่านั้นที่เปลี่ยน highlight ได้');
+     tx.set(refs[i],{schemaVersion:1,section,type:'bess',data:{...rows[i],highlight},
       createdBy:previous?.createdBy||user.uid,createdAt:previous?.createdAt||cloud.serverTimestamp(),
       updatedBy:user.uid,updatedByName:displayName||username,updatedByUsername:username,
       updatedAt:cloud.serverTimestamp(),revision:(previous?.revision||0)+1});
@@ -37,7 +40,7 @@ export function createAlarmStore(getContext){
    return ids;
   },
   async save(section,data,id){
-   const {cloud,user,role,username,displayName}=getContext();
+   const {cloud,user,role,duty,username,displayName}=getContext();
    if(!cloud||!user||!['admin','editor'].includes(role))throw Error('กรุณาเข้าสู่ระบบด้วยบัญชีที่มีสิทธิ์บันทึก');
    if(![1,2,3].includes(section)||!data||Array.isArray(data)||typeof data!=='object')throw Error('รูปแบบข้อมูลไม่ถูกต้อง');
    if(Object.keys(data).length>400||JSON.stringify(data).length>150000)throw Error('ข้อมูลมากเกินไป กรุณาแยกบันทึก');
@@ -45,7 +48,10 @@ export function createAlarmStore(getContext){
    await cloud.runTransaction(cloud.db,async transaction=>{
     const existing=await transaction.get(ref),previous=existing.exists()?existing.data():null;
     if(previous&&previous.section!==section)throw Error('ประเภทข้อมูลไม่ตรงกับรายการเดิม');
-    const next={schemaVersion:1,section,type:['','general','bess','winding'][section],data,
+    const previousHighlight=previous?.data?.highlight===true;
+    const highlight=typeof data.highlight==='boolean'?data.highlight:previousHighlight;
+    if(highlight!==previousHighlight&&!(role==='admin'&&['super admin','king admin'].includes(duty)))throw Error('เฉพาะ Super Admin หรือ King Admin เท่านั้นที่เปลี่ยน highlight ได้');
+    const next={schemaVersion:1,section,type:['','general','bess','winding'][section],data:{...data,highlight},
      createdBy:previous?.createdBy||user.uid,createdAt:previous?.createdAt||cloud.serverTimestamp(),
      updatedBy:user.uid,updatedByName:displayName||username,updatedByUsername:username,
      updatedAt:cloud.serverTimestamp(),revision:(previous?.revision||0)+1};
