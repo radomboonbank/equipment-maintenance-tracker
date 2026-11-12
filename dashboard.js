@@ -73,7 +73,7 @@ export function faultTablePage(type,rows,alarm=false,assessment=false,constructi
 }
 
 export function highlightedRecords(records,projects=[],alarmDocuments=[]){
- const projectRecords=projects.filter(p=>p.data).map(p=>({id:'construction:'+p.id,highlight:p.data.highlight===true,
+ const projectRecords=projects.filter(p=>p.data).map(p=>({id:'construction:'+p.id,highlight:p.data.highlight===true,updatedAt:p.updatedAt,createdAt:p.createdAt,
   eventType:'โครงการก่อสร้าง',date:p.data.reportPeriod||p.data.startDate||'',station:p.data.stationMode==='line'?[p.data.stationFrom,p.data.stationTo].filter(Boolean).join(' – '):p.data.station||'',
   equipment:p.data.title||p.data.projectId||'',cause:p.data.scope||p.data.workDetails||''}));
  // Equipment rows can occur in both panels 1 and 4; show each source document once.
@@ -81,13 +81,15 @@ export function highlightedRecords(records,projects=[],alarmDocuments=[]){
  for(const r of [...records,...storedAlarmRecords(alarmDocuments),...projectRecords]){
   if(r.highlight===true)unique.set(r.id,r);
  }
- return [...unique.values()];
+ const millis=value=>{const raw=value?.toMillis?.()??value?.toDate?.()??(typeof value?.seconds==='number'?value.seconds*1000:value);const n=typeof raw==='number'?raw:Date.parse(raw||'');return Number.isFinite(n)?n:0};
+ const latest=r=>millis(r.updatedAt)||millis(r.createdAt)||millis(r.date);
+ return [...unique.values()].sort((a,b)=>latest(b)-latest(a)||String(a.id).localeCompare(String(b.id))).slice(0,3);
 }
 export function highlightsHtml(records,projects=[],alarmDocuments=[]){
  const rows=highlightedRecords(records,projects,alarmDocuments);
  const date=value=>{const m=String(value||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?new Intl.DateTimeFormat('th-TH-u-ca-buddhist',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Bangkok'}).format(new Date(value+'T00:00:00+07:00')):value||''};
- return '<section class="dashboard-highlights" aria-label="เหตุการณ์ highlight"><header><h2>เหตุการณ์ highlight</h2><span>'+rows.length+' รายการ</span></header>'+
- (rows.length?'<ul>'+rows.map(r=>'<li><div class="highlight-meta"><span>'+esc(r.eventType||'เหตุการณ์')+'</span><time>'+esc(date(r.date))+'</time></div><strong>'+esc([r.station,r.equipment].filter(Boolean).join(' · ')||'ยังไม่ระบุอุปกรณ์')+'</strong>'+(r.cause?'<p>'+esc(r.cause)+'</p>':'')+'</li>').join('')+'</ul>':'<p class="highlight-empty">ยังไม่มีเหตุการณ์ที่เลือก highlight</p>')+'</section>';
+ return '<section class="dashboard-highlights" aria-label="เหตุการณ์ highlight"><header><h2>เหตุการณ์ highlight ล่าสุด</h2><span>'+rows.length+' รายการ</span></header>'+
+ (rows.length?'<ul>'+rows.map(r=>'<li><img class="highlight-event-icon" src="assets/highlight-icon.svg?v=20261112" width="40" height="40" alt="" aria-hidden="true"><div class="highlight-content"><div class="highlight-meta"><span>'+esc(r.eventType||'เหตุการณ์')+'</span><time>'+esc(date(r.date))+'</time></div><strong>'+esc([r.station,r.equipment].filter(Boolean).join(' · ')||'ยังไม่ระบุอุปกรณ์')+'</strong>'+(r.cause?'<p>'+esc(r.cause)+'</p>':'')+'</div></li>').join('')+'</ul>':'<p class="highlight-empty">ยังไม่มีเหตุการณ์ที่เลือก highlight</p>')+'</section>';
 }
 
 export function dashboardHtml(records,assessment=null,now=new Date(),projects=[],projectState='ready',alarmDocuments=[],alarmState='ready'){
