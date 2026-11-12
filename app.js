@@ -1,7 +1,7 @@
 import {installStandbyBridge} from './standby-bridge.js?v=20261109-king-upload';
 import {installThaiDateTime} from './thai-datetime.js?v=20261107-sitewide-selectors';
 installThaiDateTime(window);
-import {saveEquipmentWithTelegram} from './telegram-settings.js?v=20261107-backup';
+import {saveEquipmentWithTelegram,queueEquipmentNotification} from './telegram-settings.js?v=20261112-independent-save';
 import {openGenDispatchReference,openGenDispatchEvent} from './gen-dispatch-reference.js?v=20261108-spp-table-title';
 import {encodeSeverityRecord,decodeSeverityRecord} from './severity-record.js?v=20261104-legacy-levels';
 import {createIdleSession} from './idle-session.js?v=20261107-king-admin';
@@ -325,10 +325,17 @@ $('#record-form').onsubmit=async e=>{
   if(editing?.time&&editing.time!==r.time&&!editing.originalTime)next.originalTime=editing.time;
   busy=true;$('#save').disabled=true;$('#save').textContent='กำลังบันทึก…';
   const ref=cloud.doc(cloud.db,'equipment',next.id),original=editing;
-  const telegramEnabled=await saveEquipmentWithTelegram(cloud,ref,original,next,encodeSeverityRecord,user);
+  await saveEquipmentWithTelegram(cloud,ref,original,next,encodeSeverityRecord,user);
   $('#editor').close();
-  if(telegramEnabled){toast('บันทึกข้อมูลแล้ว กำลังส่ง Telegram…');void sendRecordNotification(next);}
-  else toast('บันทึกข้อมูลแล้ว · ปิดการส่ง Telegram อยู่');
+  toast('บันทึกข้อมูลแล้ว');
+  const savedUser=user;
+  void (async()=>{
+   try{
+    const enabled=await queueEquipmentNotification(cloud,next,encodeSeverityRecord,savedUser);
+    if(enabled){toast('บันทึกข้อมูลแล้ว กำลังส่ง Telegram…');await sendRecordNotification(next);}
+    else toast('บันทึกข้อมูลแล้ว · ปิดการส่ง Telegram อยู่');
+   }catch(error){console.warn('Notification failed after equipment was saved',error.code||error.message);toast('บันทึกข้อมูลแล้ว · ส่ง Telegram ไม่สำเร็จ ข้อมูลบันทึกเรียบร้อย');}
+  })();
  }catch(err){const explanation=err.code==='permission-denied'?'Firebase ไม่อนุญาตให้บันทึก กรุณาตรวจสิทธิ์บัญชีหรือรูปแบบข้อมูล':err.code==='unavailable'?'เชื่อมต่อ Firebase ไม่ได้ กรุณาตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง':err.message;showSaveError('บันทึกไม่สำเร็จ: '+explanation+' (ข้อมูลที่กรอกยังอยู่ในฟอร์ม)');console.warn('Record save failed',{code:err.code||'validation',recordId:editing?.id||null});}finally{busy=false;$('#save').disabled=false;$('#save').textContent='บันทึกข้อมูล'}
 };
 async function sendRecordNotification(next){
