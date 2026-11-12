@@ -25,7 +25,7 @@ export function sixPanelSummary(records){
 }
 export function faultRecordsForType(records,type){
  if(type==='__all__')return sixPanelSummary(records).faults;
- return sixPanelSummary(records).faults.filter(r=>type==='ยังไม่ระบุ / อื่น ๆ'?!mainTypes.includes(mainType(r)):mainType(r)===type);
+ return sixPanelSummary(records).faults.filter(r=>['อุปกรณ์ อื่นๆๆ','ยังไม่ระบุ / อื่น ๆ'].includes(type)?!mainTypes.includes(mainType(r)):mainType(r)===type);
 }
 export function constructionRecordsForType(records,projects,type){
  const types={'สถานีไฟฟ้า':'สถานีไฟฟ้า','สายส่งไฟฟ้า':'สายส่งไฟฟ้า','หม้อแปลงไฟฟ้า':'หม้อแปลงไฟฟ้า','เบรคเกอร์':'เซอร์กิตเบรกเกอร์','คาปาซิเตอร์':'คาปาซิเตอร์แบงค์'};
@@ -84,7 +84,7 @@ export function dashboardHtml(records,assessment=null,now=new Date(),projects=[]
  const winding=alarmSummary.open.filter(r=>r.eventType==='Winding Temp Alarm');
  const impact=open.filter(r=>String(r.criticalityAssessment?.effect||'').trim());
  return `<div class="grid-summary-six">`+
- panel(1,'อุปกรณ์ชำรุด/ไม่พร้อมใช้งาน',[...mainTypes.map((t,i)=>[t,count(faults,t),colors[i]]),['ยังไม่ระบุ / อื่น ๆ',faults.filter(r=>!mainTypes.includes(mainType(r))).length,'#8d9baa']],`อุปกรณ์ขัดข้องทั้งหมด ${faults.length} รายการ`)+
+ panel(1,'อุปกรณ์ชำรุด/ไม่พร้อมใช้งาน',[...mainTypes.map((t,i)=>[t,count(faults,t),colors[i]]),['อุปกรณ์ อื่นๆๆ',faults.filter(r=>!mainTypes.includes(mainType(r))).length,'#8d9baa']],`อุปกรณ์ขัดข้องทั้งหมด ${faults.length} รายการ`)+
  panel(2,'สรุป Abnormal Alarm',[...alarmTypes.map(([l,t],i)=>[l,count(alarms,t),colors[i]]),['Winding Temp',winding.length,'#e789c4'],['อื่น ๆ / ยังไม่ระบุ',alarms.filter(r=>!alarmTypes.some(([,t])=>t===mainType(r))).length,'#8d9baa']],`รวม ${alarms.length+winding.length} รายการ · รวม Winding Temp Alarm เฉพาะงานที่ยังไม่ปิด`).replace('</article>',alarmState==='ready'?'</article>':`<p>${alarmState==='error'?'โหลดข้อมูล AbnormalAlarm ไม่สำเร็จ ยอดยังไม่ครบ':alarmState==='guest'?'เข้าสู่ระบบเพื่อดูข้อมูล Alarm เพิ่มเติม':'กำลังโหลดข้อมูล Alarm เพิ่มเติม…'}</p></article>` )+
  panel(3,'สรุปงานก่อสร้าง',[...constructionCounts,['อื่น ๆ / ยังไม่ระบุ',otherConstruction,'#8d9baa']],constructionNote)+
  panel(4,'ระดับความสำคัญและผลกระทบต่อระบบไฟฟ้า',[['รุนแรงมาก',open.filter(r=>r.criticality==='extreme').length,'#ff0000'],['รุนแรง',open.filter(r=>r.criticality==='severe').length,'#ff6600'],['ปานกลาง',open.filter(r=>r.criticality==='moderate').length,'#ffff00'],['เล็กน้อย',open.filter(r=>r.criticality==='minor').length,'#00ee00'],['ยังไม่ประเมิน',open.filter(r=>!['extreme','severe','moderate','minor'].includes(r.criticality)).length,'#8d9baa']],`ทุกประเภทเหตุการณ์ รวม ${open.length} รายการ`).replace('class="grid-summary-panel"','class="grid-summary-panel grid-summary-combined"').replace('</header>','</header><div class="combined-assessments"><section><h4>ระดับความสำคัญอุปกรณ์</h4>').replace('</article>',`</section><section><h4>อุปกรณ์ที่มีผลกระทบต่อระบบ</h4>${bars([['มีรายละเอียดผลต่อระบบ',impact.length,'#57a7f5'],['ยังไม่ระบุผลต่อระบบ',open.length-impact.length,'#8d9baa']],4)}<p>นับรายการที่กรอกประเมินผลกระทบต่อระบบไฟฟ้า ยังไม่ใช่จำนวนที่ยืนยันว่ามีผลกระทบ</p></section></div></article>`)+
