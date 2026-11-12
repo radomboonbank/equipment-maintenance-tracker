@@ -357,3 +357,8 @@ svg.members-menu-icon{width:20px;height:24px;flex:0 0 20px;background:transparen
 #editor #fields>.station-control .station-line-toggle{padding:2px 9px;font-size:11px}
 #editor #fields>.station-control .single-station input{margin-top:0}
 #editor #fields>[data-field="time"]{align-self:end}
+#editor .followup-table td:first-child{text-align:center;white-space:nowrap}
+#editor .followup-number{display:block;text-align:center;margin-bottom:4px}
+#editor .followup-table .followup-now{display:block;margin:0 auto}
+#editor .dialog-title .editor-close{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:76px;padding:10px 16px;white-space:nowrap}
+#editor .editor-close span{font-size:22px;line-height:1;font-weight:400}
