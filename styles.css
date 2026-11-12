@@ -295,3 +295,7 @@ svg.members-menu-icon{width:20px;height:24px;flex:0 0 20px;background:transparen
 .dashboard-highlights li p{margin:5px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
 .dashboard-highlights .highlight-empty{margin:0;color:#647581}
 @media(max-width:600px){.dashboard-highlights{padding:16px}}
+
+.dashboard-highlights li{display:flex;align-items:flex-start;gap:14px}
+.dashboard-highlights .highlight-event-icon{display:block;width:40px;height:40px;object-fit:contain;flex:0 0 40px;margin:2px 0 0}
+.highlight-content{flex:1;min-width:0}
