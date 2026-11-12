@@ -63,6 +63,7 @@
    }else if(input.type==='checkbox')input.checked=value===true;
    else input.value=value??'';
   }}
+  const highlightInput=dialog.querySelector('[name="highlight"]');if(highlightInput)highlightInput.disabled=!window.GRID_CONSTRUCTION_STORE?.canHighlight?.();
   doc.body.append(dialog);dialog.querySelectorAll('[data-cancel]').forEach(b=>b.onclick=()=>{if(!pending)closeForm()});
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});
   if(kind==='construction'&&record?.data?.stationMode==='line'){
@@ -70,7 +71,7 @@
   }
   dialog.querySelector('form').onsubmit=async e=>{
    e.preventDefault();if(pending)return;const message=dialog.querySelector('[role=status]');
-   if(online){const button=dialog.querySelector('button.primary');pending=true;button.disabled=true;message.textContent='กำลังบันทึก…';try{const formData=new FormData(e.target),data=Object.fromEntries(formData);data.highlight=formData.has('highlight');
+   if(online){const button=dialog.querySelector('button.primary');pending=true;button.disabled=true;message.textContent='กำลังบันทึก…';try{const formData=new FormData(e.target),data=Object.fromEntries(formData);data.highlight=window.GRID_CONSTRUCTION_STORE?.canHighlight?.()?formData.has('highlight'):record?.data?.highlight===true;
     for(const name of ['projectId','title']){
      data[name]=data[name].trim();
      if(!data[name])throw Error('กรุณากรอก Job No. และชื่อย่อ สฟ.');
