@@ -43,7 +43,7 @@ function parseBessBatch(text){
  return {raw,events};
 }
 function bessTransferRecord(p,raw){
- return {bessStation:p.station,bessSourceText:raw,'bess-1-date':p.date,'bess-1-time':p.time,
+ return {highlight:false,bessStation:p.station,bessSourceText:raw,'bess-1-date':p.date,'bess-1-time':p.time,
   'bess-1-pb':p.pb,'bess-1-alarm':p.alarm,'bess-1-cause':p.cause==='รอตรวจสอบ'?'รอตรวจสอบ':p.cause?'ตรวจสอบแล้ว (ระบุรายละเอียด)':'',
   'bess-1-causeDetails':p.cause&&p.cause!=='รอตรวจสอบ'?p.cause:'',
   'bess-1-weather':p.weather,'bess-1-breaker22Trip':p.breakerTrip===true,
@@ -54,7 +54,7 @@ function bessTransferRecord(p,raw){
  const field=(name,label,hint='',long=false)=>`<label>${label}${long?`<textarea name="${name}" rows="3" maxlength="4000" placeholder="${hint}"></textarea>`:`<input name="${name}" maxlength="500" placeholder="${hint}">`}</label>`;
  const select=(name,label,values)=>`<label>${label}<select name="${name}"><option value="">ยังไม่ระบุ</option>${values.map(v=>`<option>${v}</option>`).join('')}</select></label>`;
  const reporterFields=prefix=>`<div class="construction-grid alarm-section-reporter">${field(prefix+'ReporterName','แจ้ง พนักงานประจำ สฟ. ชื่อ','ชื่อพนักงาน')}<label>เบอร์มือถือ<input type="tel" name="${prefix}ReporterPhone" maxlength="50" placeholder="เบอร์มือถือ"></label></div>`;
- const section=(n,title,content)=>`<fieldset class="construction-section" data-alarm-section="${n}"><legend>${n}. ${title}</legend><div class="construction-grid">${content}</div><div class="alarm-section-save"><p role="status" data-section-status></p><button type="button" data-close>ปิด</button><button type="button" class="primary" data-save-section="${n}">บันทึกข้อมูล</button></div></fieldset>`;
+ const section=(n,title,content)=>`<fieldset class="construction-section" data-alarm-section="${n}"><legend>${n}. ${title}</legend><div class="construction-grid"><label class="wide highlight-control"><input type="checkbox" name="highlight" data-highlight> highlight</label>${content}</div><div class="alarm-section-save"><p role="status" data-section-status></p><button type="button" data-close>ปิด</button><button type="button" class="primary" data-save-section="${n}">บันทึกข้อมูล</button></div></fieldset>`;
  window.openAbnormalDraft=(existing=null,targetDocument=document)=>{
   const document=targetDocument, Event=document.defaultView.Event, dialogWindow=document.defaultView;
   const offlinePreview=location.protocol==='file:'&&!window.GRID_ALARM_STORE;
@@ -98,7 +98,7 @@ function bessTransferRecord(p,raw){
      if(el.disabled||!el.name)return;
      if(el.type==='radio'){if(el.checked)values[el.name]=el.value;return}
      if(el.type==='checkbox'){
-      if(el.hasAttribute('data-breaker-trip'))values[el.name]=el.checked;
+      if((el.hasAttribute('data-breaker-trip')||el.hasAttribute('data-highlight')))values[el.name]=el.checked;
       else {if(!seenCheckboxes.has(el.name)){values[el.name]=[];seenCheckboxes.add(el.name)}if(el.checked)values[el.name].push(el.value)}
       return;
      }
@@ -240,7 +240,7 @@ function bessTransferRecord(p,raw){
    const populate=()=>d.querySelectorAll('input,select,textarea').forEach(el=>{
     if(!el.name||!Object.prototype.hasOwnProperty.call(existing.data,el.name))return;
     const value=existing.data[el.name];
-    if(el.type==='checkbox')el.checked=el.hasAttribute('data-breaker-trip')?value===true:Array.isArray(value)&&value.includes(el.value);
+    if(el.type==='checkbox')el.checked=(el.hasAttribute('data-breaker-trip')||el.hasAttribute('data-highlight'))?value===true:Array.isArray(value)&&value.includes(el.value);
     else if(el.type==='radio')el.checked=el.value===value;
     else el.value=value??'';
    });
