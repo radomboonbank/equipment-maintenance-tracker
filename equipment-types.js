@@ -6,6 +6,7 @@ export const equipmentTypes = [
  {name:'คาปาซิเตอร์แบงค์',subtypes:[],voltages:['230 kV','115 kV','69 kV','22 kV']},
  {name:'รีเลย์ระบบป้องกัน',subtypes:[],voltages:[]},
  {name:'ระบบสื่อสาร',subtypes:['สถานีไฟฟ้า','ศูนย์นนทบุรี'],voltages:[]},
+ {name:'อุปกรณ์ อื่นๆๆ',subtypes:[],voltages:[]},
 ];
 const separator=' · ';
 export function parseEquipmentCategory(value='') {
