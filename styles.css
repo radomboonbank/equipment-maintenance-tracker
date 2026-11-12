@@ -362,3 +362,7 @@ svg.members-menu-icon{width:20px;height:24px;flex:0 0 20px;background:transparen
 #editor .followup-table .followup-now{display:block;margin:0 auto}
 #editor .dialog-title .editor-close{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:76px;padding:10px 16px;white-space:nowrap}
 #editor .editor-close span{font-size:22px;line-height:1;font-weight:400}
+.dashboard-highlights .highlight-content>p{display:none}
+@media(hover:hover){
+ .dashboard-highlights .highlight-record-link:hover .highlight-content>p{display:block}
+}
