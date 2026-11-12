@@ -1,14 +1,20 @@
+// Equipment storage is independent of notification settings and delivery.
 export async function saveEquipmentWithTelegram(cloud,ref,original,next,encode,user){
- const settingsRef=cloud.doc(cloud.db,'metadata','telegramSending');
- return cloud.runTransaction(cloud.db,async transaction=>{
-  const snapshot=await transaction.get(ref),settings=await transaction.get(settingsRef);
+ await cloud.runTransaction(cloud.db,async transaction=>{
+  const snapshot=await transaction.get(ref);
   if(original&&(!snapshot.exists()||snapshot.data().revision!==original.revision))throw Error('ข้อมูลเปลี่ยนแปลงแล้ว กรุณาปิดและเปิดรายการใหม่');
   if(!original&&snapshot.exists())throw Error('รหัสซ้ำ กรุณาบันทึกอีกครั้ง');
-  const enabled=!settings.exists()||settings.data().enabled!==false;
   transaction.set(ref,encode(next));
-  if(enabled)transaction.set(cloud.doc(cloud.db,'telegramOutbox',next.id+'__'+next.revision),{recordId:next.id,revision:next.revision,record:encode(next),createdBy:user.uid,createdAt:cloud.serverTimestamp(),readyAt:cloud.serverTimestamp(),status:'pending',nextPart:0,attempts:0});
-  return enabled;
  });
+}
+export async function queueEquipmentNotification(cloud,next,encode,user){
+ const settings=await cloud.getDocFromServer(cloud.doc(cloud.db,'metadata','telegramSending'));
+ if(settings.exists()&&settings.data().enabled===false)return false;
+ await cloud.setDoc(cloud.doc(cloud.db,'telegramOutbox',next.id+'__'+next.revision),{
+  recordId:next.id,revision:next.revision,record:encode(next),createdBy:user.uid,
+  createdAt:cloud.serverTimestamp(),readyAt:cloud.serverTimestamp(),status:'pending',nextPart:0,attempts:0
+ });
+ return true;
 }
 
 export function setupTelegramControl(root,session){
