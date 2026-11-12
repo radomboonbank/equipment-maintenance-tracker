@@ -1,13 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
  match /databases/{database}/documents {
-  // Shared Standby contacts: public directory, edits restricted to King/Super Admin.
   match /StandbyContacts/{id} {
    allow read: if true;
    allow create: if superAdmin() && standbyValid(id) && request.resource.data.revision == 1
     && !exists(/databases/$(database)/documents/StandbyDeleted/$(id));
-   allow update: if superAdmin() && standbyValid(id)
-    && request.resource.data.revision == resource.data.revision + 1;
+   allow update: if superAdmin() && standbyValid(id) && request.resource.data.revision == resource.data.revision + 1;
    allow delete: if superAdmin() && existsAfter(/databases/$(database)/documents/StandbyDeleted/$(id));
   }
   match /StandbyDeleted/{id} {
@@ -38,6 +36,35 @@ service cloud.firestore {
   function admin() { return account() && role() == 'admin'; }
   function superAdmin() { return admin() && get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.get('duty', '') in ['super admin','king admin']; }
   function kingAdmin() { return admin() && get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.get('duty', '') == 'king admin'; }
+
+  // Missing highlight is false for legacy documents. Only King/Super Admin can change it.
+  function highlightCreate(d) {
+   return (!('highlight' in d) || d.highlight is bool)
+    && (superAdmin() || d.get('highlight', false) == false);
+  }
+  function highlightUpdate(d, previous) {
+   return (!('highlight' in d) || d.highlight is bool)
+    && (superAdmin() || d.get('highlight', false) == previous.get('highlight', false));
+  }
+  // Private renewable login lease. Existing live leases cannot be taken over.
+  match /activeLogins/{uid} {
+   allow get: if account() && request.auth.uid == uid;
+   allow list: if false;
+   allow create: if loginLeaseValid(uid);
+   allow update: if loginLeaseValid(uid)
+    && (request.resource.data.sessionId == resource.data.sessionId || resource.data.expiresAt <= request.time);
+   allow delete: if account() && request.auth.uid == uid;
+  }
+  function loginLeaseValid(uid) {
+   let d=request.resource.data;
+   return account() && request.auth.uid == uid && role() in ['admin','editor','viewer']
+    && d.keys().hasOnly(['sessionId','lastSeen','expiresAt'])
+    && d.keys().hasAll(['sessionId','lastSeen','expiresAt'])
+    && d.sessionId is string && d.sessionId.size() >= 20 && d.sessionId.size() <= 100
+    && d.lastSeen == request.time && d.expiresAt is timestamp
+    && d.expiresAt > request.time && d.expiresAt <= request.time + duration.value(4,'m');
+  }
+
   function followup(v) {
    return v is map && v.keys().hasOnly(['date','time','informant','mobile','details','follower'])
     && v.date is string && v.time is string && v.informant is string && v.mobile is string && v.details is string && v.follower is string
@@ -86,9 +113,9 @@ service cloud.firestore {
   // Alarm forms: each section is stored independently; no public access.
   match /AbnormalAlarm/{id} {
    allow read: if account() && role() in ['admin','editor','viewer'];
-   allow create: if editor() && alarmValid() && request.resource.data.createdBy == request.auth.uid
+   allow create: if editor() && alarmValid() && highlightCreate(request.resource.data.data) && request.resource.data.createdBy == request.auth.uid
     && request.resource.data.createdAt == request.time && request.resource.data.revision == 1;
-   allow update: if editor() && alarmValid()
+   allow update: if editor() && alarmValid() && highlightUpdate(request.resource.data.data,resource.data.data)
     && request.resource.data.section == resource.data.section
     && request.resource.data.createdBy == resource.data.createdBy
     && request.resource.data.createdAt == resource.data.createdAt
@@ -108,6 +135,143 @@ service cloud.firestore {
     && d.updatedByName == p.get('displayName',p.username) && d.updatedByUsername == p.username
     && d.revision is int && d.revision > 0;
   }
+  match /ConstructionProjects/{id} {
+   allow read: if account() && role() in ['admin','editor','viewer'];
+   allow create: if editor() && constructionValid() && highlightCreate(request.resource.data.data) && request.resource.data.createdBy == request.auth.uid
+    && request.resource.data.createdAt == request.time && request.resource.data.revision == 1;
+   allow update: if editor() && constructionValid() && highlightUpdate(request.resource.data.data,resource.data.data)
+    && request.resource.data.createdBy == resource.data.createdBy
+    && request.resource.data.createdAt == resource.data.createdAt
+    && request.resource.data.revision == resource.data.revision + 1;
+   allow delete: if superAdmin() && id != '_schema';
+  }
+  function constructionValid() {
+   let d=request.resource.data;
+   let p=get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data;
+   return d.keys().hasAll(['schemaVersion','type','data','createdBy','createdAt','updatedBy','updatedByName','updatedByUsername','updatedAt','revision'])
+    && d.keys().hasOnly(['schemaVersion','type','data','createdBy','createdAt','updatedBy','updatedByName','updatedByUsername','updatedAt','revision'])
+    && d.schemaVersion == 1 && d.type == 'construction'
+    && d.data is map && d.data.size() <= 400
+    && d.createdBy is string && d.createdAt is timestamp
+    && d.updatedBy == request.auth.uid && d.updatedAt == request.time
+    && d.updatedByName == p.get('displayName',p.username) && d.updatedByUsername == p.username
+    && d.revision is int && d.revision > 0;
+  }
+  match /equipment/{id} {
+   allow read: if true;
+   allow create: if editor() && valid() && highlightCreate(request.resource.data) && request.resource.data.id == id && request.resource.data.revision == 1;
+   allow update: if editor() && valid() && highlightUpdate(request.resource.data,resource.data) && request.resource.data.id == resource.data.id && request.resource.data.code == resource.data.code && request.resource.data.revision == resource.data.revision + 1;
+   allow delete: if superAdmin();
+  }
+  match /DatabaseLogin/{uid} {
+   allow get: if (request.auth != null && request.auth.uid == uid) || superAdmin();
+   allow list: if superAdmin();
+   allow create, update, delete: if false;
+  }
+
+  // Public login counts contain no employee IDs, passwords, or role data.
+  match /publicLoginStats/{uid} {
+   allow get: if true;
+   allow list: if request.query.limit != null && request.query.limit <= 10;
+   allow create: if validLoginStat(uid) && request.resource.data.count == 1 && request.resource.data.firstLoginAt == request.time;
+   allow update: if validLoginStat(uid) && request.resource.data.count == resource.data.count + 1 && request.resource.data.firstLoginAt == resource.data.firstLoginAt;
+   allow delete: if false;
+  }
+  function validLoginStat(uid) {
+   let d=request.resource.data;
+   return account() && request.auth.uid == uid && role() in ['admin','editor','viewer']
+    && d.keys().hasAll(['displayName','count','firstLoginAt','lastLoginAt'])
+    && d.keys().hasOnly(['displayName','count','firstLoginAt','lastLoginAt'])
+    && d.displayName == get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.get('displayName', get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.username)
+    && d.count is int && d.count > 0 && d.firstLoginAt is timestamp && d.lastLoginAt == request.time;
+  }
+
+  // Public projection contains only names and login times, never employee IDs or UIDs.
+  match /publicLoginHistory/{id} {
+   allow get: if id == 'recent';
+   allow list, delete: if false;
+   allow create: if id == 'recent' && validPublicLogin()
+    && request.resource.data.second == null && request.resource.data.third == null && request.resource.data.fourth == null && request.resource.data.fifth == null && request.resource.data.sixth == null && request.resource.data.seventh == null && request.resource.data.eighth == null && request.resource.data.ninth == null && request.resource.data.tenth == null;
+   allow update: if id == 'recent' && validPublicLogin()
+    && request.resource.data.second == resource.data.first && request.resource.data.third == resource.data.second && request.resource.data.fourth == resource.data.third && request.resource.data.fifth == resource.data.fourth && request.resource.data.sixth == resource.data.fifth && request.resource.data.seventh == resource.data.sixth && request.resource.data.eighth == resource.data.seventh && request.resource.data.ninth == resource.data.eighth && request.resource.data.tenth == resource.data.ninth;
+  }
+  function validPublicLogin() {
+   let d=request.resource.data;
+   return account() && role() in ['admin','editor','viewer']
+    && d.keys().hasAll(['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth']) && d.keys().hasOnly(['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth'])
+    && d.first is map && d.first.keys().hasAll(['displayName','at']) && d.first.keys().hasOnly(['displayName','at'])
+    && d.first.displayName == get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.get('displayName', get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.username)
+    && d.first.at == request.time;
+  }
+  match /loginHistory/{id} {
+   allow get: if account() && role() in ['admin','editor','viewer'] && id == 'recent';
+   allow list, delete: if false;
+   allow create: if account() && role() in ['admin','editor','viewer'] && id == 'recent' && validLogin()
+    && request.resource.data.second == null && request.resource.data.third == null;
+   allow update: if account() && role() in ['admin','editor','viewer'] && id == 'recent' && validLogin()
+    && request.resource.data.second == resource.data.first
+    && request.resource.data.third == resource.data.second;
+  }
+  function validLogin() {
+   let d = request.resource.data;
+   return d.keys().hasAll(['first','second','third']) && d.keys().hasOnly(['first','second','third'])
+    && d.first is map && d.first.keys().hasAll(['uid','username','at']) && d.first.keys().hasOnly(['uid','username','displayName','at'])
+    && d.first.uid == request.auth.uid
+    && d.first.username == get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.username
+    && (!('displayName' in d.first) || d.first.displayName == get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.get('displayName', d.first.username))
+    && d.first.at == request.time;
+  }
+
+  match /metadata/systemAssessment { allow get: if account(); }
+  match /metadata/telegramSending {
+   allow read: if editor();
+   allow create, update: if kingAdmin()
+    && request.resource.data.keys().hasAll(['enabled','updatedBy','updatedAt'])
+    && request.resource.data.keys().hasOnly(['enabled','updatedBy','updatedAt'])
+    && request.resource.data.enabled is bool
+    && request.resource.data.updatedBy == request.auth.uid
+    && request.resource.data.updatedAt == request.time;
+   allow delete: if false;
+  }
+  match /metadata/{id} { allow read: if editor(); allow write: if id != 'telegramSending' && admin(); }
+  // Presence is visible only to signed-in members; each session owns its write.
+  match /onlineSessions/{id} {
+   allow read: if account() && role() in ['admin','editor','viewer'];
+   allow create: if validPresence() && id.matches(request.auth.uid + '_.*');
+   allow update: if validPresence() && resource.data.uid == request.auth.uid;
+   allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+  }
+  function validPresence() {
+   let d=request.resource.data;
+   return account() && role() in ['admin','editor','viewer']
+    && d.keys().hasAll(['uid','displayName','lastSeen']) && d.keys().hasOnly(['uid','displayName','lastSeen'])
+    && d.uid == request.auth.uid
+    && d.displayName == get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.get('displayName', get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.username)
+    && d.lastSeen == request.time;
+  }
+  match /memberOperations/{id} {
+   allow get: if superAdmin() && resource.data.actor == request.auth.uid;
+   allow list, create, update, delete: if false;
+  }
+  match /members/{uid} { allow read, write: if false; }
+  match /telegramDeliveries/{id} { allow read, write: if false; }
+  match /telegramOutbox/{key} {
+   allow get: if editor() && resource.data.createdBy == request.auth.uid;
+   allow list, update, delete: if false;
+   allow create: if editor() && queueValid(key);
+  }
+  function queueValid(key) {
+   let q = request.resource.data;
+   let path = /databases/$(database)/documents/equipment/$(q.recordId);
+   return q.keys().hasOnly(['recordId','revision','record','createdBy','createdAt','readyAt','status','nextPart','attempts'])
+    && q.recordId is string && q.revision is int && q.record is map
+    && key == q.recordId + '__' + string(q.revision)
+    && q.createdBy == request.auth.uid && q.createdAt == request.time && q.readyAt == request.time
+    && q.status == 'pending' && q.nextPart == 0 && q.attempts == 0
+    && getAfter(path).data == q.record && q.record.revision == q.revision
+    && exists(path) && get(path).data.revision == q.revision;
+  }
+  // Gen Dispatch: reviewed reference table, publicly readable like the published table.
   match /GenDispatchEvents/{id} {
    allow read: if account() && role() in ['admin','editor','viewer'];
    allow create: if (id == '_schema' && superAdmin()
@@ -203,150 +367,6 @@ service cloud.firestore {
     && d.revision is int && d.revision > 0;
   }
 
-  match /ConstructionProjects/{id} {
-   allow read: if account() && role() in ['admin','editor','viewer'];
-   allow create: if editor() && constructionValid() && request.resource.data.createdBy == request.auth.uid
-    && request.resource.data.createdAt == request.time && request.resource.data.revision == 1;
-   allow update: if editor() && constructionValid()
-    && request.resource.data.createdBy == resource.data.createdBy
-    && request.resource.data.createdAt == resource.data.createdAt
-    && request.resource.data.revision == resource.data.revision + 1;
-   allow delete: if superAdmin() && id != '_schema';
-  }
-  function constructionValid() {
-   let d=request.resource.data;
-   let p=get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data;
-   return d.keys().hasAll(['schemaVersion','type','data','createdBy','createdAt','updatedBy','updatedByName','updatedByUsername','updatedAt','revision'])
-    && d.keys().hasOnly(['schemaVersion','type','data','createdBy','createdAt','updatedBy','updatedByName','updatedByUsername','updatedAt','revision'])
-    && d.schemaVersion == 1 && d.type == 'construction'
-    && d.data is map && d.data.size() <= 400
-    && d.createdBy is string && d.createdAt is timestamp
-    && d.updatedBy == request.auth.uid && d.updatedAt == request.time
-    && d.updatedByName == p.get('displayName',p.username) && d.updatedByUsername == p.username
-    && d.revision is int && d.revision > 0;
-  }
-  match /equipment/{id} {
-   allow read: if true;
-   allow create: if editor() && valid() && request.resource.data.id == id && request.resource.data.revision == 1;
-   allow update: if editor() && valid() && request.resource.data.id == resource.data.id && request.resource.data.code == resource.data.code && request.resource.data.revision == resource.data.revision + 1;
-   allow delete: if superAdmin();
-  }
-  match /DatabaseLogin/{uid} {
-   allow get: if (request.auth != null && request.auth.uid == uid) || superAdmin();
-   allow list: if superAdmin();
-   allow create, update, delete: if false;
-  }
-
-  // Public login counts contain no employee IDs, passwords, or role data.
-  match /publicLoginStats/{uid} {
-   allow get: if true;
-   allow list: if request.query.limit != null && request.query.limit <= 10;
-   allow create: if validLoginStat(uid) && request.resource.data.count == 1
-    && request.resource.data.firstLoginAt == request.time;
-   allow update: if validLoginStat(uid)
-    && request.resource.data.count == resource.data.count + 1
-    && request.resource.data.firstLoginAt == resource.data.firstLoginAt;
-   allow delete: if false;
-  }
-  function validLoginStat(uid) {
-   let d=request.resource.data;
-   return account() && request.auth.uid == uid && role() in ['admin','editor','viewer']
-    && d.keys().hasAll(['displayName','count','firstLoginAt','lastLoginAt'])
-    && d.keys().hasOnly(['displayName','count','firstLoginAt','lastLoginAt'])
-    && d.displayName == get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.get('displayName', get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.username)
-    && d.count is int && d.count > 0
-    && d.firstLoginAt is timestamp && d.lastLoginAt == request.time;
-  }
-
-  // Public projection contains only names and login times, never employee IDs or UIDs.
-  match /publicLoginHistory/{id} {
-   allow get: if id == 'recent';
-   allow list, delete: if false;
-   allow create: if id == 'recent' && validPublicLogin()
-    && request.resource.data.second == null && request.resource.data.third == null && request.resource.data.fourth == null && request.resource.data.fifth == null && request.resource.data.sixth == null && request.resource.data.seventh == null && request.resource.data.eighth == null && request.resource.data.ninth == null && request.resource.data.tenth == null;
-   allow update: if id == 'recent' && validPublicLogin()
-    && request.resource.data.second == resource.data.first && request.resource.data.third == resource.data.second && request.resource.data.fourth == resource.data.third && request.resource.data.fifth == resource.data.fourth && request.resource.data.sixth == resource.data.fifth && request.resource.data.seventh == resource.data.sixth && request.resource.data.eighth == resource.data.seventh && request.resource.data.ninth == resource.data.eighth && request.resource.data.tenth == resource.data.ninth;
-  }
-  function validPublicLogin() {
-   let d=request.resource.data;
-   return account() && role() in ['admin','editor','viewer']
-    && d.keys().hasAll(['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth']) && d.keys().hasOnly(['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth'])
-    && d.first is map && d.first.keys().hasAll(['displayName','at']) && d.first.keys().hasOnly(['displayName','at'])
-    && d.first.displayName == get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.get('displayName', get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.username)
-    && d.first.at == request.time;
-  }
-  match /loginHistory/{id} {
-   allow get: if account() && role() in ['admin','editor','viewer'] && id == 'recent';
-   allow list, delete: if false;
-   allow create: if account() && role() in ['admin','editor','viewer'] && id == 'recent' && validLogin()
-    && request.resource.data.second == null && request.resource.data.third == null;
-   allow update: if account() && role() in ['admin','editor','viewer'] && id == 'recent' && validLogin()
-    && request.resource.data.second == resource.data.first
-    && request.resource.data.third == resource.data.second;
-  }
-  function validLogin() {
-   let d = request.resource.data;
-   return d.keys().hasAll(['first','second','third']) && d.keys().hasOnly(['first','second','third'])
-    && d.first is map && d.first.keys().hasAll(['uid','username','at']) && d.first.keys().hasOnly(['uid','username','displayName','at'])
-    && d.first.uid == request.auth.uid
-    && d.first.username == get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.username
-    && (!('displayName' in d.first) || d.first.displayName == get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.get('displayName', d.first.username))
-    && d.first.at == request.time;
-  }
-
-  match /metadata/systemAssessment { allow get: if account(); }
-  match /metadata/telegramSending {
-   allow read: if editor();
-   allow create, update: if kingAdmin()
-    && request.resource.data.keys().hasAll(['enabled','updatedBy','updatedAt'])
-    && request.resource.data.keys().hasOnly(['enabled','updatedBy','updatedAt'])
-    && request.resource.data.enabled is bool
-    && request.resource.data.updatedBy == request.auth.uid
-    && request.resource.data.updatedAt == request.time;
-   allow delete: if false;
-  }
-  match /metadata/{id} { allow read: if editor(); allow write: if id != 'telegramSending' && admin(); }
-  // Presence is visible only to signed-in members; each session owns its write.
-  match /onlineSessions/{id} {
-   allow read: if account() && role() in ['admin','editor','viewer'];
-   allow create: if validPresence() && id.matches(request.auth.uid + '_.*');
-   allow update: if validPresence() && resource.data.uid == request.auth.uid;
-   allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
-  }
-  function validPresence() {
-   let d=request.resource.data;
-   return account() && role() in ['admin','editor','viewer']
-    && d.keys().hasAll(['uid','displayName','lastSeen']) && d.keys().hasOnly(['uid','displayName','lastSeen'])
-    && d.uid == request.auth.uid
-    && d.displayName == get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.get('displayName', get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.username)
-    && d.lastSeen == request.time;
-  }
-  match /memberOperations/{id} {
-   allow get: if superAdmin() && resource.data.actor == request.auth.uid;
-   allow list, create, update, delete: if false;
-  }
-  match /members/{uid} { allow read, write: if false; }
-  match /telegramDeliveries/{id} { allow read, write: if false; }
-  function queued(id) {
-   let key = id + '__' + string(request.resource.data.revision);
-   let q = getAfter(/databases/$(database)/documents/telegramOutbox/$(key)).data;
-   return q.record == request.resource.data && q.createdBy == request.auth.uid && q.createdAt == request.time && q.status == 'pending';
-  }
-  match /telegramOutbox/{key} {
-   allow get: if editor() && resource.data.createdBy == request.auth.uid;
-   allow list, update, delete: if false;
-   allow create: if editor() && queueValid(key);
-  }
-  function queueValid(key) {
-   let q = request.resource.data;
-   let path = /databases/$(database)/documents/equipment/$(q.recordId);
-   return q.keys().hasOnly(['recordId','revision','record','createdBy','createdAt','readyAt','status','nextPart','attempts'])
-    && q.recordId is string && q.revision is int && q.record is map
-    && key == q.recordId + '__' + string(q.revision)
-    && q.createdBy == request.auth.uid && q.createdAt == request.time && q.readyAt == request.time
-    && q.status == 'pending' && q.nextPart == 0 && q.attempts == 0
-    && getAfter(path).data == q.record && q.record.revision == q.revision
-    && exists(path) && get(path).data.revision == q.revision;
-  }
  }
 }
+
