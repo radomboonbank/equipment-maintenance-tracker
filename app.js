@@ -1,5 +1,5 @@
 import {installStandbyBridge} from './standby-bridge.js?v=20261109-king-upload';
-import {installThaiDateTime} from './thai-datetime.js?v=20261107-sitewide-selectors';
+import {installThaiDateTime} from './thai-datetime.js?v=20261112-calendar';
 installThaiDateTime(window);
 import {saveEquipmentWithTelegram,queueEquipmentNotification} from './telegram-settings.js?v=20261112-independent-save';
 import {openGenDispatchReference,openGenDispatchEvent} from './gen-dispatch-reference.js?v=20261108-spp-table-title';
@@ -18,7 +18,7 @@ import {rotateLogins,loginEntries,loginTime,nextLoginStat,rotatePublicLogins} fr
 import {dateParts,dateText,stamp,credential,loginEmail,readDate,normalizeTime,mergedEquipment} from './utils.js?v=20261027-merged';
 const $=s=>document.querySelector(s), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const statuses={unreviewed:'รอตรวจสอบ',pending:'รอดำเนินการ',repairing:'กำลังซ่อม',resolved:'ซ่อมแล้ว'}, priorities={normal:'ปกติ',urgent:'เร่งด่วน',critical:'วิกฤต'};
-const eventTypes=['อุปกรณ์ขัดข้อง','Abnormal Alarm','Winding Temp Alarm','โครงการก่อสร้าง','งานบำรุงรักษาเกินกำหนด','ข้อจำกัด ระบบส่ง'];
+const eventTypes=['อุปกรณ์ขัดข้อง','Abnormal Alarm','Winding Temp Alarm','โครงการก่อสร้าง','งานบำรุงรักษาเกินกำหนด','ข้อจำกัด ระบบส่ง','งาน Switching Order'];
 const fields={code:'รหัสอุปกรณ์ชำรุด',date:'วันที่ได้รับแจ้งอุปกรณ์ชำรุด (พ.ศ.)',time:'เวลาที่ได้รับแจ้งอุปกรณ์ชำรุด',station:'สถานีไฟฟ้าแรงสูง',eventType:'ประเภทเหตุการณ์',category:'ชนิดอุปกรณ์',equipment:'อุปกรณ์ที่ชำรุด (อุปกรณ์ที่ OFF)',cause:'สาเหตุ ที่ ปลด (OFF)',criticality:'ระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า',owner:'ผู้รับผิดชอบแก้ไข',reporter:'ผู้แจ้ง',receiver:'พนักงานศูนย์ ผู้รับเรื่อง',due:'คาดการณ์กำหนดการแก้ไข (พ.ศ.)',status:'สถานะ',priority:'ความเร่งด่วน'};
 const retiredRecordFields=new Set(['owner','reporter','receiver','due','status','priority']);
 let data=[],notes=[],page=1,view='all',editing=null,cloud=null,unsubscribe=null,user=null,cloudReady=false,busy=false;
