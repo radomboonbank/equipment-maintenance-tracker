@@ -379,3 +379,7 @@ svg.members-menu-icon{width:20px;height:24px;flex:0 0 20px;background:transparen
 [data-alarm-section="2"] input[name="bessStation"]{margin-top:14px}
 [data-alarm-section="2"] .bess-breaker-state p{margin:4px 0}
 [data-alarm-section="2"] .bess-event textarea{min-height:calc(3lh + 22px)}
+
+/* Compact system-importance indicator immediately after each highlight date. */
+.highlight-meta .highlight-date-with-severity{display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.highlight-meta .highlight-criticality-icon{display:inline-block;width:12px;height:12px;flex:0 0 12px;border-radius:50%;background:var(--highlight-criticality-color,#8d9baa);box-shadow:inset 0 0 0 1px rgba(25,60,80,.25);vertical-align:middle}
