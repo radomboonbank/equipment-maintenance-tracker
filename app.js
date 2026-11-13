@@ -13,7 +13,7 @@ import {createLoginGuard,createPresence} from './presence.js?v=20261112-single-l
 import {createMembersPage} from './members.js?v=20261113-green-close';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261105-circuit';
-import {equipmentEventTypes,genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261113-highlight-criticality';
+import {equipmentEventTypes,genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261113-highlight-layout2';
 import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261112-other-equipment';
 import {rotateLogins,loginEntries,loginTime,nextLoginStat,rotatePublicLogins} from './login-history.js?v=20261104-stats';
 'use strict';
@@ -270,8 +270,9 @@ const criticalities={extreme:'รุนแรงมาก',severe:'รุนแ�
 const legacyCriticalities={high:'รุนแรง',medium:'ปานกลาง',low:'เล็กน้อย'};
 function criticalityBadge(value){if(legacyCriticalities[value])return `<span class="badge criticality-unassessed">${legacyCriticalities[value]}</span>`;const level=Object.hasOwn(criticalities,value)?value:'unassessed';return `<span class="badge criticality-badge criticality-${level}"><span aria-hidden="true">●</span> ${level==='unassessed'?'ยังไม่ประเมิน':criticalities[level]}</span>`}
 const severityCriteriaImage=new URL('./assets/severity-criteria.webp',import.meta.url).href;
-function criticalityControl(value='') {
- return `<fieldset class="criticality-field wide"><legend>ระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า</legend><div class="severity-map"><img class="severity-criteria-image" src="${severityCriteriaImage}" alt="หลักเกณฑ์การประเมินระดับความรุนแรงของเหตุการณ์ที่มีผลกระทบต่อระบบไฟฟ้า: พื้นที่ไฟดับ ระยะเวลา พลังงานไฟฟ้าที่หายไป และเหตุการณ์สำคัญ"><div class="severity-picks" role="radiogroup" aria-label="เลือกระดับความสำคัญ">${Object.entries(criticalities).map(([key,label])=>`<label title="${label}"><input type="radio" name="criticality" aria-label="${label}" value="${key}" ${value===key?'checked':''}></label>`).join('')}</div></div>${!criticalities[value]?`<p class="criticality-unassessed">${legacyCriticalities[value]||'ยังไม่ประเมิน'}</p>`:''}</fieldset>`;
+function criticalityControl(value='',record=null) {
+ const author=record?historyAuthor(record.history?.at(-1)||{displayName:record.updatedByName,by:record.updatedByUsername},historyNames(data)):'ยังไม่มีการบันทึก';
+ return `<fieldset class="criticality-field wide"><legend>ระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า <span class="criticality-last-editor">· ผู้แก้ไขล่าสุด: ${esc(author)}</span></legend><div class="severity-map"><img class="severity-criteria-image" src="${severityCriteriaImage}" alt="หลักเกณฑ์การประเมินระดับความรุนแรงของเหตุการณ์ที่มีผลกระทบต่อระบบไฟฟ้า: พื้นที่ไฟดับ ระยะเวลา พลังงานไฟฟ้าที่หายไป และเหตุการณ์สำคัญ"><div class="severity-picks" role="radiogroup" aria-label="เลือกระดับความสำคัญ">${Object.entries(criticalities).map(([key,label])=>`<label title="${label}"><input type="radio" name="criticality" aria-label="${label}" value="${key}" ${value===key?'checked':''}></label>`).join('')}</div></div>${!criticalities[value]?`<p class="criticality-unassessed">${legacyCriticalities[value]||'ยังไม่ประเมิน'}</p>`:''}</fieldset>`;
 }
 
 const assessmentFields={scope:['1. ขอบเขตผลกระทบ','เฉพาะอุปกรณ์ / สถานี / หลายสถานีหรือระบบหลัก'],replacement:['2. ระบบหรืออุปกรณ์ทดแทน','มีและรองรับได้ / มีแต่มีข้อจำกัด / ไม่มี'],effect:['3. ผลต่อระบบ','กระทบการส่งจ่ายไฟอย่างไร และที่ใด'],measures:['4. มาตรการรองรับเหตุการณ์','คืออะไร อย่างไร']};
@@ -310,7 +311,7 @@ function edit(r){
   if(k==='station')return stationControl(r||{});
   if(k==='eventType')return eventTypeControl(val);
   if(k==='category')return categoryControl(val);
-  if(k==='criticality')return criticalityControl(val)+assessmentControl(r?.criticalityAssessment)+repairPlanControl(r||{});
+  if(k==='criticality')return criticalityControl(val,r)+assessmentControl(r?.criticalityAssessment)+repairPlanControl(r||{});
   const long=['equipment','cause'].includes(k);
   const input=['date','due'].includes(k)?dateControl(k,val):k==='status'||k==='priority'?`<select name="${k}">${options(k==='status'?statuses:priorities,val)}</select>`:long?`<textarea name="${k}" ${k==='equipment'?'rows="3"':''} maxlength="4000" >${esc(val)}</textarea>`:`<input name="${k}" value="${esc(k==='time'?normalizeTime(val):val)}" ${k==='code'?'readonly placeholder="สร้างอัตโนมัติเมื่อบันทึก"':k==='time'?'type="time" step="60"':k==='station'?'':''} maxlength="250">`;
   return `<label data-field="${k}" class="${long?'wide':''}">${l}${input}</label>`;
