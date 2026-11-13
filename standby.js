@@ -34,6 +34,28 @@ async function refreshAccess(){
  if(!mayEdit&&dialog.open&&!saving)dialog.close();
  render();
  void ensureImported();
+ void assignRequestedWorkGroups();
+}
+let assigningWorkGroups=false;
+async function assignRequestedWorkGroups(){
+ if(new URLSearchParams(location.search).get('assignWorkGroups')!=='20261113'||!mayEdit||!ready||importing||assigningWorkGroups)return;
+ assigningWorkGroups=true;importing=true;
+ let saved=0;
+ try{
+  const updates=[...overrides.entries()].map(([key,entry])=>({
+   key,...entry,
+   target: String(entry.row[5]||'').includes('สฟ.')?'Operatorสฟ.':key.startsWith('g0-')?'ผู้บริหาร':''
+  })).filter(entry=>entry.target&&entry.workGroup!==entry.target);
+  for(const entry of updates){
+   $('standby-status').textContent='กำลังบันทึกกลุ่มงานใน Firebase '+saved+' / '+updates.length+' รายการ';
+   await request('save',{key:entry.key,row:entry.row,revision:entry.revision,workGroup:entry.target},30000);
+   saved++;
+  }
+  const url=new URL(location.href);url.searchParams.delete('assignWorkGroups');history.replaceState(null,'',url);
+  $('standby-status').textContent='ปรับปรุงกลุ่มงานใน Firebase สำเร็จ '+saved+' รายการ';
+ }catch(error){
+  $('standby-status').textContent='ปรับปรุงกลุ่มงานแล้ว '+saved+' รายการ · '+error.message+' · รีเฟรชเพื่อลองต่อ';
+ }finally{importing=false;render();}
 }
 function entries(){
  const prefix='g'+groups.indexOf(group)+'-';
