@@ -1,3 +1,4 @@
+const responsiveStylesUrl = new URL('./responsive.css?v=20261113-responsive', import.meta.url).href;
 const closeStyle = 'background:#087f83;color:#fff;border:1px solid #087f83;border-radius:10px;padding:10px 16px;font:inherit;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap;cursor:pointer';
 const actionSelector = '.dialog-actions,.work-action-buttons,.alarm-section-save,.actions,.work-draft-actions';
 
@@ -6,6 +7,11 @@ export function installPageActions(win = window, popup = false) {
   const doc = win.document;
   if (!doc.body || doc.documentElement.dataset.pageActions === 'ready') return;
   doc.documentElement.dataset.pageActions = 'ready';
+  if (!doc.querySelector('link[data-responsive-layout],link[href*="responsive.css"]')) {
+   const layout = doc.createElement('link');
+   layout.rel = 'stylesheet';layout.href = responsiveStylesUrl;layout.dataset.responsiveLayout = 'true';
+   doc.head.append(layout);
+  }
   const style = doc.createElement('style');
   style.textContent = `
    .page-action-footer{display:flex!important;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap;width:100%;margin:18px 0 0!important;padding:16px!important;border:1px solid #cce5e5;border-radius:12px;background:#f4fafb;box-sizing:border-box}
