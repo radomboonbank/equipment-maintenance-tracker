@@ -77,11 +77,11 @@ function render(){
  $('standby-upload').disabled=!ready||importing;
  $('standby-edit-heading').hidden=!(mayEdit&&ready);
  const source=entries(),query=normalize(search.value);
- const matches=source.filter(({row})=>normalize(row.join(' ')).includes(query));
+ const matches=source.filter(({row,workGroup})=>normalize(row.join(' ')+' '+workGroup).includes(query));
  if(sortColumn){
-  const value=row=>sortColumn===2?displayName(row[2]).trim():row[sortColumn].trim();
+  const value=entry=>sortColumn===7?entry.workGroup.trim():sortColumn===2?displayName(entry.row[2]).trim():entry.row[sortColumn].trim();
   matches.sort((a,b)=>{
-   const left=value(a.row),right=value(b.row);
+   const left=value(a),right=value(b);
    if(!left||!right)return Number(!left)-Number(!right);
    return sortDirection*collator.compare(left,right);
   });
@@ -101,6 +101,11 @@ function render(){
     a.setAttribute('aria-label','โทรหา '+displayName(entry.row[2])+' '+value);td.append(a);
    }else td.textContent=(index===2?displayName(value):value)||'—';
    tr.append(td);
+   if(index===4){
+    const workGroupCell=document.createElement('td');
+    workGroupCell.textContent=entry.workGroup;
+    tr.append(workGroupCell);
+   }
   });
   if(mayEdit&&ready){
    const td=document.createElement('td'),b=document.createElement('button');
