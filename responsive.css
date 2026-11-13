@@ -1,0 +1,70 @@
+/* Shared screen layout: preserve readable labels instead of squeezing controls.
+   Data tables scroll inside their own frame; long descriptions may wrap. */
+@media screen {
+  *,*::before,*::after{box-sizing:border-box}
+  body{min-width:0}
+  main,section,article,fieldset,form,header,nav,.panel,.card,.field{min-width:0}
+  h1,h2,h3,h4,p,legend,dt,dd,label{overflow-wrap:break-word}
+  button,[role="button"],input[type="submit"],input[type="button"]{
+    white-space:nowrap;overflow-wrap:normal;word-break:normal;flex-shrink:0
+  }
+  input:not([type="checkbox"]):not([type="radio"]),select,textarea{min-width:0;max-width:100%}
+  fieldset{max-width:100%}
+  legend{max-width:100%;white-space:normal}
+  .table-wrap,.wrap,.inventory-table-wrap{max-width:100%;min-width:0;overflow-x:auto;overscroll-behavior-inline:contain}
+  .table-wrap>table,.wrap>table{min-width:760px}
+  th,td{word-break:normal}
+  td button,th button{white-space:nowrap;overflow-wrap:normal;word-break:normal}
+  td:last-child:has(>button),th:last-child:has(>button){white-space:nowrap}
+  .heading,.panel-title,.dialog-title,.work-draft-title,.page-heading{flex-wrap:wrap}
+  .heading>div,.panel-title>div,.dialog-title>div,.work-draft-title>div,.page-heading>div{min-width:0}
+  .actions,.dialog-actions,.work-action-buttons,.work-draft-actions,.edit-actions,.gen-dispatch-toolbar{flex-wrap:wrap}
+  .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .form-grid>*,.grid>*,.construction-grid>*,.repair-operator-row>*,.filters>*{min-width:0}
+  .grid-summary-panel header{height:auto;min-height:64px}
+  .grid-summary-panel header h3{min-width:0}
+  .grid-summary-panel .fault-drilldown{white-space:normal}
+  .dashboard-highlights .highlight-record-link,.grid-summary-panel header button,aside .nav{white-space:normal;overflow-wrap:break-word}
+  .be-calendar-display{white-space:normal;overflow-wrap:break-word;height:auto;min-height:42px}
+  .gen-dispatch-toolbar input{flex:1 1 220px}
+  .criticality-last-editor{display:inline-block}
+
+  /* Standby has eight columns: reserve space for actions and phone numbers. */
+  body:has(#standby-rows) main{padding:24px clamp(12px,2.5vw,40px)}
+  body:has(#standby-rows) .panel{padding:clamp(14px,2vw,24px)}
+  body:has(#standby-rows) table{min-width:1100px;table-layout:auto}
+  body:has(#standby-rows) th,body:has(#standby-rows) td{padding:8px 10px}
+  #standby-edit-heading,#standby-rows td:last-child:has(button){width:84px;min-width:84px;white-space:nowrap}
+  #standby-rows td:last-child button{min-width:60px;white-space:nowrap;overflow-wrap:normal;word-break:normal}
+  #standby-rows td:nth-child(6){min-width:200px;overflow-wrap:anywhere}
+  #standby-rows td:nth-child(7){min-width:140px;white-space:nowrap}
+  #standby-rows td:nth-child(2){min-width:180px;white-space:normal}
+  #standby-edit-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+  @media(max-width:1280px){
+    .table-wrap>table,.wrap>table{font-size:13px}
+    .table-wrap th,.table-wrap td,.wrap th,.wrap td{padding:10px 12px}
+    .grid-summary-six{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+  @media(max-width:900px){
+    .overview{grid-template-columns:minmax(0,1fr)}
+    .grid-summary-six{grid-template-columns:minmax(0,1fr)}
+    .grid-summary-six{gap:14px}
+    .grid-summary-panel{padding:18px}
+    .grid-summary-row{grid-template-columns:minmax(100px,1.35fr) minmax(32px,1fr) 24px;gap:8px}
+  }
+  @media(max-width:720px){
+    .form-grid,.repair-operator-row{grid-template-columns:minmax(0,1fr)}
+    .grid-summary-six{grid-template-columns:minmax(0,1fr)}
+    .wide{grid-column:1/-1}
+    .heading .primary{width:auto}
+    .dialog-actions,.edit-actions{gap:8px}
+    .dialog-actions button,.edit-actions button{padding-inline:12px}
+    #login-session-label .login-session-text{white-space:normal}
+    #today{white-space:normal}
+  }
+  @media(max-width:600px){
+    #standby-edit-fields{grid-template-columns:minmax(0,1fr)}
+    body:has(#standby-rows) nav button{flex:0 0 auto}
+  }
+}
