@@ -21,7 +21,8 @@ service cloud.firestore {
    let r = d.row;
    return id.matches('g[0-5]-[0-9]{1,3}')
     && d.keys().hasAll(['row','revision','updatedBy','updatedAt'])
-    && d.keys().hasOnly(['row','revision','updatedBy','updatedAt'])
+    && d.keys().hasOnly(['row','revision','updatedBy','updatedAt','workGroup'])
+    && (!('workGroup' in d) || d.workGroup in ['','ผู้บริหาร','บสส.','Operatorสฟ.','ว.แผนก+Planner'])
     && r is list && r.size() == 7
     && standbyText(r[0]) && standbyText(r[1]) && standbyText(r[2])
     && standbyText(r[3]) && standbyText(r[4]) && standbyText(r[5]) && standbyText(r[6])

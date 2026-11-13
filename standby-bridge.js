@@ -14,7 +14,9 @@ export function installStandbyBridge(session) {
    if (!canEdit(c)) throw Error('บัญชีนี้ไม่มีสิทธิ์แก้ไข หรือออกจากระบบแล้ว');
    const uploading=m.action==='upload';
    if(uploading && c.duty!=='king admin')throw Error('เฉพาะ King Admin เท่านั้นที่อัปโหลด Excel ได้');
-   const {key,row,revision} = m.payload || {};
+   const {key,row,revision,workGroup} = m.payload || {};
+   const workGroups=['ผู้บริหาร','บสส.','Operatorสฟ.','ว.แผนก+Planner'];
+   if(workGroup!==undefined && !['',...workGroups].includes(workGroup))throw Error('กลุ่มงานไม่ถูกต้อง');
    const deleting=m.action==='delete';
    if (!/^g[0-5]-[0-9]{1,3}$/.test(key) || !Number.isInteger(revision) || revision<(deleting?1:0)) throw Error('ข้อมูลไม่ถูกต้อง');
    if (!deleting && (!Array.isArray(row) || row.length !== 7 || row.some(v=>typeof v !== 'string' || v.length>2000) || !row[2].trim() )) throw Error('ข้อมูลไม่ถูกต้อง');
@@ -34,8 +36,9 @@ export function installStandbyBridge(session) {
      return {deleted:true};
     }
     if(!existing.exists() && (await tx.get(marker)).exists())return {deleted:true};
-    tx.set(ref,{row,revision:revision+1,updatedBy:uid,updatedAt:f.serverTimestamp()});
-    return {revision:revision+1};
+    const savedGroup=workGroup??existing.data()?.workGroup??'';
+    tx.set(ref,{row,workGroup:savedGroup,revision:revision+1,updatedBy:uid,updatedAt:f.serverTimestamp()});
+    return {revision:revision+1,workGroup:savedGroup};
    });
    channel.postMessage({kind:'response',id:m.id,client:m.client,server,result});
   } catch(e) {channel.postMessage({kind:'response',id:m.id,client:m.client,server,error:e.message||'บันทึกไม่สำเร็จ'});}

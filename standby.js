@@ -7,6 +7,7 @@ let group='ทั้งหมด',mayEdit=false,mayUpload=false,server='',ready=
 const $=id=>document.getElementById(id),search=$('standby-search'),body=$('standby-rows');
 const buttons=[...document.querySelectorAll('[data-group]')],dialog=$('standby-editor'),form=$('standby-edit-form');
 const labels=['ลำดับที่','รหัสพนักงาน','ชื่อ - สกุล','ตำแหน่ง','สังกัด','รายละเอียด','โทรศัพท์มือถือ'];
+const workGroups=['ผู้บริหาร','บสส.','Operatorสฟ.','ว.แผนก+Planner'];
 const sortButtons=[...document.querySelectorAll('[data-sort-column]')];
 const collator=new Intl.Collator('th',{numeric:true});
 let sortColumn=0,sortDirection=1;
@@ -38,7 +39,7 @@ function entries(){
  const prefix='g'+groups.indexOf(group)+'-';
  return [...overrides.entries()].filter(([key])=>group==='ทั้งหมด'||key.startsWith(prefix))
   .sort(([a],[b])=>Number(a.slice(1).split('-')[0])-Number(b.slice(1).split('-')[0])||Number(a.split('-')[1])-Number(b.split('-')[1]))
-  .map(([key,value])=>({key,row:value.row,revision:value.revision}));
+  .map(([key,value])=>({key,row:value.row,revision:value.revision,workGroup:value.workGroup||''}));
 }
 async function ensureImported(){
  if(!mayEdit||!ready||importing||importAttempted)return;
@@ -321,6 +322,14 @@ function openEditor(entry){
   if(i===6){input.inputMode='tel';input.maxLength=50;}
   wrap.append(input);fields.append(wrap);
  });
+ const workGroupField=document.createElement('fieldset');workGroupField.className='standby-work-group';
+ const legend=document.createElement('legend');legend.textContent='กลุ่มงาน';workGroupField.append(legend);
+ for(const value of workGroups){
+  const label=document.createElement('label'),input=document.createElement('input');
+  input.type='radio';input.name='workGroup';input.value=value;input.checked=entry.workGroup===value;
+  label.append(input,document.createTextNode(value));workGroupField.append(label);
+ }
+ fields.append(workGroupField);
  dialog.showModal();
 }
 form.addEventListener('submit',async e=>{
@@ -343,8 +352,9 @@ form.addEventListener('submit',async e=>{
   if(!row[2]||row[6]&&row[6]!=='-'&&row[2]!=='ว่าง'&&!/^0\d{9}$/.test(row[6]))throw Error('กรุณากรอกชื่อและเบอร์มือถือ 10 หลัก (เว้นว่างได้)');
   const access=await request('session');
   if(!access.canEdit)throw Error('บัญชีนี้ไม่มีสิทธิ์แก้ไขข้อมูล');
-  const saved=await request('save',{key:record.key,row,revision:record.revision},30000);
-  overrides.set(record.key,{row,revision:saved.revision});
+  const workGroup=new FormData(form).get('workGroup')||'';
+  const saved=await request('save',{key:record.key,row,workGroup,revision:record.revision},30000);
+  overrides.set(record.key,{row,workGroup:saved.workGroup,revision:saved.revision});
   editing=null;
   dialog.close();
   $('standby-status').textContent='บันทึกข้อมูลออนไลน์แล้ว';

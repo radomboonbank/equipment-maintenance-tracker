@@ -1,6 +1,6 @@
 import './page-actions.js?v=20261113-page-footer';
 import {seedGroups} from './standby-seed.js';
-import {installStandbyBridge} from './standby-bridge.js?v=20261109-king-upload';
+import {installStandbyBridge} from './standby-bridge.js?v=20261113-work-group';
 import {installThaiDateTime} from './thai-datetime.js?v=20261112-compact-list-date';
 installThaiDateTime(window);
 import {saveEquipmentWithTelegram,queueEquipmentNotification} from './telegram-settings.js?v=20261112-independent-save';
