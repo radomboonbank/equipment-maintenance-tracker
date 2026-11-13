@@ -383,3 +383,14 @@ svg.members-menu-icon{width:20px;height:24px;flex:0 0 20px;background:transparen
 /* Compact system-importance indicator immediately after each highlight date. */
 .highlight-meta .highlight-date-with-severity{display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
 .highlight-meta .highlight-criticality-icon{display:inline-block;width:12px;height:12px;flex:0 0 12px;border-radius:50%;background:var(--highlight-criticality-color,#8d9baa);box-shadow:inset 0 0 0 1px rgba(25,60,80,.25);vertical-align:middle}
+
+/* Compact highlight heading and readable importance labels. */
+.dashboard-highlights{border-left:1px solid #e4d69c;padding:16px 26px}
+.dashboard-highlights>header{height:auto;min-height:0;padding:0 0 10px;margin-bottom:10px;line-height:1.35}
+.dashboard-highlights h2{line-height:1.35}
+.highlight-meta .highlight-date-with-severity{flex-wrap:wrap;white-space:normal}
+.highlight-meta .highlight-criticality-icon{width:auto;height:auto;flex:0 0 auto;border-radius:999px;padding:4px 11px;font-size:12px;font-weight:600;line-height:1.4;color:#563f22;box-shadow:none;background:var(--highlight-criticality-color,#e3e9ee);white-space:nowrap}
+.highlight-criticality-icon[data-criticality="extreme"]{color:#8e2525}
+.highlight-criticality-icon[data-criticality="severe"]{color:#945013}
+.highlight-criticality-icon[data-criticality="minor"]{color:#2c6435}
+.criticality-last-editor{font-weight:400;color:#627c8c;overflow-wrap:anywhere}
