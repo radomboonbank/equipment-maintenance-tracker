@@ -86,12 +86,12 @@ export function highlightedRecords(records,projects=[],alarmDocuments=[]){
  return [...unique.values()].sort((a,b)=>latest(b)-latest(a)||String(a.id).localeCompare(String(b.id))).slice(0,5);
 }
 export function highlightCriticalityIcon(record){
- const levels={extreme:['รุนแรงมาก','#ff0000'],severe:['รุนแรง','#ff6600'],moderate:['ปานกลาง','#ffff00'],minor:['เล็กน้อย','#00ee00'],unassessed:['ยังไม่ประเมิน','#8d9baa']};
+ const levels={extreme:['1. รุนแรงมาก','#ffc0c0'],severe:['2. รุนแรง','#ffd0a5'],moderate:['3. ปานกลาง','#ffed99'],minor:['4. เล็กน้อย','#bde5bc'],unassessed:['ยังไม่ประเมิน','#e3e9ee']};
  const legacy={high:'severe',medium:'moderate',low:'minor'};
  const source=record.severityLevel||record.criticality||'';
  const level=Object.hasOwn(levels,source)?source:legacy[source]||'unassessed';
  const [label,color]=levels[level],description='ความสำคัญต่อระบบ: '+label;
- return '<span class="highlight-criticality-icon" role="img" aria-label="'+description+'" title="'+description+'" data-criticality="'+level+'" style="--highlight-criticality-color:'+color+'"></span>';
+ return '<span class="highlight-criticality-icon" aria-label="'+description+'" title="'+description+'" data-criticality="'+level+'" style="--highlight-criticality-color:'+color+'">'+label+'</span>';
 }
 
 export function highlightsHtml(records,projects=[],alarmDocuments=[]){
@@ -110,7 +110,7 @@ export function highlightDetailPage(kind,record){
  if(kind==='equipment'){
   title='รายละเอียดเหตุการณ์ #'+(record.code||record.id);
   const levels={extreme:'รุนแรงมาก',severe:'รุนแรง',moderate:'ปานกลาง',minor:'เล็กน้อย',high:'รุนแรง',medium:'ปานกลาง',low:'เล็กน้อย'};
-  sections.push(['ข้อมูลเหตุการณ์',rows({code:'รหัสอุปกรณ์ชำรุด',date:'วันที่ได้รับแจ้ง',time:'เวลาที่ได้รับแจ้ง',station:'สถานีไฟฟ้า',stationFrom:'สถานีต้นทาง',stationTo:'สถานีปลายทาง',circuit:'วงจร',eventType:'ประเภทเหตุการณ์',category:'ชนิดอุปกรณ์',equipment:'อุปกรณ์ที่ชำรุด',cause:'สาเหตุ'},record).concat([['ระดับความสำคัญ',levels[record.criticality]||'ยังไม่ประเมิน'],['highlight',record.highlight===true?'เลือก':'ไม่เลือก']])]);
+  sections.push(['ข้อมูลเหตุการณ์',rows({code:'รหัสอุปกรณ์ชำรุด',date:'วันที่ได้รับแจ้ง',time:'เวลาที่ได้รับแจ้ง',station:'สถานีไฟฟ้า',stationFrom:'สถานีต้นทาง',stationTo:'สถานีปลายทาง',circuit:'วงจร',eventType:'ประเภทเหตุการณ์',category:'ชนิดอุปกรณ์',equipment:'อุปกรณ์ที่ชำรุด',cause:'สาเหตุ'},record).concat([['ระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า · ผู้แก้ไขล่าสุด: '+(record.history?.at(-1)?.displayName||record.updatedByName||'ไม่พบชื่อผู้แก้ไข'),levels[record.criticality]||'ยังไม่ประเมิน'],['highlight',record.highlight===true?'เลือก':'ไม่เลือก']])]);
   sections.push(['ผลกระทบต่อระบบไฟฟ้า',rows({scope:'ขอบเขตผลกระทบ',replacement:'ระบบหรืออุปกรณ์ทดแทน',effect:'ผลต่อระบบ',measures:'มาตรการรองรับ'},record.criticalityAssessment||{})]);
   sections.push(['แผนงานซ่อมแซมแก้ไข',rows({approach:'แนวทางการแก้ไข',responsible:'หน่วยงานที่รับผิดชอบ',operatorName:'ผู้ดำเนินการ',operatorId:'รหัสพนักงาน',operatorMobile:'เบอร์มือถือ',schedule:'แผนดำเนินการ',expectedDate:'วันที่คาดว่าจะแก้ไขเสร็จ'},record.repairPlan||{}).concat(record.repairPlan?.expectedDateUnknown?[['กำหนดเสร็จ','ยังไม่ทราบ']]:[])]);
   (record.followups||[]).forEach((r,i)=>sections.push(['ติดตามข้อมูล ครั้งที่ '+(i+1),rows({date:'วันที่',time:'เวลา',informant:'ผู้ให้ข้อมูล',mobile:'เบอร์มือถือ',details:'รายละเอียด',follower:'ผู้ติดตามข้อมูล'},r)]));
