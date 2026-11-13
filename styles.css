@@ -367,3 +367,15 @@ svg.members-menu-icon{width:20px;height:24px;flex:0 0 20px;background:transparen
  .dashboard-highlights .highlight-record-link:hover .highlight-content>p{display:block}
 }
 .dashboard-highlights .highlight-content>strong{font-size:15px;line-height:1.5;font-weight:600}
+.construction-report-dialog .construction-grid textarea[name="scope"],.construction-report-dialog .construction-grid textarea[name="workDetails"]{line-height:1.6;min-height:calc(8lh + 22px);height:calc(8lh + 22px)}
+[data-alarm-section="2"] .bess-content-columns{gap:16px}
+[data-alarm-section="2"] .bess-content-column{gap:12px}
+[data-alarm-section="2"] .bess-event>.construction-grid{gap:12px 16px;align-items:start}
+[data-alarm-section="2"] .bess-event .thai-date-summary{display:none}
+[data-alarm-section="2"] .bess-event .be-calendar,[data-alarm-section="2"] .bess-event .time-picker-24,[data-alarm-section="2"] .bess-event .thai-time-controls{margin-top:5px}
+[data-alarm-section="2"] .bess-full{position:relative}
+[data-alarm-section="2"] .bess-import-button{position:absolute;top:0;right:0;margin:0!important;padding:6px 12px}
+[data-alarm-section="2"] .bess-full>label{padding-top:6px}
+[data-alarm-section="2"] input[name="bessStation"]{margin-top:14px}
+[data-alarm-section="2"] .bess-breaker-state p{margin:4px 0}
+[data-alarm-section="2"] .bess-event textarea{min-height:calc(3lh + 22px)}

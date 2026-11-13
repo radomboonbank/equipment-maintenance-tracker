@@ -148,9 +148,10 @@ function bessTransferRecord(p,raw){
    const columns=document.createElement('div');columns.className='bess-content-columns';
    const left=document.createElement('div');left.className='bess-content-column';
    const right=document.createElement('div');right.className='bess-content-column';
-   left.append(row.querySelector('.bess-pb-side'),row.querySelector('.bess-breaker-state'),row.querySelector(`[name="${prefix}causeDetails"]`).closest('label'));
-   right.append(row.querySelector('.bess-pb-field'),row.querySelector('.bess-cause-weather'));
-   columns.append(left,right);grid.append(columns);
+   left.append(row.querySelector('.bess-pb-side'),row.querySelector('.bess-breaker-state'),row.querySelector('.bess-cause-weather'));
+   right.append(row.querySelector('.bess-pb-field'));
+   const causeDetails=row.querySelector(`[name="${prefix}causeDetails"]`).closest('label');causeDetails.classList.add('wide');
+   columns.append(left,right);grid.append(columns,causeDetails);
    const trip=row.querySelector('[data-breaker-trip]'),details=row.querySelector('[data-breaker-details]');
    trip.onchange=()=>{const text=trip.checked?'มี 22 kV เบรกเกอร์ ทริป':'ไม่มี 22 kV เบรกเกอร์ ทริป';row.querySelector('[data-breaker-state]').textContent=text;row.querySelector(`[name="${prefix}breaker22Status"]`).value=text;details.hidden=!trip.checked;details.querySelectorAll('input').forEach(input=>input.disabled=!trip.checked)};
    if(id===1){
@@ -163,7 +164,7 @@ function bessTransferRecord(p,raw){
   addBess();
 
   const bessBlock=d.querySelector('[data-alarm-section="2"]');
-  const txtButton=document.createElement('button');txtButton.type='button';txtButton.textContent='txt2web';txtButton.style.cssText='float:right;margin:0 0 12px 16px;font-weight:700';
+  const txtButton=document.createElement('button');txtButton.type='button';txtButton.className='bess-import-button';txtButton.textContent='txt2web';txtButton.style.cssText='float:right;margin:0 0 12px 16px;font-weight:700';
   bessBlock.querySelector('.bess-full').prepend(txtButton);
   const stationWrap=document.createElement('label');stationWrap.textContent='สถานีไฟฟ้า BESS';
   const stationInput=document.createElement('input');stationInput.name='bessStation';stationInput.maxLength=100;stationWrap.append(stationInput);txtButton.after(stationWrap);

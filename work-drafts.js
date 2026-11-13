@@ -9,8 +9,8 @@
 <label>ประเภทงาน<select name="category"><option value=""></option><option>สถานีไฟฟ้า</option><option>สายส่งไฟฟ้า</option><option>หม้อแปลงไฟฟ้า</option><option>เบรคเกอร์</option><option>คาปาซิเตอร์</option><option>อื่น ๆ</option></select></label>
 <label>ระดับแรงดัน (kV)<select name="voltage"><option value=""></option><option>500</option><option>230</option><option>115</option><option>22</option></select></label>
 <label>สถานีไฟฟ้า / สถานีต้นทาง<input name="station"></label><label>สถานีปลายทาง (สำหรับสายส่ง)<input name="stationTo"></label>
-<label class="wide">ขอบเขตงานและอุปกรณ์<textarea name="scope"></textarea></label>
-<label class="wide">รายละเอียดงาน<textarea name="workDetails" rows="4"></textarea></label>
+<label class="wide">ขอบเขตงานและอุปกรณ์<textarea name="scope" rows="8"></textarea></label>
+<label class="wide">รายละเอียดงาน<textarea name="workDetails" rows="8"></textarea></label>
 </div></fieldset>
 <fieldset class="construction-section"><legend>กำหนดเสร็จและเอกสารอ้างอิง</legend><div class="construction-grid">
 <label>กำหนดแล้วเสร็จ (พ.ศ.)<input name="plannedEndDate"></label>
@@ -36,7 +36,7 @@
    doc.open();
    doc.write('<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>แบบบันทึกข้อมูลงานก่อสร้าง · CROD GRID CARE</title></head><body></body></html>');
    doc.close();
-   const css=doc.createElement('link');css.rel='stylesheet';css.href=new URL('styles.css?v=20261112-highlight',location.href).href;doc.head.append(css);
+   const css=doc.createElement('link');css.rel='stylesheet';css.href=new URL('styles.css?v=20261113-bess-layout',location.href).href;doc.head.append(css);
   }
   const dialog=doc.createElement(tab?'main':'dialog');dialog.className=tab?'construction-page':'work-draft-dialog';
   const closeForm=()=>tab?window.returnToConstructionTable(tab):dialog.close();
