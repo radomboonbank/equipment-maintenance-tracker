@@ -73,7 +73,7 @@ export function faultTablePage(type,rows,alarm=false,assessment=false,constructi
 }
 
 export function highlightedRecords(records,projects=[],alarmDocuments=[]){
- const projectRecords=projects.filter(p=>p.data).map(p=>({id:'construction:'+p.id,highlight:p.data.highlight===true,criticality:p.data.criticality||'',severityLevel:p.data.severityLevel||'',updatedAt:p.updatedAt,createdAt:p.createdAt,
+ const projectRecords=projects.filter(p=>p.data).map(p=>({id:'construction:'+p.id,updatedByName:p.updatedByName,updatedByUsername:p.updatedByUsername,highlight:p.data.highlight===true,criticality:p.data.criticality||'',severityLevel:p.data.severityLevel||'',updatedAt:p.updatedAt,createdAt:p.createdAt,
   eventType:'โครงการก่อสร้าง',date:p.data.reportPeriod||p.data.startDate||'',station:p.data.stationMode==='line'?[p.data.stationFrom,p.data.stationTo].filter(Boolean).join(' – '):p.data.station||'',
   equipment:p.data.title||p.data.projectId||'',cause:p.data.scope||p.data.workDetails||''}));
  // Equipment rows can occur in both panels 1 and 4; show each source document once.
@@ -86,7 +86,7 @@ export function highlightedRecords(records,projects=[],alarmDocuments=[]){
  return [...unique.values()].sort((a,b)=>latest(b)-latest(a)||String(a.id).localeCompare(String(b.id))).slice(0,5);
 }
 export function highlightCriticalityIcon(record){
- const levels={extreme:['1. รุนแรงมาก','#ffc0c0'],severe:['2. รุนแรง','#ffd0a5'],moderate:['3. ปานกลาง','#ffed99'],minor:['4. เล็กน้อย','#bde5bc'],unassessed:['ยังไม่ประเมิน','#e3e9ee']};
+ const levels={extreme:['รุนแรงมาก','#ffc0c0'],severe:['รุนแรง','#ffd0a5'],moderate:['ปานกลาง','#ffed99'],minor:['เล็กน้อย','#bde5bc'],unassessed:['ยังไม่ประเมิน','#e3e9ee']};
  const legacy={high:'severe',medium:'moderate',low:'minor'};
  const source=record.severityLevel||record.criticality||'';
  const level=Object.hasOwn(levels,source)?source:legacy[source]||'unassessed';
@@ -94,11 +94,20 @@ export function highlightCriticalityIcon(record){
  return '<span class="highlight-criticality-icon" aria-label="'+description+'" title="'+description+'" data-criticality="'+level+'" style="--highlight-criticality-color:'+color+'">'+label+'</span>';
 }
 
+export function highlightEditorName(record,records=[]){
+ const last=record.history?.at(-1);
+ const valid=value=>typeof value==='string'&&value.trim()&&!/^\\d+$/.test(value.trim());
+ for(const name of [last?.displayName,record.updatedByName])if(valid(name))return name.trim();
+ const username=last?.by||record.updatedByUsername;
+ if(username)for(const r of records)for(const h of r.history||[])if(h.by===username&&valid(h.displayName))return h.displayName.trim();
+ return 'ไม่พบชื่อผู้แก้ไขล่าสุด';
+}
+
 export function highlightsHtml(records,projects=[],alarmDocuments=[]){
  const rows=highlightedRecords(records,projects,alarmDocuments);
  const date=value=>{const m=String(value||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?new Intl.DateTimeFormat('th-TH-u-ca-buddhist',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Bangkok'}).format(new Date(value+'T00:00:00+07:00')):value||''};
  return '<section class="dashboard-highlights" aria-label="เหตุการณ์ highlight"><header><h2>เหตุการณ์ highlight ล่าสุด</h2></header>'+
- (rows.length?'<ul>'+rows.map(r=>'<li><button type="button" class="highlight-record-link" data-highlight-record="'+esc(r.id)+'" aria-label="เปิดรายละเอียด '+esc([r.station,r.equipment].filter(Boolean).join(' · ')||'เหตุการณ์')+'"><img class="highlight-event-icon" src="assets/highlight-icon.svg?v=20261112" width="40" height="40" alt="" aria-hidden="true"><div class="highlight-content"><div class="highlight-meta"><span>'+esc(r.eventType||'เหตุการณ์')+'</span><span class="highlight-date-with-severity"><time>'+esc(date(r.date))+'</time>'+highlightCriticalityIcon(r)+'</span></div><strong>'+esc([r.station,r.equipment].filter(Boolean).join(' · ')||'ยังไม่ระบุอุปกรณ์')+'</strong>'+(r.cause?'<p>'+esc(r.cause)+'</p>':'')+'</div></button></li>').join('')+'</ul>':'<p class="highlight-empty">ยังไม่มีเหตุการณ์ที่เลือก highlight</p>')+'</section>';
+ (rows.length?'<ul>'+rows.map(r=>'<li><button type="button" class="highlight-record-link" data-highlight-record="'+esc(r.id)+'" aria-label="เปิดรายละเอียด '+esc([r.station,r.equipment].filter(Boolean).join(' · ')||'เหตุการณ์')+'"><img class="highlight-event-icon" src="assets/highlight-icon.svg?v=20261112" width="40" height="40" alt="" aria-hidden="true"><div class="highlight-content"><div class="highlight-meta"><span>'+esc(r.eventType||'เหตุการณ์')+'</span><span class="highlight-date-with-severity"><time>'+esc(date(r.date))+'</time>'+highlightCriticalityIcon(r)+'<span class="highlight-last-editor">ผู้แก้ไขล่าสุด: '+esc(highlightEditorName(r,records))+'</span></span></div><strong>'+esc([r.station,r.equipment].filter(Boolean).join(' · ')||'ยังไม่ระบุอุปกรณ์')+'</strong>'+(r.cause?'<p>'+esc(r.cause)+'</p>':'')+'</div></button></li>').join('')+'</ul>':'<p class="highlight-empty">ยังไม่มีเหตุการณ์ที่เลือก highlight</p>')+'</section>';
 }
 
 
