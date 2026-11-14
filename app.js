@@ -1,5 +1,5 @@
-import {createWebBoard} from './webboard.js?v=20261114-board-tabs';
-import './page-actions.js?v=20261114-record-history';
+import {createWebBoard} from './webboard.js?v=20261114-board-sub';
+import './page-actions.js?v=20261114-board-sub';
 import {seedGroups} from './standby-seed.js';
 import {installStandbyBridge} from './standby-bridge.js?v=20261113-work-group';
 import {installThaiDateTime} from './thai-datetime.js?v=20261114-no-short-weekday';
