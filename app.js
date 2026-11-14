@@ -471,6 +471,7 @@ $('#dashboard').addEventListener('click',e=>{
   const id=kind==='alarm'?key.slice(6):kind==='construction'?key.slice(13):key;
   const record=(kind==='alarm'?alarmData:kind==='construction'?constructionData:data).find(r=>r.id===id);
   if(!record){toast('ไม่พบรายการ กรุณาโหลด Dashboard ใหม่');return;}
+  if(kind==='equipment'){edit(record);return;}
   const token=crypto.randomUUID(),storageKey='grid-highlight-detail:'+token;
   try{sessionStorage.setItem(storageKey,JSON.stringify({kind,record:kind==='equipment'?{...record,equipment:mergedEquipment(record)}:record}));}
   catch{toast('เปิดรายละเอียดไม่ได้ กรุณาตรวจพื้นที่จัดเก็บของเบราว์เซอร์');return;}
