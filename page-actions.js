@@ -6,7 +6,7 @@ const actionSelector = '.dialog-actions,.work-action-buttons,.alarm-section-save
 export function installPageActions(win = window, popup = false) {
  function install() {
   const doc = win.document;
-  if (!doc.body || doc.documentElement.dataset.pageActions === 'ready') return;
+  if (!doc.body || doc.body.classList.contains('board-window') || doc.documentElement.dataset.pageActions === 'ready') return;
   doc.documentElement.dataset.pageActions = 'ready';
   if (!doc.querySelector('link[data-responsive-layout],link[href*="responsive.css"]')) {
    const layout = doc.createElement('link');
