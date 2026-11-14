@@ -5,6 +5,15 @@ export function validateBoardText(title,body){
  if(typeof title!=='string'||!title.trim()||title.trim().length>120)throw Error('กรุณากรอกหัวข้อไม่เกิน 120 ตัวอักษร');
  if(typeof body!=='string'||!body.trim()||body.trim().length>10000)throw Error('กรุณากรอกข้อความไม่เกิน 10,000 ตัวอักษร');
 }
+export function boardRowDate(value){
+ const raw=value?.toDate?.()??(typeof value?.seconds==='number'?value.seconds*1000:value);
+ const date=raw instanceof Date?raw:new Date(raw||NaN);
+ return Number.isNaN(date.getTime())?'ไม่พบวันที่':new Intl.DateTimeFormat('th-TH-u-ca-buddhist',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(date);
+}
+export function boardRowHtml(r){
+ const label=r.title+' ('+r.createdByName+')';
+ return `<article class="board-row"><time class="board-row-date thai-date-display">${esc(boardRowDate(r.createdAt))}</time><button type="button" class="board-topic" data-board-topic="${esc(r.id)}" title="${esc(label)}">${r.hidden?'[ซ่อน] ':''}${esc(label)}</button><button type="button" class="board-add-info" data-board-topic="${esc(r.id)}" data-board-add aria-label="เปิดหัวข้อเพื่อเพิ่มข้อมูล: ${esc(r.title)}">เพิ่มข้อมูล →</button></article>`;
+}
 export function createWebBoard(session){
  let dialog=null,stopThreads=null,stopReplies=null,rows=[],selected=null,epoch=0,busy=false,limit=50;
  const context=()=>session();
@@ -23,7 +32,7 @@ export function createWebBoard(session){
   const term=$('[data-board-search]').value.trim().toLocaleLowerCase('th'),category=$('[data-board-filter]').value;
   const visible=rows.filter(r=>(!r.hidden||moderator())&&(!category||r.category===category)&&(!term||[r.title,r.body,r.createdByName].some(v=>String(v||'').toLocaleLowerCase('th').includes(term))));
   $('[data-board-count]').textContent=`แสดง ${visible.length} จาก ${rows.filter(r=>!r.hidden||moderator()).length} กระทู้ที่โหลด`;
-  $('[data-board-list]').innerHTML=visible.length?visible.map(r=>`<article class="board-row"><div><span class="board-category">${esc(r.category)}</span>${r.hidden?'<span class="board-hidden">ซ่อนกระทู้</span>':''}<button type="button" class="board-topic" data-board-topic="${esc(r.id)}">${esc(r.title)}</button><p>${esc(r.body.slice(0,150))}${r.body.length>150?'…':''}</p><small>${esc(r.createdByName)} · ${esc(historyTime(r.createdAt))}</small></div><span class="board-open" aria-hidden="true">→</span></article>`).join(''):'<div class="board-empty"><strong>ยังไม่มีกระทู้ที่ตรงกับมุมมองนี้</strong><p>เริ่มแบ่งปันข้อมูลหรือสอบถามเรื่องงานได้ที่ “ตั้งกระทู้”</p></div>';
+  $('[data-board-list]').innerHTML=visible.length?visible.map(boardRowHtml).join(''):'<div class="board-empty"><strong>ยังไม่มีกระทู้ที่ตรงกับมุมมองนี้</strong><p>เริ่มแบ่งปันข้อมูลหรือสอบถามเรื่องงานได้ที่ “ตั้งกระทู้”</p></div>';
   $('[data-board-more]').hidden=rows.length<limit;
   if(selected){const fresh=rows.find(r=>r.id===selected.id);if(fresh){selected=fresh;renderTopic();}else{$('[data-board-detail]').hidden=true;selected=null;stopReplies?.();stopReplies=null;}}
  }
@@ -69,7 +78,7 @@ export function createWebBoard(session){
   $('[data-board-refresh]').onclick=listen;$('[data-board-more]').onclick=()=>{limit+=50;listen()};$('[data-board-new]').onclick=()=>openComposer();
   $('[data-board-cancel]').onclick=()=>{if(!busy)$('[data-board-compose]').hidden=true};
   $('[data-board-back]').onclick=()=>{$('[data-board-detail]').hidden=true;selected=null;stopReplies?.();stopReplies=null;$('[data-board-search]').focus()};
-  dialog.onclick=e=>{const topic=e.target.closest('[data-board-topic]');if(topic)openTopic(topic.dataset.boardTopic);if(e.target.closest('[data-board-edit]'))openComposer(selected);
+  dialog.onclick=e=>{const topic=e.target.closest('[data-board-topic]');if(topic){openTopic(topic.dataset.boardTopic);if(topic.hasAttribute('data-board-add')&&writable()&&!selected?.hidden)$('[data-board-reply-form] textarea').focus();}if(e.target.closest('[data-board-edit]'))openComposer(selected);
    const hide=e.target.closest('[data-board-hide]');if(hide&&selected&&moderator())void runWrite(async uid=>{const {cloud}=context();const ref=cloud.doc(cloud.db,'WebBoardThreads',selected.id);await cloud.runTransaction(cloud.db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw Error('ไม่พบกระทู้');if(!moderator()||context().user.uid!==uid)throw Error('สิทธิ์เปลี่ยนแปลง');tx.update(ref,{hidden:!snap.data().hidden,updatedAt:cloud.serverTimestamp(),updatedBy:uid,revision:snap.data().revision+1})})});
    const reply=e.target.closest('[data-board-hide-reply]');if(reply&&selected&&moderator())void runWrite(async uid=>{const {cloud}=context();await cloud.updateDoc(cloud.doc(cloud.db,'WebBoardThreads',selected.id,'replies',reply.dataset.boardHideReply),{hidden:reply.dataset.hidden!=='true',updatedAt:cloud.serverTimestamp(),updatedBy:uid})});
   };
