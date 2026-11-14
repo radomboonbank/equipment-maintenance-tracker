@@ -389,18 +389,19 @@ service cloud.firestore {
     && request.resource.data.title is string && request.resource.data.schemaVersion==1 && request.resource.data.enabled is bool;
    allow delete: if false;
   }
+  function boardKing() { return admin() && get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.get('duty','')=='king admin'; }
   match /WebBoardThreads/{threadId} {
    allow read: if boardMember();
    allow create: if editor() && boardThreadValid() && request.resource.data.createdBy==request.auth.uid
     && request.resource.data.createdByName==boardName() && request.resource.data.createdAt==request.time
     && request.resource.data.revision==1 && request.resource.data.hidden==false;
-   allow update: if editor() && boardThreadValid()
+   allow update: if boardKing() && boardThreadValid()
     && request.resource.data.createdBy==resource.data.createdBy
     && request.resource.data.createdByName==resource.data.createdByName
     && request.resource.data.createdAt==resource.data.createdAt
     && request.resource.data.revision==resource.data.revision+1
-    && ((resource.data.createdBy==request.auth.uid && request.resource.data.hidden==resource.data.hidden) || superAdmin());
-   allow delete: if false;
+    && boardKing();
+   allow delete: if boardKing();
    match /replies/{replyId} {
     allow read: if boardMember();
     allow create: if editor()
@@ -413,9 +414,9 @@ service cloud.firestore {
      && request.resource.data.createdBy==request.auth.uid && request.resource.data.createdByName==boardName()
      && request.resource.data.createdAt==request.time && request.resource.data.updatedAt==request.time
      && request.resource.data.updatedBy==request.auth.uid && request.resource.data.hidden==false;
-    allow update: if superAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hidden','updatedBy','updatedAt'])
+    allow update: if boardKing() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hidden','updatedBy','updatedAt'])
      && request.resource.data.hidden is bool && request.resource.data.updatedBy==request.auth.uid && request.resource.data.updatedAt==request.time;
-    allow delete: if false;
+    allow delete: if boardKing();
    }
   }
 
