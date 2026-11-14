@@ -357,6 +357,7 @@ function openEditor(entry){
   label.append(input,document.createTextNode(value));workGroupField.append(label);
  }
  fields.append(workGroupField);
+ window.GRID_RECORD_HISTORY?.mount(form,overrides.get(entry.key)||entry);
  dialog.showModal();
 }
 form.addEventListener('submit',async e=>{
