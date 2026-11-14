@@ -64,6 +64,7 @@
    else input.value=value??'';
   }}
   const highlightInput=dialog.querySelector('[name="highlight"]');if(highlightInput)highlightInput.disabled=!window.GRID_CONSTRUCTION_STORE?.canHighlight?.();
+  window.GRID_RECORD_HISTORY?.mount(dialog.querySelector('form'),record);
   doc.body.append(dialog);dialog.querySelectorAll('[data-cancel]').forEach(b=>b.onclick=()=>{if(!pending)closeForm()});
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});
   if(kind==='construction'&&record?.data?.stationMode==='line'){
