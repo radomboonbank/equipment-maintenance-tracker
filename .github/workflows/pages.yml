@@ -22,7 +22,7 @@ jobs:
         run: |
           mkdir -p public/assets
           cp assets/severity-criteria.webp assets/highlight-icon.svg public/assets/
-          cp webboard.js webboard.css record-history.js page-actions.js member-backup.js thai-datetime.js gen-dispatch-events.js gen-dispatch-event-store.js edit-icons.js telegram-settings.js severity-record.js followup-now.js gen-dispatch.js gen-dispatch-reference.js public/
+          cp webboard.html webboard-page.js webboard.js webboard.css record-history.js page-actions.js member-backup.js thai-datetime.js gen-dispatch-events.js gen-dispatch-event-store.js edit-icons.js telegram-settings.js severity-record.js followup-now.js gen-dispatch.js gen-dispatch-reference.js public/
           cp highlight-detail.html highlight-detail.js construction-report.html construction-report.js construction-report-data.json standby-seed.js standby-bridge.js standby.html standby.js idle-session.js construction-store.js time-pickers.js alarm-store.js date-pickers.js abnormal-drafts.js work-drafts.js presence.js index.html styles.css responsive.css app.js members.js table-filters.js station-control.js dashboard.js firebase-config.js utils.js equipment-types.js login-history.js CROD_EGAT_Control_Center.ico online-users.png admin-559350.ico public/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
