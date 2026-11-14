@@ -1,3 +1,4 @@
+import {mountRecordHistory} from './record-history.js?v=20261114-record-history';
 export async function readConstructionReport(keyText){
  const bytes=value=>Uint8Array.from(atob(value.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
  const key=await crypto.subtle.importKey('raw',bytes(keyText),'AES-GCM',false,['decrypt']);
@@ -106,6 +107,7 @@ function renderRows(doc,records,openEditor,total){
     const value=record.data[key];if(value==null||value==='')continue;
     const dt=doc.createElement('dt'),dd=doc.createElement('dd');dt.textContent=label;dd.textContent=value;list.append(dt,dd);
    }
+   mountRecordHistory(details,record);
    details.showModal();
   };
   tr.insertCell().append(action);rows.append(tr);
