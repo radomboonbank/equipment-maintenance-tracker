@@ -1,3 +1,4 @@
+import {createWebBoard} from './webboard.js?v=20261114-webboard';
 import './page-actions.js?v=20261114-record-history';
 import {seedGroups} from './standby-seed.js';
 import {installStandbyBridge} from './standby-bridge.js?v=20261113-work-group';
@@ -55,6 +56,7 @@ function rememberLogin(uid,entry){
 let memberDuty='';
 installStandbyBridge(()=>({cloud,user,role,duty:memberDuty}));
 const membersPage=createMembersPage({session:()=>({cloud,user,role,duty:memberDuty}),endpoint:()=>window.GRID_TELEGRAM_URL});
+const webBoard=createWebBoard(()=>({cloud,user,role,duty:memberDuty,username,displayName}));
 
 let unsubscribeLogins=null;
 function renderLogins(value,message='') {
@@ -387,7 +389,7 @@ $('#delete').onclick=async()=>{
  busy=true;$('#delete').disabled=true;
  try{const original=editing;await cloud.runTransaction(cloud.db,async t=>{const ref=cloud.doc(cloud.db,'equipment',original.id),snap=await t.get(ref);if(!snap.exists()||snap.data().revision!==original.revision)throw Error('ข้อมูลเปลี่ยนแปลง กรุณาเปิดใหม่');t.delete(ref)});$('#editor').close();toast('ลบรายการแล้ว')}catch(err){toast('ลบไม่สำเร็จ: '+err.message)}finally{busy=false;$('#delete').disabled=false}
 };
-function resetSession(){void loginGuard.release();if(reportTab&&!reportTab.closed)reportTab.close();reportTab=null;headerOnlineUsers=[];onlineLoginInfo.clear();loginStartedAt=null;unsubscribeAlarms?.();unsubscribeAlarms=null;alarmData=[];alarmState='loading';idleSession.stop();document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());unsubscribeConstruction?.();unsubscribeConstruction=null;constructionData=[];constructionState='loading';presence.stop();membersPage.reset();memberDuty="";generation++;unsubscribeLogins?.();unsubscribeLogins=null;renderLogins(null);unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';displayName='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
+function resetSession(){webBoard.reset();void loginGuard.release();if(reportTab&&!reportTab.closed)reportTab.close();reportTab=null;headerOnlineUsers=[];onlineLoginInfo.clear();loginStartedAt=null;unsubscribeAlarms?.();unsubscribeAlarms=null;alarmData=[];alarmState='loading';idleSession.stop();document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());unsubscribeConstruction?.();unsubscribeConstruction=null;constructionData=[];constructionState='loading';presence.stop();membersPage.reset();memberDuty="";generation++;unsubscribeLogins?.();unsubscribeLogins=null;renderLogins(null);unsubscribe?.();unsubscribe=null;data=[];notes=[];cloudReady=false;role='guest';username='';displayName='';$('#editor').close();$('#workspace').hidden=true;$('#login-screen').hidden=false;render()}
 function showWorkspace(){updateLoginSession();idleSession.start();
  $('#current-account').textContent=role==='guest'?'ผู้ชมทั่วไป':`บัญชีของคุณ: ${displayName||username}`;
  presence.start(cloud,role==='guest'?null:user,displayName||username);
