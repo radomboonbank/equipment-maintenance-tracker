@@ -368,6 +368,56 @@ service cloud.firestore {
     && d.revision is int && d.revision > 0;
   }
 
+  // Web board: private to existing members; posting follows editor privileges.
+  function boardMember() { return account() && role() in ['admin','editor','viewer']; }
+  function boardName() { let p=get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data; return p.get('displayName',p.username); }
+  function boardThreadValid() {
+   let d=request.resource.data;
+   return d.keys().hasAll(['schemaVersion','title','body','category','createdBy','createdByName','createdAt','updatedBy','updatedAt','revision','hidden'])
+    && d.keys().hasOnly(['schemaVersion','title','body','category','createdBy','createdByName','createdAt','updatedBy','updatedAt','revision','hidden'])
+    && d.schemaVersion==1 && d.title is string && d.title.size()>0 && d.title.size()<=120
+    && d.body is string && d.body.size()>0 && d.body.size()<=10000
+    && d.category in ['ทั่วไป','งานระบบไฟฟ้า','แจ้งปัญหา / ข้อเสนอแนะ']
+    && d.createdBy is string && d.createdByName is string && d.createdAt is timestamp
+    && d.updatedBy==request.auth.uid && d.updatedAt==request.time
+    && d.hidden is bool && d.revision is int && d.revision>0;
+  }
+  match /WebBoardSettings/{id} {
+   allow read: if boardMember();
+   allow create, update: if superAdmin() && id=='general'
+    && request.resource.data.keys().hasOnly(['title','schemaVersion','enabled'])
+    && request.resource.data.title is string && request.resource.data.schemaVersion==1 && request.resource.data.enabled is bool;
+   allow delete: if false;
+  }
+  match /WebBoardThreads/{threadId} {
+   allow read: if boardMember();
+   allow create: if editor() && boardThreadValid() && request.resource.data.createdBy==request.auth.uid
+    && request.resource.data.createdByName==boardName() && request.resource.data.createdAt==request.time
+    && request.resource.data.revision==1 && request.resource.data.hidden==false;
+   allow update: if editor() && boardThreadValid()
+    && request.resource.data.createdBy==resource.data.createdBy
+    && request.resource.data.createdByName==resource.data.createdByName
+    && request.resource.data.createdAt==resource.data.createdAt
+    && request.resource.data.revision==resource.data.revision+1
+    && ((resource.data.createdBy==request.auth.uid && request.resource.data.hidden==resource.data.hidden) || superAdmin());
+   allow delete: if false;
+   match /replies/{replyId} {
+    allow read: if boardMember();
+    allow create: if editor()
+     && exists(/databases/$(database)/documents/WebBoardThreads/$(threadId))
+     && get(/databases/$(database)/documents/WebBoardThreads/$(threadId)).data.hidden==false
+     && request.resource.data.keys().hasAll(['schemaVersion','body','createdBy','createdByName','createdAt','updatedBy','updatedAt','hidden'])
+     && request.resource.data.keys().hasOnly(['schemaVersion','body','createdBy','createdByName','createdAt','updatedBy','updatedAt','hidden'])
+     && request.resource.data.schemaVersion==1 && request.resource.data.body is string
+     && request.resource.data.body.size()>0 && request.resource.data.body.size()<=10000
+     && request.resource.data.createdBy==request.auth.uid && request.resource.data.createdByName==boardName()
+     && request.resource.data.createdAt==request.time && request.resource.data.updatedAt==request.time
+     && request.resource.data.updatedBy==request.auth.uid && request.resource.data.hidden==false;
+    allow update: if superAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hidden','updatedBy','updatedAt'])
+     && request.resource.data.hidden is bool && request.resource.data.updatedBy==request.auth.uid && request.resource.data.updatedAt==request.time;
+    allow delete: if false;
+   }
+  }
+
  }
 }
-
