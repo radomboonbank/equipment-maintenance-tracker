@@ -1,4 +1,4 @@
-import {createWebBoard} from './webboard.js?v=20261114-webboard';
+import {createWebBoard} from './webboard.js?v=20261114-board-one-line';
 import './page-actions.js?v=20261114-record-history';
 import {seedGroups} from './standby-seed.js';
 import {installStandbyBridge} from './standby-bridge.js?v=20261113-work-group';
