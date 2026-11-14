@@ -1,19 +1,19 @@
-import './page-actions.js?v=20261113-responsive';
+import './page-actions.js?v=20261114-record-history';
 import {seedGroups} from './standby-seed.js';
 import {installStandbyBridge} from './standby-bridge.js?v=20261113-work-group';
 import {installThaiDateTime} from './thai-datetime.js?v=20261112-compact-list-date';
 installThaiDateTime(window);
 import {saveEquipmentWithTelegram,queueEquipmentNotification} from './telegram-settings.js?v=20261112-independent-save';
-import {openGenDispatchReference} from './gen-dispatch-reference.js?v=20261113-green-close';
+import {openGenDispatchReference} from './gen-dispatch-reference.js?v=20261114-record-history';
 import {encodeSeverityRecord,decodeSeverityRecord} from './severity-record.js?v=20261104-legacy-levels';
 import {createIdleSession} from './idle-session.js?v=20261107-king-admin';
 import {createConstructionStore} from './construction-store.js?v=20261112-highlight-access';
 import {createAlarmStore} from './alarm-store.js?v=20261112-highlight-access';
 import {createLoginGuard,createPresence} from './presence.js?v=20261112-single-login';
-import {createMembersPage} from './members.js?v=20261113-green-close';
+import {createMembersPage} from './members.js?v=20261114-record-history';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261105-circuit';
-import {equipmentEventTypes,genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261113-highlight-author';
+import {equipmentEventTypes,genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261114-record-history';
 import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261112-other-equipment';
 import {rotateLogins,loginEntries,loginTime,nextLoginStat,rotatePublicLogins} from './login-history.js?v=20261104-stats';
 'use strict';
@@ -118,7 +118,7 @@ function showAllConstruction(existingTab){
 }
 async function updateReportTable(){
  const tab=reportTab;if(!tab||tab.closed)return;
- const {showConstructionRows}=await import('./construction-report.js?v=20261111-columns-close');
+ const {showConstructionRows}=await import('./construction-report.js?v=20261114-record-history');
  if(!user||role==='guest'||tab!==reportTab||tab.closed)return;
  try{
   if(!tab.document.querySelector('#report-table'))return;
@@ -135,7 +135,7 @@ async function importLinkedReport(gen){
  const key=new URLSearchParams(location.hash.slice(1)).get('report');
  if(!key||!user||!['admin','editor'].includes(role))return;
  try{
-  const {readConstructionReport}=await import('./construction-report.js?v=20261111-columns-close');
+  const {readConstructionReport}=await import('./construction-report.js?v=20261114-record-history');
   const records=await readConstructionReport(key);
   if(gen!==generation||!user||!['admin','editor'].includes(role))return;
   const uid=user.uid, editorName=displayName||username, editorUsername=username;
