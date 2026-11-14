@@ -61,7 +61,7 @@
     else if(!lastBacking)selects.forEach(s=>s.value='');
    }
    const v=selected(),date=v.d&&v.m&&v.y?new Date(Date.UTC(v.y-543,v.m-1,v.d)):null;
-   display.textContent=date?weekdays[date.getUTCDay()]+' '+v.d+' '+months[v.m-1]+' '+v.y:'เลือกวันที่';
+   display.textContent=date?v.d+' '+months[v.m-1]+' '+v.y:'เลือกวันที่';
    display.disabled=toggle.disabled=selects.some(s=>s.disabled);
    if(!group.isConnected)wrapper.remove();
   }
