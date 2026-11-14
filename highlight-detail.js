@@ -1,4 +1,4 @@
-import {highlightDetailPage} from './dashboard.js?v=20261113-green-close';
+import {highlightDetailPage} from './dashboard.js?v=20261114-record-history';
 // The source tab supplies a one-time snapshot through the browser's tab-scoped storage.
 // This page does not initialize Firebase Authentication or create a login session.
 const token=location.hash.slice(1),key='grid-highlight-detail:'+token;
