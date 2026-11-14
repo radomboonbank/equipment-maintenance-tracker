@@ -394,3 +394,8 @@ svg.members-menu-icon{width:20px;height:24px;flex:0 0 20px;background:transparen
 .highlight-criticality-icon[data-criticality="severe"]{color:#945013}
 .highlight-criticality-icon[data-criticality="minor"]{color:#2c6435}
 .criticality-last-editor{font-weight:400;color:#627c8c;overflow-wrap:anywhere}
+
+/* Align the highlight metadata text with the center of the severity badge. */
+.highlight-meta,.highlight-meta .highlight-date-with-severity{align-items:center;line-height:1.5}
+.highlight-meta>span,.highlight-meta time,.highlight-meta .highlight-last-editor{line-height:1.5}
+.highlight-meta .highlight-last-editor{min-width:0;overflow-wrap:anywhere}
