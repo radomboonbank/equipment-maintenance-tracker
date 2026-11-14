@@ -250,6 +250,7 @@ function bessTransferRecord(p,raw){
    d.querySelectorAll('[data-breaker-trip],input[name$="resetState"]:checked').forEach(el=>el.dispatchEvent(new Event('change',{bubbles:true})));
    populate();
   }
+  window.GRID_RECORD_HISTORY?.mount(form,existing);
   d.showModal();
  };
  const previewButton=document.getElementById('preview-add-abnormal');
