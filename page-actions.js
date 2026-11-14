@@ -1,3 +1,4 @@
+import './record-history.js?v=20261114-record-history';
 const responsiveStylesUrl = new URL('./responsive.css?v=20261113-responsive', import.meta.url).href;
 const closeStyle = 'background:#087f83;color:#fff;border:1px solid #087f83;border-radius:10px;padding:10px 16px;font:inherit;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap;cursor:pointer';
 const actionSelector = '.dialog-actions,.work-action-buttons,.alarm-section-save,.actions,.work-draft-actions';
