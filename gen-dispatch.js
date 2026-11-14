@@ -1,3 +1,4 @@
+import {mountRecordHistory} from './record-history.js?v=20261114-record-history';
 import {editIconHtml} from './edit-icons.js?v=20261106';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function createGenDispatchStore(context){
@@ -34,6 +35,7 @@ export function openGenDispatch(store){
   const d=document.createElement('dialog');d.className='work-draft-dialog';
   d.innerHTML=`<form class="work-draft-form"><div class="work-draft-title"><h2>${record?'แก้ไข':'เพิ่มข้อมูล'} Gen Dispatch</h2><button type="button" data-cancel>✕</button></div><div class="construction-grid"><label>วันที่ (พ.ศ.)<input name="date" placeholder="วว/ดด/พ.ศ."></label><label>เวลา<input type="time" name="time"></label><label>โรงไฟฟ้า / สถานี<input name="plant" maxlength="500"></label><label>หน่วยผลิต<input name="unit" maxlength="250"></label><label>กำลังผลิต (MW)<input type="number" step="any" min="0" name="mw"></label><label>รายละเอียด<textarea name="details" maxlength="4000" rows="4"></textarea></label></div><p role="status"></p><div class="work-action-buttons">${record&&store.canDelete()?'<button type="button" class="danger delete-record">ลบรายการ</button>':''}<button type="button" data-cancel style="background:#087f83;color:#fff;border-color:#087f83;display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap">ปิด <span aria-hidden="true">×</span></button><button type="submit" class="primary">บันทึกข้อมูล</button></div></form>`;
   const form=d.querySelector('form');
+  mountRecordHistory(form,record);
   const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB-u-ca-buddhist-nu-latn',{timeZone:'Asia/Bangkok',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).map(p=>[p.type,p.value]));
   const initial=record?.data||{date:`${parts.day}/${parts.month}/${parts.year}`,time:`${parts.hour}:${parts.minute}`};for(const [k,v] of Object.entries(initial)){if(form.elements.namedItem(k))form.elements.namedItem(k).value=v}
   document.body.append(d);d.showModal();let busy=false;const message=d.querySelector('[role=status]');
