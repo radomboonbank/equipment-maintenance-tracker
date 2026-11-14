@@ -42,3 +42,15 @@ aside #webboard-nav svg{flex:0 0 20px}
 .board-row .board-topic{flex:1;min-width:0;display:block;padding:5px 0;font-size:14px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}
 .board-row .board-add-info{flex:0 0 auto;white-space:nowrap;font-size:12px;color:#087f83;padding:7px 11px}
 @media(max-width:600px){.board-row{gap:8px;padding-inline:0}.board-row .board-row-date{font-size:10px}.board-row .board-topic{font-size:12px}.board-row .board-add-info{font-size:11px;padding:6px}}
+
+/* Dedicated browser tabs use the full viewport instead of a dashboard dialog. */
+body.board-window{background:#fff;min-height:100vh}
+.webboard-page{margin:0;max-width:none;width:100%;min-height:100vh;padding:30px;box-sizing:border-box}
+.webboard-page [hidden]{display:none!important}
+.webboard-page .board-top{padding-bottom:10px}
+.webboard-page .board-top a{color:#087f83;display:inline-block;margin-top:10px}
+.webboard-page .board-topic{text-decoration:none}
+.webboard-page .board-detail{margin-bottom:0}
+.webboard-page .board-row{width:100%}
+#board-loading{padding:30px}
+@media(max-width:600px){.webboard-page{padding:18px}.webboard-page .board-top h2{font-size:23px}}
