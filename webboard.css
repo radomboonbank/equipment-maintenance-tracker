@@ -54,3 +54,11 @@ body.board-window{background:#fff;min-height:100vh}
 .webboard-page .board-row{width:100%}
 #board-loading{padding:30px}
 @media(max-width:600px){.webboard-page{padding:18px}.webboard-page .board-top h2{font-size:23px}}
+
+/* The forum owns its header close button; omit automatic popup footers. */
+body.board-window .page-action-footer{display:none!important}
+.board-row .board-topic{display:inline-flex;align-items:center;gap:6px;text-overflow:clip}
+.board-topic-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.board-row .board-topic-author{font-weight:400}
+.board-row .board-sub-icon{display:block;flex:0 0 28px;width:28px;height:28px;object-fit:contain}
+@media(max-width:600px){.board-row .board-sub-icon{flex-basis:24px;width:24px;height:24px}}
