@@ -35,3 +35,10 @@ aside #webboard-nav{display:flex;align-items:center;gap:9px}
 aside #webboard-nav svg{flex:0 0 20px}
 @media(max-width:900px){#today{gap:9px}#today span{font-size:12px}#today strong{font-size:19px}.live-header{gap:12px}}
 @media(max-width:600px){.webboard-dialog{padding:18px}.board-toolbar{grid-template-columns:minmax(0,1fr) auto}.board-toolbar input{grid-column:1/-1}.board-compose,.board-detail{padding:14px}#today{gap:6px}#today span{font-size:10px}#today strong{font-size:16px}.live-header{gap:8px}.live-header #online-users summary{padding:6px;gap:4px}.live-header .online-users-icon{width:22px;height:22px}}
+
+/* Single-line topic index: short date/time, title (author), explicit reply action. */
+.board-row{display:flex;align-items:center;flex-wrap:nowrap;gap:14px;padding:12px 6px;min-width:0}
+.board-row .board-row-date{flex:0 0 auto;font-size:12px;color:#627c8c;white-space:nowrap;line-height:1.5}
+.board-row .board-topic{flex:1;min-width:0;display:block;padding:5px 0;font-size:14px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}
+.board-row .board-add-info{flex:0 0 auto;white-space:nowrap;font-size:12px;color:#087f83;padding:7px 11px}
+@media(max-width:600px){.board-row{gap:8px;padding-inline:0}.board-row .board-row-date{font-size:10px}.board-row .board-topic{font-size:12px}.board-row .board-add-info{font-size:11px;padding:6px}}
