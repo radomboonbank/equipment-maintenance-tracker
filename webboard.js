@@ -12,10 +12,11 @@ export function boardRowDate(value){
 }
 export function boardRowHtml(r){
  const label=r.title+' ('+r.createdByName+')';
- return `<article class="board-row"><time class="board-row-date thai-date-display">${esc(boardRowDate(r.createdAt))}</time><button type="button" class="board-topic" data-board-topic="${esc(r.id)}" title="${esc(label)}">${r.hidden?'[ซ่อน] ':''}${esc(label)}</button></article>`;
+ return `<article class="board-row"><time class="board-row-date thai-date-display">${esc(boardRowDate(r.createdAt))}</time><button type="button" class="board-topic" data-board-topic="${esc(r.id)}" title="${esc(label)}"><span class="board-topic-label">${r.hidden?'[ซ่อน] ':''}<span class="board-topic-title">${esc(r.title)}</span> <span class="board-topic-author">(${esc(r.createdByName)})</span></span>${r.hasReplies?'<img class="board-sub-icon" src="assets/webboard-sub.svg" alt="มีกระทู้ย่อย" title="มีกระทู้ย่อย" width="28" height="28">':''}</button></article>`;
 }
 export function createWebBoard(session, {page=false,threadId=null}={}){
  let dialog=null,stopThreads=null,stopReplies=null,rows=[],selected=null,epoch=0,busy=false,limit=50;
+ const replyIndicators=new Map();
  const context=()=>session();
  window.GRID_WEBBOARD_SESSION=context;
  const boardUrl=id=>`webboard.html${id?'?thread='+encodeURIComponent(id):''}`;
@@ -25,7 +26,7 @@ export function createWebBoard(session, {page=false,threadId=null}={}){
  const $=selector=>dialog.querySelector(selector);
  const status=(text,error=false)=>{const e=$('[data-board-status]');e.textContent=text;e.classList.toggle('board-error',error)};
  const editable=record=>moderator();
- function stop(){stopThreads?.();stopReplies?.();stopThreads=stopReplies=null;epoch++;}
+ function stop(){stopReplyIndicators();stopThreads?.();stopReplies?.();stopThreads=stopReplies=null;epoch++;}
  function close(){stop();if(page){window.close();return;}dialog?.close();dialog?.remove();dialog=null;rows=[];selected=null;busy=false;}
  function lock(value){busy=value;if(!dialog)return;dialog.querySelectorAll('[data-board-write]').forEach(b=>b.disabled=value);}
  function fail(error){status(error?.code==='permission-denied'?'บัญชีนี้ยังไม่มีสิทธิ์เข้าถึงเว็บบอร์ด':error?.message||'เชื่อมต่อไม่สำเร็จ กรุณาลองใหม่',true);}
@@ -34,15 +35,38 @@ export function createWebBoard(session, {page=false,threadId=null}={}){
   const term=$('[data-board-search]').value.trim().toLocaleLowerCase('th'),category=$('[data-board-filter]').value;
   const visible=rows.filter(r=>(!r.hidden||moderator())&&(!category||r.category===category)&&(!term||[r.title,r.body,r.createdByName].some(v=>String(v||'').toLocaleLowerCase('th').includes(term))));
   $('[data-board-count]').textContent=`แสดง ${visible.length} จาก ${rows.filter(r=>!r.hidden||moderator()).length} กระทู้ที่โหลด`;
-  $('[data-board-list]').innerHTML=visible.length?visible.map(r=>boardRowHtml(r).replace('<button type="button"','<a target="_blank" rel="opener" href="'+boardUrl(r.id)+'"').replace('</button>','</a>')).join(''):'<div class="board-empty"><strong>ยังไม่มีกระทู้ที่ตรงกับมุมมองนี้</strong><p>เริ่มแบ่งปันข้อมูลหรือสอบถามเรื่องงานได้ที่ “ตั้งกระทู้”</p></div>';
+  $('[data-board-list]').innerHTML=visible.length?visible.map(r=>boardRowHtml({...r,hasReplies:replyIndicators.get(r.id)?.hasReplies===true}).replace('<button type="button"','<a target="_blank" rel="opener" href="'+boardUrl(r.id)+'"').replace('</button>','</a>')).join(''):'<div class="board-empty"><strong>ยังไม่มีกระทู้ที่ตรงกับมุมมองนี้</strong><p>เริ่มแบ่งปันข้อมูลหรือสอบถามเรื่องงานได้ที่ “ตั้งกระทู้”</p></div>';
   $('[data-board-more]').hidden=rows.length<limit;
   if(selected){const fresh=rows.find(r=>r.id===selected.id);if(fresh){selected=fresh;renderTopic();}else{$('[data-board-detail]').hidden=true;selected=null;stopReplies?.();stopReplies=null;}}
+ }
+
+ function stopReplyIndicators(){
+  for(const entry of replyIndicators.values())entry.stop?.();
+  replyIndicators.clear();
+ }
+ function watchReplyIndicators(){
+  const {cloud}=context(),mark=epoch;
+  const ids=new Set(rows.filter(r=>!r.hidden||moderator()).map(r=>r.id));
+  for(const [id,entry] of replyIndicators){
+   if(!ids.has(id)){entry.stop?.();replyIndicators.delete(id);}
+  }
+  for(const id of ids){
+   if(replyIndicators.has(id))continue;
+   const entry={hasReplies:false,stop:null};replyIndicators.set(id,entry);
+   const constraints=[cloud.collection(cloud.db,'WebBoardThreads',id,'replies')];
+   if(!moderator())constraints.push(cloud.where('hidden','==',false));
+   constraints.push(cloud.limit(1));
+   entry.stop=cloud.onSnapshot(cloud.query(...constraints),snapshot=>{
+    if(mark!==epoch||!dialog||replyIndicators.get(id)!==entry)return;
+    entry.hasReplies=snapshot.docs.length>0;renderList();
+   },error=>{if(mark===epoch&&dialog)fail(error)});
+  }
  }
  function listen(){
   if(threadId){listenTopic();return;}
   stopThreads?.();const {cloud}=context(),mark=epoch;status('กำลังโหลดกระทู้…');
   stopThreads=cloud.onSnapshot(cloud.query(cloud.collection(cloud.db,'WebBoardThreads'),cloud.orderBy('createdAt','desc'),cloud.limit(limit)),snapshot=>{
-   if(mark!==epoch||!dialog)return;rows=snapshot.docs.map(d=>({...d.data(),id:d.id}));status('');renderList();
+   if(mark!==epoch||!dialog)return;rows=snapshot.docs.map(d=>({...d.data(),id:d.id}));watchReplyIndicators();status('');renderList();
   },error=>{if(mark===epoch&&dialog)fail(error)});
  }
 
@@ -127,5 +151,5 @@ export function createWebBoard(session, {page=false,threadId=null}={}){
   listen();
  }
  document.querySelector('#webboard-nav')?.addEventListener('click',open);
- return {open,reset:()=>{if(page){stop();dialog?.remove();dialog=null;}else close();}};
+ return {open,reset:()=>{if(page){stop();dialog?.remove();dialog=null;rows=[];selected=null;busy=false;}else close();}};
 }
