@@ -12,17 +12,17 @@ export function boardRowDate(value){
 }
 export function boardRowHtml(r){
  const label=r.title+' ('+r.createdByName+')';
- return `<article class="board-row"><time class="board-row-date thai-date-display">${esc(boardRowDate(r.createdAt))}</time><button type="button" class="board-topic" data-board-topic="${esc(r.id)}" title="${esc(label)}">${r.hidden?'[ซ่อน] ':''}${esc(label)}</button><button type="button" class="board-add-info" data-board-topic="${esc(r.id)}" data-board-add aria-label="เปิดหัวข้อเพื่อเพิ่มข้อมูล: ${esc(r.title)}">เพิ่มข้อมูล →</button></article>`;
+ return `<article class="board-row"><time class="board-row-date thai-date-display">${esc(boardRowDate(r.createdAt))}</time><button type="button" class="board-topic" data-board-topic="${esc(r.id)}" title="${esc(label)}">${r.hidden?'[ซ่อน] ':''}${esc(label)}</button></article>`;
 }
 export function createWebBoard(session){
  let dialog=null,stopThreads=null,stopReplies=null,rows=[],selected=null,epoch=0,busy=false,limit=50;
  const context=()=>session();
  const readable=()=>{const c=context();return !!c.cloud&&!!c.user&&['admin','editor','viewer'].includes(c.role)};
  const writable=()=>readable()&&['admin','editor'].includes(context().role);
- const moderator=()=>readable()&&context().role==='admin'&&['super admin','king admin'].includes(context().duty);
+ const moderator=()=>readable()&&context().role==='admin'&&context().duty==='king admin';
  const $=selector=>dialog.querySelector(selector);
  const status=(text,error=false)=>{const e=$('[data-board-status]');e.textContent=text;e.classList.toggle('board-error',error)};
- const editable=record=>writable()&&(record.createdBy===context().user.uid||moderator());
+ const editable=record=>moderator();
  function stop(){stopThreads?.();stopReplies?.();stopThreads=stopReplies=null;epoch++;}
  function close(){stop();dialog?.close();dialog?.remove();dialog=null;rows=[];selected=null;busy=false;}
  function lock(value){busy=value;if(!dialog)return;dialog.querySelectorAll('[data-board-write]').forEach(b=>b.disabled=value);}
@@ -45,14 +45,14 @@ export function createWebBoard(session){
  function renderTopic(){
   if(!selected||!dialog)return;const r=selected;
   $('[data-board-detail]').hidden=false;
-  $('[data-board-topic-content]').innerHTML=`<div class="board-topic-heading"><div><span class="board-category">${esc(r.category)}</span><h3 tabindex="-1">${esc(r.title)}</h3><small>${esc(r.createdByName)} · ${esc(historyTime(r.createdAt))}${r.revision>1?' · แก้ไขล่าสุด '+esc(historyTime(r.updatedAt)):''}</small></div><div class="board-topic-actions">${editable(r)?'<button type="button" data-board-edit data-board-write>แก้ไขกระทู้</button>':''}${moderator()?`<button type="button" data-board-hide data-board-write>${r.hidden?'แสดงกระทู้':'ซ่อนกระทู้'}</button>`:''}</div></div><p class="board-body">${esc(r.body)}</p>${r.hidden?'<p class="board-hidden">กระทู้นี้ถูกซ่อน</p>':''}`;
+  $('[data-board-topic-content]').innerHTML=`<div class="board-topic-heading"><div><span class="board-category">${esc(r.category)}</span><h3 tabindex="-1">${esc(r.title)}</h3><small>${esc(r.createdByName)} · ${esc(historyTime(r.createdAt))}${r.revision>1?' · แก้ไขล่าสุด '+esc(historyTime(r.updatedAt)):''}</small></div><div class="board-topic-actions">${moderator()?'<button type="button" class="danger" data-board-delete disabled title="ต้องเผยแพร่ Firebase Rules ใหม่ก่อนใช้งาน">ลบกระทู้</button>':''}${editable(r)?'<button type="button" data-board-edit data-board-write>แก้ไขกระทู้</button>':''}${moderator()?`<button type="button" data-board-hide data-board-write>${r.hidden?'แสดงกระทู้':'ซ่อนกระทู้'}</button>`:''}</div></div><p class="board-body">${esc(r.body)}</p>${r.hidden?'<p class="board-hidden">กระทู้นี้ถูกซ่อน</p>':''}`;
   $('[data-board-reply-form]').hidden=!writable()||r.hidden;
  }
  function openTopic(id){
   selected=rows.find(r=>r.id===id);if(!selected)return;
   stopReplies?.();renderTopic();$('[data-board-reply-form]').reset();$('[data-board-replies]').textContent='กำลังโหลดคำตอบ…';
   const {cloud}=context(),mark=epoch,topicId=id;
-  stopReplies=cloud.onSnapshot(cloud.query(cloud.collection(cloud.db,'WebBoardThreads',id,'replies'),cloud.orderBy('createdAt','asc')),snapshot=>{
+  stopReplies=cloud.onSnapshot(cloud.query(cloud.collection(cloud.db,'WebBoardThreads',id,'replies'),cloud.orderBy('createdAt','desc')),snapshot=>{
    if(mark!==epoch||!dialog||selected?.id!==topicId)return;
    $('[data-board-replies]').innerHTML=snapshot.docs.map(d=>({...d.data(),id:d.id})).filter(r=>!r.hidden||moderator()).map(r=>`<article class="board-reply"><small>${esc(r.createdByName)} · ${esc(historyTime(r.createdAt))}</small><p class="board-body">${esc(r.body)}</p>${moderator()?`<button type="button" data-board-hide-reply="${esc(r.id)}" data-hidden="${r.hidden}" data-board-write>${r.hidden?'แสดงคำตอบ':'ซ่อนคำตอบ'}</button>`:''}</article>`).join('')||'<p class="board-muted">ยังไม่มีคำตอบ</p>';
   },error=>{if(mark===epoch&&dialog)fail(error)});
@@ -71,7 +71,7 @@ export function createWebBoard(session){
  function open(){
   if(dialog){dialog.focus();return;}
   dialog=document.createElement('dialog');dialog.className='webboard-dialog';dialog.setAttribute('aria-labelledby','webboard-title');
-  dialog.innerHTML=`<div class="board-top"><div><div class="eyebrow">CROD GRID CARE</div><h2 id="webboard-title">เว็บบอร์ด</h2><p>แบ่งปันข้อมูล สอบถาม และแลกเปลี่ยนเรื่องงาน</p></div><button type="button" data-board-close>ปิด ×</button></div><p data-board-status role="status" aria-live="polite"></p><div data-board-members><div class="board-toolbar"><input type="search" data-board-search aria-label="ค้นหากระทู้" placeholder="ค้นหาหัวข้อ ข้อความ หรือผู้ตั้งกระทู้…"><select data-board-filter aria-label="หมวดหมู่"><option value="">ทุกหมวดหมู่</option>${boardCategories.map(c=>`<option>${c}</option>`).join('')}</select><button type="button" class="primary" data-board-new data-board-write>+ ตั้งกระทู้</button><button type="button" data-board-refresh>โหลดใหม่</button></div><form data-board-compose hidden class="board-compose"><h3 data-board-compose-title>ตั้งกระทู้ใหม่</h3><label>หัวข้อ<input name="title" required maxlength="120"></label><label>หมวดหมู่<select name="category">${boardCategories.map(c=>`<option>${c}</option>`).join('')}</select></label><label>ข้อความ<textarea name="body" required maxlength="10000" rows="6"></textarea></label><div class="board-form-actions"><button type="button" data-board-cancel>ยกเลิก</button><button class="primary" type="submit" data-board-write>บันทึกกระทู้</button></div></form><p data-board-count class="board-muted"></p><div data-board-list></div><button type="button" data-board-more hidden>โหลดกระทู้เพิ่มเติม</button><section data-board-detail hidden class="board-detail"><button type="button" data-board-back>← กลับรายการกระทู้</button><div data-board-topic-content></div><h3>คำตอบ</h3><div data-board-replies></div><form data-board-reply-form><label>ตอบกระทู้<textarea name="reply" required maxlength="10000" rows="4"></textarea></label><button class="primary" type="submit" data-board-write>ส่งคำตอบ</button></form></section></div>`;
+  dialog.innerHTML=`<div class="board-top"><div><div class="eyebrow">CROD GRID CARE</div><h2 id="webboard-title">เว็บบอร์ด</h2><p>แบ่งปันข้อมูล สอบถาม และแลกเปลี่ยนเรื่องงาน</p></div><button type="button" data-board-close>ปิด ×</button></div><p data-board-status role="status" aria-live="polite"></p><div data-board-members><div class="board-toolbar"><input type="search" data-board-search aria-label="ค้นหากระทู้" placeholder="ค้นหาหัวข้อ ข้อความ หรือผู้ตั้งกระทู้…"><select data-board-filter aria-label="หมวดหมู่"><option value="">ทุกหมวดหมู่</option>${boardCategories.map(c=>`<option>${c}</option>`).join('')}</select><button type="button" class="primary" data-board-new data-board-write>+ ตั้งกระทู้</button><button type="button" data-board-refresh>โหลดใหม่</button></div><form data-board-compose hidden class="board-compose"><h3 data-board-compose-title>ตั้งกระทู้ใหม่</h3><label>หัวข้อ<input name="title" required maxlength="120"></label><label>หมวดหมู่<select name="category">${boardCategories.map(c=>`<option>${c}</option>`).join('')}</select></label><label>ข้อความ<textarea name="body" required maxlength="10000" rows="6"></textarea></label><div class="board-form-actions"><button type="button" data-board-cancel>ยกเลิก</button><button class="primary" type="submit" data-board-write>บันทึกกระทู้</button></div></form><p data-board-count class="board-muted"></p><div data-board-list></div><button type="button" data-board-more hidden>โหลดกระทู้เพิ่มเติม</button><section data-board-detail hidden class="board-detail"><button type="button" data-board-back>← กลับรายการกระทู้</button><div data-board-topic-content></div><h3>ประวัติข้อมูลที่เพิ่ม · ล่าสุดก่อน</h3><div data-board-replies></div><form data-board-reply-form><label>ตอบกระทู้<textarea name="reply" required maxlength="10000" rows="4"></textarea></label><button class="primary" type="submit" data-board-write>ส่งคำตอบ</button></form></section></div>`;
   document.body.append(dialog);dialog.showModal();dialog.addEventListener('cancel',e=>{e.preventDefault();if(!busy)close()});$('[data-board-close]').onclick=()=>{if(!busy)close()};
   if(!readable()){$('[data-board-members]').hidden=true;status('กรุณาเข้าสู่ระบบเพื่ออ่านและใช้งานเว็บบอร์ด');return;}
   $('[data-board-new]').hidden=!writable();$('[data-board-search]').oninput=renderList;$('[data-board-filter]').onchange=renderList;
@@ -79,6 +79,17 @@ export function createWebBoard(session){
   $('[data-board-cancel]').onclick=()=>{if(!busy)$('[data-board-compose]').hidden=true};
   $('[data-board-back]').onclick=()=>{$('[data-board-detail]').hidden=true;selected=null;stopReplies?.();stopReplies=null;$('[data-board-search]').focus()};
   dialog.onclick=e=>{const topic=e.target.closest('[data-board-topic]');if(topic){openTopic(topic.dataset.boardTopic);if(topic.hasAttribute('data-board-add')&&writable()&&!selected?.hidden)$('[data-board-reply-form] textarea').focus();}if(e.target.closest('[data-board-edit]'))openComposer(selected);
+   const remove=e.target.closest('[data-board-delete]');if(remove&&selected&&moderator()&&!busy){
+    const target=selected;
+    if(window.confirm('ลบกระทู้นี้พร้อมคำตอบทั้งหมดถาวรหรือไม่?'))void runWrite(async uid=>{
+     const {cloud}=context();
+     const replies=await cloud.getDocs(cloud.collection(cloud.db,'WebBoardThreads',target.id,'replies'));
+     if(!moderator()||context().user.uid!==uid)throw Error('สิทธิ์เปลี่ยนแปลง');
+     for(let i=0;i<replies.docs.length;i+=400){const batch=cloud.writeBatch(cloud.db);replies.docs.slice(i,i+400).forEach(d=>batch.delete(d.ref));await batch.commit();}
+     await cloud.deleteDoc(cloud.doc(cloud.db,'WebBoardThreads',target.id));
+     if(dialog){selected=null;stopReplies?.();stopReplies=null;$('[data-board-detail]').hidden=true;}
+    });
+   }
    const hide=e.target.closest('[data-board-hide]');if(hide&&selected&&moderator())void runWrite(async uid=>{const {cloud}=context();const ref=cloud.doc(cloud.db,'WebBoardThreads',selected.id);await cloud.runTransaction(cloud.db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw Error('ไม่พบกระทู้');if(!moderator()||context().user.uid!==uid)throw Error('สิทธิ์เปลี่ยนแปลง');tx.update(ref,{hidden:!snap.data().hidden,updatedAt:cloud.serverTimestamp(),updatedBy:uid,revision:snap.data().revision+1})})});
    const reply=e.target.closest('[data-board-hide-reply]');if(reply&&selected&&moderator())void runWrite(async uid=>{const {cloud}=context();await cloud.updateDoc(cloud.doc(cloud.db,'WebBoardThreads',selected.id,'replies',reply.dataset.boardHideReply),{hidden:reply.dataset.hidden!=='true',updatedAt:cloud.serverTimestamp(),updatedBy:uid})});
   };
