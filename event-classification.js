@@ -29,9 +29,12 @@ export function serializeEventClassification(primary,secondary,previous={}){
  return {eventPrimary:primary,eventSecondary:secondary,eventType,...(previous.eventType&&previous.eventType!==eventType&&!previous.originalEventType?{originalEventType:previous.eventType}:{})};
 }
 const radioHtml=(primary,selected='',disabled=false)=>(eventGroups[primary]||[]).map(label=>`<label><input type="radio" name="eventSecondary" value="${esc(label)}" required ${label===selected?'checked':''} ${disabled?'disabled':''}><span>${esc(label)}</span></label>`).join('');
-export function eventClassificationHtml(record={}){
- const {primary,secondary}=readEventClassification(record);
- return `<div class="event-classification wide" data-event-classification><fieldset class="event-type-field"><legend>เหตุการณ์หลัก</legend><div class="event-type-options" role="radiogroup" aria-label="เหตุการณ์หลัก" data-event-primary>${Object.keys(eventGroups).map(label=>`<label><input type="radio" name="eventPrimary" value="${esc(label)}" required ${label===primary?'checked':''}><span>${esc(label)}</span></label>`).join('')}</div></fieldset><fieldset class="event-type-field"><legend>เหตุการณ์ย่อย</legend><div class="event-type-options" role="radiogroup" aria-label="เหตุการณ์ย่อย" data-event-secondary>${primary?radioHtml(primary,secondary):'<p class="event-choice-hint">เลือกเหตุการณ์หลักเพื่อแสดงเหตุการณ์ย่อย</p>'}</div></fieldset><input type="hidden" name="eventType" value="${esc(eventTypeFor(primary,secondary))}"></div>`;
+export function eventClassificationHtml(record={}, {faultOnly=false}={}){
+ const current=readEventClassification(record);
+ const primary=faultOnly?'อุปกรณ์ชำรุด/ไม่พร้อมใช้งาน':current.primary;
+ const secondary=validEventPair(primary,current.secondary)?current.secondary:'';
+ const primaryChoices=faultOnly?[primary]:Object.keys(eventGroups);
+ return `<div class="event-classification wide" data-event-classification><fieldset class="event-type-field"><legend>เหตุการณ์หลัก</legend><div class="event-type-options" role="radiogroup" aria-label="เหตุการณ์หลัก" data-event-primary>${primaryChoices.map(label=>`<label><input type="radio" name="eventPrimary" value="${esc(label)}" required ${label===primary?'checked':''}><span>${esc(label)}</span></label>`).join('')}</div></fieldset><fieldset class="event-type-field"><legend>เหตุการณ์ย่อย</legend><div class="event-type-options" role="radiogroup" aria-label="เหตุการณ์ย่อย" data-event-secondary>${primary?radioHtml(primary,secondary):'<p class="event-choice-hint">เลือกเหตุการณ์หลักเพื่อแสดงเหตุการณ์ย่อย</p>'}</div></fieldset><input type="hidden" name="eventType" value="${esc(eventTypeFor(primary,secondary))}"></div>`;
 }
 export function setupEventClassification(root,{editable=true,onSubChange=()=>{}}={}){
  if(!root)return;
