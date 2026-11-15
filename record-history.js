@@ -1,3 +1,4 @@
+export const historyNote=value=>String(value??'').replace(/^บันทึกข้อมูล\s*·\s*(?:รอดำเนินการ|ซ่อมแล้ว|รอตรวจสอบ|กำลังซ่อม)$/,'บันทึกข้อมูล');
 const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function historyTime(value){
  const raw=value?.toDate?.()??(typeof value?.seconds==='number'?value.seconds*1000:value);
@@ -16,7 +17,7 @@ export function recordHistoryEntries(record){
 }
 export function recordHistoryHtml(record){
  const entries=recordHistoryEntries(record);
- return `<section data-record-history style="grid-column:1/-1;min-width:0;margin:22px 0"><h3 style="font-size:15px;margin:0 0 14px;color:#193743">ประวัติรายการ</h3>${entries.length?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:8px">${entries.map(h=>`<article style="min-width:0;border-left:2px solid #73bbb4;background:#f4f9f9;padding:10px 12px;font-size:13px;line-height:1.6;overflow-wrap:anywhere"><div>${escapeHtml(h.note||'บันทึกข้อมูล')}</div><small style="display:block;color:#627c8c"><time>${escapeHtml(historyTime(h.at))}</time> · ${escapeHtml(h.displayName||h.by||'ไม่พบชื่อผู้บันทึก')}</small></article>`).join('')}</div>${entries.some(e=>e.summaryOnly)?'<p style="font-size:12px;color:#627c8c">แสดงข้อมูลที่ระบบเก็บไว้ รายการเดิมไม่มีประวัติการเปลี่ยนแปลงย้อนหลังครบทุกครั้ง</p>':''}`:'<p style="font-size:13px;color:#627c8c">ยังไม่มีประวัติรายการที่บันทึกไว้</p>'}</section>`;
+ return `<section data-record-history style="grid-column:1/-1;min-width:0;margin:22px 0"><h3 style="font-size:15px;margin:0 0 14px;color:#193743">ประวัติรายการ</h3>${entries.length?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:8px">${entries.map(h=>`<article style="min-width:0;border-left:2px solid #73bbb4;background:#f4f9f9;padding:10px 12px;font-size:13px;line-height:1.6;overflow-wrap:anywhere"><div>${escapeHtml(historyNote(h.note)||'บันทึกข้อมูล')}</div><small style="display:block;color:#627c8c"><time>${escapeHtml(historyTime(h.at))}</time> · ${escapeHtml(h.displayName||h.by||'ไม่พบชื่อผู้บันทึก')}</small></article>`).join('')}</div>${entries.some(e=>e.summaryOnly)?'<p style="font-size:12px;color:#627c8c">แสดงข้อมูลที่ระบบเก็บไว้ รายการเดิมไม่มีประวัติการเปลี่ยนแปลงย้อนหลังครบทุกครั้ง</p>':''}`:'<p style="font-size:13px;color:#627c8c">ยังไม่มีประวัติรายการที่บันทึกไว้</p>'}</section>`;
 }
 export function mountRecordHistory(root,record){
  if(!root)return;
