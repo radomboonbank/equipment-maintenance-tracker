@@ -1,5 +1,5 @@
 import {historyNote} from './record-history.js?v=20261115-no-work-status';
-import {eventClassificationHtml,setupEventClassification,serializeEventClassification} from './event-classification.js?v=20261115-fault-only';
+import {eventClassificationHtml,setupEventClassification,serializeEventClassification} from './event-classification.js?v=20261115-fault-labels';
 import {recordEditorDocument,hasRecordEditorTab,focusRecordEditorTab,openRecordEditorTab} from './record-editor-tab.js?v=20261115-no-work-status';
 import {createWebBoard} from './webboard.js?v=20261114-board-sub';
 import './page-actions.js?v=20261115-full-tabs';
@@ -254,7 +254,7 @@ function categoryControl(value='') {
  const current=parseEquipmentCategory(value);
  const choices=equipmentTypes.map(type=>[type.name,type.name]);
  if(current.legacy)choices.unshift(['__legacy__','ข้อมูลเดิม: '+current.legacy]);
- return `<fieldset class="equipment-category wide"><legend>ชนิดของอุปกรณ์ที่ชำรุด</legend><p class="category-hint">เลือกชนิดอุปกรณ์ เพื่อแสดงชนิดย่อยและระดับแรงดันที่เกี่ยวข้อง</p><div class="category-grid"><label>ชนิดอุปกรณ์หลัก<select id="equipment-type" aria-label="ชนิดอุปกรณ์หลัก"><option value="">เลือกชนิดอุปกรณ์</option>${options(Object.fromEntries(choices),current.legacy?'__legacy__':current.name)}</select></label><label id="equipment-subtype-field" hidden>ชนิดอุปกรณ์ย่อย<select id="equipment-subtype" aria-label="ชนิดอุปกรณ์ย่อย"></select></label><label id="equipment-voltage-field" hidden>ระดับแรงดัน<select id="equipment-voltage" aria-label="ระดับแรงดัน"></select></label></div><input type="hidden" name="category" value="${esc(value)}"><p id="category-summary" class="category-summary" aria-live="polite"></p></fieldset>`;
+ return `<fieldset class="equipment-category wide"><legend>รายละเอียดของ อุปกรณ์ชำรุด/ไม่พร้อมใช้งาน</legend><p class="category-hint">เลือกชนิดอุปกรณ์ เพื่อแสดงชนิดย่อยและระดับแรงดันที่เกี่ยวข้อง</p><div class="category-grid"><label>ชนิดอุปกรณ์หลัก<select id="equipment-type" aria-label="ชนิดอุปกรณ์หลัก"><option value="">เลือกชนิดอุปกรณ์</option>${options(Object.fromEntries(choices),current.legacy?'__legacy__':current.name)}</select></label><label id="equipment-subtype-field" hidden>ชนิดอุปกรณ์ย่อย<select id="equipment-subtype" aria-label="ชนิดอุปกรณ์ย่อย"></select></label><label id="equipment-voltage-field" hidden>ระดับแรงดัน<select id="equipment-voltage" aria-label="ระดับแรงดัน"></select></label></div><input type="hidden" name="category" value="${esc(value)}"><p id="category-summary" class="category-summary" aria-live="polite"></p></fieldset>`;
 }
 function setupCategory(value='') {
  const current=parseEquipmentCategory(value),main=$('#equipment-type'),sub=$('#equipment-subtype'),voltage=$('#equipment-voltage');
@@ -314,7 +314,7 @@ function edit(r,show=true){
  const current=dateParts();
  const defaults=r?{}:{date:`${current.year}-${current.month}-${current.day}`,time:`${current.hour}:${current.minute}`};
  $('#save-error').hidden=true;$('#save-error').textContent='';
- $('#editor-title').textContent=r?'รายละเอียด #'+r.code:'แจ้งอุปกรณ์ชำรุด';
+ $('#editor-title').textContent=r?'รายละเอียด #'+r.code:'แจ้ง เพิ่ม อุปกรณ์ชำรุด/ไม่พร้อมใช้งาน';
  $('#fields').innerHTML=Object.entries(fields).filter(([key])=>!retiredRecordFields.has(key)).map(([k,l])=>{
   const val=(k==='equipment'?mergedEquipment(r||{}):(r?.[k]??defaults[k]))||(k==='priority'?'normal':'');
   if(k==='station')return stationControl(r||{});
