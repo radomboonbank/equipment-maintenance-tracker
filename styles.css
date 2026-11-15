@@ -440,3 +440,19 @@ aside .brand-logo{width:100%;height:auto;aspect-ratio:2.55;object-fit:cover;obje
 #recent-updates .recent-record-link{display:block;max-width:100%;min-width:0;padding:0;border:0;border-radius:3px;background:none;color:inherit;text-align:left;font:inherit;white-space:normal;overflow-wrap:anywhere;cursor:pointer}
 #recent-updates .recent-record-link:hover{color:#087f83;text-decoration:underline}
 #recent-updates .recent-record-link:focus-visible{outline:2px solid #087f83;outline-offset:3px}
+
+/* Keep public login names, counts and timestamps on one desktop row. */
+.login-story .public-logins{min-width:0;width:100%}
+.public-logins .login-entry{display:grid;grid-template-columns:minmax(0,1fr) max-content;align-items:baseline;gap:8px;min-width:0}
+.public-logins .login-entry strong{display:block;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;word-break:normal}
+.public-logins .login-entry time{display:block;margin:0;white-space:nowrap}
+@media(min-width:1600px){
+ .login-story{grid-template-columns:minmax(240px,.8fr) minmax(420px,1.2fr);gap:24px}
+}
+@media(min-width:1301px) and (max-width:1599px){
+ .login-story{grid-template-columns:minmax(0,1fr)}
+ .login-story-copy{gap:22px}
+}
+@media(max-width:600px){
+ .public-logins .login-entry{grid-template-columns:minmax(0,1fr);gap:0}
+}
