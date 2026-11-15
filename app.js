@@ -84,13 +84,22 @@ async function recordLogin() {
 }
 
 function watchPublicLogins(){
- const list=$('#public-logins-list');
- const query=cloud.query(cloud.collection(cloud.db,'publicLoginStats'),cloud.orderBy('lastLoginAt','desc'),cloud.limit(20));
- cloud.onSnapshot(query,snapshot=>{
-  snapshot.docs.forEach(doc=>rememberLogin(doc.id,doc.data()));updateLoginSession();
-  const entries=snapshot.docs.map(doc=>doc.data());
+ const list=$('#public-logins-list'),stats=cloud.collection(cloud.db,'publicLoginStats');
+ let unsubscribeMore=null,version=0;
+ const render=docs=>{
+  docs.forEach(doc=>rememberLogin(doc.id,doc.data()));updateLoginSession();
+  const entries=docs.map(doc=>doc.data());
   list.innerHTML=entries.length?entries.map((entry,i)=>`<li><span class="login-rank">${String(i+1).padStart(2,'0')}</span><div class="login-entry"><strong>${esc(entry.displayName)} (${esc(entry.count)} ครั้ง)</strong><time class="event-date">${esc(publicLoginTime(entry.lastLoginAt))}</time></div></li>`).join(''):'<li class="login-empty">ยังไม่มีสถิติการเข้าสู่ระบบ</li>';
- },error=>{list.innerHTML='<li class="login-empty">ยังโหลดสถิติไม่ได้ กรุณาลองใหม่ภายหลัง</li>';console.warn('Public login statistics unavailable:',error.code)});
+ };
+ const fail=error=>{list.innerHTML='<li class="login-empty">ยังโหลดสถิติไม่ได้ กรุณาลองใหม่ภายหลัง</li>';console.warn('Public login statistics unavailable:',error.code)};
+ // Each page respects the existing ten-document query limit in Firestore rules.
+ cloud.onSnapshot(cloud.query(stats,cloud.orderBy('lastLoginAt','desc'),cloud.limit(10)),snapshot=>{
+  const current=++version;unsubscribeMore?.();unsubscribeMore=null;
+  const first=snapshot.docs;render(first);
+  if(first.length===10)unsubscribeMore=cloud.onSnapshot(cloud.query(stats,cloud.orderBy('lastLoginAt','desc'),cloud.startAfter(first.at(-1)),cloud.limit(10)),more=>{
+   if(current===version)render([...first,...more.docs]);
+  },error=>{if(current===version)fail(error)});
+ },fail);
 }
 function watchLogins() {
  unsubscribeLogins?.();unsubscribeLogins=null;
