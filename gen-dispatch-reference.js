@@ -1,7 +1,7 @@
 import {mountRecordHistory} from './record-history.js?v=20261114-record-history';
 import {createGenDispatchEventStore} from './gen-dispatch-event-store.js?v=20261114-record-history';
 import {createGenDispatchEvents,sppFontFaces} from './gen-dispatch-events.js?v=20261114-record-history';
-import {editIconUrl} from './edit-icons.js?v=20261106';
+import {editIconUrl} from './edit-icons.js?v=20261115-dashboard-actions';
 const regions=['กลางบน - หถก1&2','กลางบน - หถก3','กลางตะวันออก - หถก4&5&6'];
 const kvStatuses=['On','Off','ยังไม่มี kV Control'];
 function kvLabel(value){
