@@ -46,10 +46,35 @@ function sortValue(data, key) {
  return value;
 }
 
+export function matchesJobPrefix(projectId, prefix) {
+ return !prefix || String(projectId ?? '').trim().toUpperCase().split(/[-\\s]/, 1)[0] === prefix;
+}
+
 export function showConstructionRows(doc, records, openEditor) {
  const search = doc.querySelector('#report-search');
  if (!search) return renderRows(doc, records, openEditor, records.length);
  const clear = doc.querySelector('#clear-search');
+ let filters = doc.querySelector('#job-prefix-filter');
+ if (!filters) {
+  filters = doc.createElement('fieldset');
+  filters.id = 'job-prefix-filter';
+  filters.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px 18px;margin:0 0 18px;padding:12px 16px;border:1px solid #cfdee3;border-radius:10px;background:white;min-width:0';
+  const legend = doc.createElement('legend');
+  legend.textContent = 'กรอง Job No.';
+  legend.style.cssText = 'padding:0 6px;color:#076b70;font-weight:700';
+  filters.append(legend);
+  for (const prefix of ['', 'TS12', 'TIEC', 'TRP1', 'IPPP', 'LPLC', 'RTS2', 'TIPE']) {
+   const label = doc.createElement('label');
+   label.style.cssText = 'display:inline-flex;align-items:center;gap:7px;cursor:pointer;white-space:nowrap';
+   const radio = doc.createElement('input');
+   radio.type = 'radio'; radio.name = 'job-prefix'; radio.value = prefix; radio.checked = prefix === '';
+   radio.style.cssText = 'margin:0;width:18px;height:18px;accent-color:#087f83';
+   label.append(radio, doc.createTextNode(prefix || 'ทั้งหมด'));
+   filters.append(label);
+  }
+  search.closest('.toolbar').after(filters);
+ }
+ filters.onchange = render;
  const headers = Array.from(doc.querySelectorAll('#report-table th'));
  const keys = fields.slice(0, 10).map(([key]) => key);
  const actionHeader=headers.at(-1);
@@ -58,8 +83,9 @@ export function showConstructionRows(doc, records, openEditor) {
  function render() {
   const term = search.value.trim().toLocaleLowerCase('th');
   clear.hidden = search.value.length === 0;
-  const visible = records.filter(({data}) => !term || shortDate(data.plannedEndDate).includes(term) || fields.some(([key]) =>
-   String(data[key] ?? '').toLocaleLowerCase('th').includes(term)));
+  const prefix = filters.querySelector('input:checked')?.value || '';
+  const visible = records.filter(({data}) => matchesJobPrefix(data.projectId, prefix) && (!term || shortDate(data.plannedEndDate).includes(term) || fields.some(([key]) =>
+   String(data[key] ?? '').toLocaleLowerCase('th').includes(term))));
   const index = headers.findIndex((header,i) => i<keys.length && header.hasAttribute('aria-sort'));
   if (index >= 0) {
    const direction = headers[index].getAttribute('aria-sort') === 'ascending' ? 1 : -1;
