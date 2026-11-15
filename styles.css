@@ -471,3 +471,9 @@ aside .brand-logo{width:100%;height:auto;aspect-ratio:2.55;object-fit:cover;obje
 .event-classification [data-event-secondary]{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media(max-width:850px){.event-classification [data-event-secondary]{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.event-classification [data-event-secondary]{grid-template-columns:minmax(0,1fr)}}
+
+/* Consistent text edit actions and responsive dashboard shortcuts. */
+body .edit-action-button,body .edit-text-action,body [data-board-edit]{color:#0284c7;font-weight:700;width:auto;max-width:none;min-width:60px;white-space:nowrap}
+.heading>.work-action-buttons{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.heading>.work-action-buttons button{white-space:nowrap}
+@media(max-width:900px){.heading>.work-action-buttons{width:100%;justify-content:flex-start}}
