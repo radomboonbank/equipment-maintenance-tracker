@@ -14,7 +14,7 @@ import {createLoginGuard,createPresence} from './presence.js?v=20261112-single-l
 import {createMembersPage} from './members.js?v=20261114-record-history';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261105-circuit';
-import {equipmentEventTypes,genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261115-table-actions';
+import {equipmentEventTypes,genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261115-recent-fit';
 import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261115-breaker-ds';
 import {rotateLogins,loginEntries,loginTime,publicLoginTime,nextLoginStat,rotatePublicLogins} from './login-history.js?v=20261115-logins20';
 'use strict';
@@ -135,8 +135,6 @@ async function updateReportTable(){
   if(!tab.document.querySelector('#report-table'))return;
   if(constructionState!=='ready'){tab.document.querySelector('#count').textContent=constructionState==='error'?'โหลดข้อมูล Firebase ไม่สำเร็จ':'กำลังโหลดรายการ…';return;}
   showConstructionRows(tab.document,constructionData,canEdit()?record=>{reportTab=null;window.openConstructionDraft(record,tab)}:null);
-  const addEquipment=tab.document.querySelector('#add-construction-equipment');
-  if(addEquipment){addEquipment.hidden=!canEdit();addEquipment.onclick=()=>{if(!canEdit())return;edit();window.focus();tab.close();reportTab=null;};}
  }catch(error){console.warn('Construction table',error.message);}
 }
 

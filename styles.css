@@ -422,3 +422,13 @@ aside .brand-logo{width:100%;height:auto;aspect-ratio:2.55;object-fit:cover;obje
 .public-logins .login-entry time{display:inline;font-size:11px;margin:0 0 0 6px;white-space:nowrap}
 @media(max-width:1050px) and (min-width:721px){aside .brand{width:100%;margin-inline:0}aside .brand-logo{width:100%;height:auto}}
 @media(max-width:720px){aside .brand{width:min(220px,65%);margin-bottom:0}aside .brand-logo{width:100%;height:auto}.login-story .brand-lockup{width:min(260px,100%)}}
+
+/* Keep the three recent updates inside their dashboard card. */
+#recent-updates .table-wrap{overflow-x:visible}
+#recent-updates .recent-updates-table{width:100%;min-width:0;table-layout:fixed;font-size:12px}
+#recent-updates .recent-updates-table th,#recent-updates .recent-updates-table td{min-width:0;max-width:none;padding:10px 9px;white-space:normal;overflow-wrap:anywhere;line-height:1.6}
+#recent-updates .recent-updates-table th{font-size:11px}
+#recent-updates .recent-updates-table th:first-child{width:65%}
+#recent-updates .recent-updates-table th:last-child{width:35%}
+#recent-updates .recent-updates-table strong{font-size:13px;white-space:normal;overflow-wrap:anywhere}
+#recent-updates .recent-updates-table time{font-size:11px;white-space:normal;line-height:1.5;margin-top:4px}
