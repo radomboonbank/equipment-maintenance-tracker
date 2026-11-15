@@ -1,5 +1,5 @@
 import {historyNote} from './record-history.js?v=20261115-no-work-status';
-import {eventClassificationHtml,setupEventClassification,serializeEventClassification} from './event-classification.js?v=20261115-fault-labels';
+import {eventClassificationHtml,setupEventClassification,serializeEventClassification} from './event-classification.js?v=20261115-breaker-thai';
 import {recordEditorDocument,hasRecordEditorTab,focusRecordEditorTab,openRecordEditorTab} from './record-editor-tab.js?v=20261115-fault-labels';
 import {createWebBoard} from './webboard.js?v=20261114-board-sub';
 import './page-actions.js?v=20261115-full-tabs';
@@ -183,7 +183,7 @@ function listDateLabel(r){
 
 function options(map,selected=''){return Object.entries(map).map(([v,l])=>`<option value="${esc(v)}" ${selected===v?'selected':''}>${esc(l)}</option>`).join('')}
 $('#event-filter').innerHTML='<option value="">ทุกประเภทเหตุการณ์</option><option value="__unspecified__">ยังไม่ระบุ</option>'+options(Object.fromEntries(eventTypes.map(v=>[v,v])));
-$('#equipment-filter').innerHTML='<option value="">ทุกชนิดอุปกรณ์หลัก</option>'+options(Object.fromEntries(equipmentTypes.map(v=>[v.name,v.name])));
+$('#equipment-filter').innerHTML='<option value="">ทุกชนิดอุปกรณ์หลัก</option>'+options(Object.fromEntries(equipmentTypes.map(v=>[v.name,v.name==='Breaker และ DS'?'เบรคเกอร์ หรือ ใบมีด':v.name])));
 function updateClock(){updateLoginSession();const now=new Date();$('#today').dateTime=now.toISOString();$('#today').innerHTML=`<span>${now.toLocaleDateString('th-TH-u-ca-buddhist',{timeZone:'Asia/Bangkok',day:'numeric',month:'long',year:'numeric'})}</span><strong>${now.toLocaleTimeString('en-GB',{timeZone:'Asia/Bangkok',hour12:false})}</strong>`}
 updateClock();setInterval(updateClock,1000);
 const presence=createPresence({render(entries,message){headerOnlineUsers=message?[]:entries;updateLoginSession();$('#online-count').textContent=message?'—':entries.length;$('#online-list').innerHTML=message?`<li class="online-empty">${esc(message)}</li>`:entries.length?entries.map(entry=>`<li><span class="online-avatar" aria-hidden="true">${esc(Array.from(entry.displayName)[0]||'●')}</span><div><strong>${esc(entry.displayName)}</strong><small>${entry.uid===user?.uid?'คุณ · ':''}เชื่อมต่อล่าสุด ${new Date(entry.at).toLocaleTimeString('en-GB',{timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit'})}</small></div><span class="online-dot" aria-label="ออนไลน์"></span></li>`).join(''):'<li>ยังไม่มีผู้ใช้ออนไลน์</li>'}});
@@ -252,7 +252,7 @@ function formDate(f,name){try{return readDate(f.get(name+'-day'),f.get(name+'-mo
 function eventTypeControl(record={},newRecord=false){return eventClassificationHtml(record,{faultOnly:newRecord});}
 function categoryControl(value='') {
  const current=parseEquipmentCategory(value);
- const choices=equipmentTypes.map(type=>[type.name,type.name]);
+ const choices=equipmentTypes.map(type=>[type.name,type.name==='Breaker และ DS'?'เบรคเกอร์ หรือ ใบมีด':type.name]);
  if(current.legacy)choices.unshift(['__legacy__','ข้อมูลเดิม: '+current.legacy]);
  return `<fieldset class="equipment-category wide"><legend>รายละเอียดของ อุปกรณ์ชำรุด/ไม่พร้อมใช้งาน</legend><p class="category-hint">เลือกชนิดอุปกรณ์ เพื่อแสดงชนิดย่อยและระดับแรงดันที่เกี่ยวข้อง</p><div class="category-grid"><label>ชนิดอุปกรณ์หลัก<select id="equipment-type" aria-label="ชนิดอุปกรณ์หลัก"><option value="">เลือกชนิดอุปกรณ์</option>${options(Object.fromEntries(choices),current.legacy?'__legacy__':current.name)}</select></label><label id="equipment-subtype-field" hidden>ชนิดอุปกรณ์ย่อย<select id="equipment-subtype" aria-label="ชนิดอุปกรณ์ย่อย"></select></label><label id="equipment-voltage-field" hidden>ระดับแรงดัน<select id="equipment-voltage" aria-label="ระดับแรงดัน"></select></label></div><input type="hidden" name="category" value="${esc(value)}"><p id="category-summary" class="category-summary" aria-live="polite"></p></fieldset>`;
 }
@@ -263,7 +263,7 @@ function setupCategory(value='') {
   if(main.value==='__legacy__')text=current.legacy;
   else if(main.value){try{text=formatEquipmentCategory(main.value,sub.value,voltage.value)}catch{}}
   $('#fields [name="category"]').value=text;
-  $('#category-summary').textContent=text?'รายการที่เลือก: '+text:'กรุณาเลือกข้อมูลชนิดอุปกรณ์ให้ครบ';
+  $('#category-summary').textContent=text?'รายการที่เลือก: '+text.replace('Breaker และ DS','เบรคเกอร์ หรือ ใบมีด'):'กรุณาเลือกข้อมูลชนิดอุปกรณ์ให้ครบ';
  };
  const refresh=(initial=false)=>{
   const type=equipmentTypes.find(v=>v.name===main.value);
