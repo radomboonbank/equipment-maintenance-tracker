@@ -1,7 +1,7 @@
 import {historyNote} from './record-history.js?v=20261115-no-work-status';
 import {eventClassificationHtml,setupEventClassification,serializeEventClassification} from './event-classification.js?v=20261115-breaker-thai';
 import {recordEditorDocument,hasRecordEditorTab,focusRecordEditorTab,openRecordEditorTab} from './record-editor-tab.js?v=20261115-create-from-table';
-import {createWebBoard} from './webboard.js?v=20261114-board-sub';
+import {createWebBoard} from './webboard.js?v=20261115-board-save';
 import './page-actions.js?v=20261115-compact-records';
 import {seedGroups} from './standby-seed.js';
 import {installStandbyBridge} from './standby-bridge.js?v=20261113-work-group';
@@ -59,7 +59,7 @@ function rememberLogin(uid,entry){
 let memberDuty='';
 installStandbyBridge(()=>({cloud,user,role,duty:memberDuty}));
 const membersPage=createMembersPage({session:()=>({cloud,user,role,duty:memberDuty}),endpoint:()=>window.GRID_TELEGRAM_URL});
-const webBoard=createWebBoard(()=>({cloud,user,role,duty:memberDuty,username,displayName}));
+const webBoard=createWebBoard(()=>({cloud,user,role,duty:memberDuty,username,displayName,firestoreData:value=>Object.assign({},value)}));
 
 let unsubscribeLogins=null;
 function renderLogins(value,message='') {
