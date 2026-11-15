@@ -95,3 +95,20 @@
   body:not(:has(#workspace)) .dialog-title h2,body:not(:has(#workspace)) .work-draft-title h2{font-size:23px}
  }
 }
+
+/* Compact record rows across dashboard tables and separate report tabs. */
+@media screen {
+ body table th,body table td{padding-top:6px!important;padding-bottom:6px!important;line-height:1.5!important;vertical-align:middle}
+ body table tr{height:auto!important}
+ body table td>p:first-child{margin-top:0}
+ body table td>p:last-child{margin-bottom:0}
+ body table td small,body table td time{margin-top:2px}
+ body table td button:not([role="switch"]){padding-top:4px!important;padding-bottom:4px!important;min-height:32px!important;height:auto!important;line-height:1.4}
+ body .board-row{padding-top:6px!important;padding-bottom:6px!important}
+ body .board-row .board-topic{padding-top:3px;padding-bottom:3px}
+ body .board-reply{padding-top:10px;padding-bottom:10px}
+ body .board-reply .board-body{line-height:1.6;margin-top:4px;margin-bottom:4px}
+ body .history-item{padding-top:5px;padding-bottom:5px;line-height:1.5}
+ body .last-logins ol{row-gap:8px}
+ @media(pointer:coarse){body table td button:not([role="switch"]){min-height:44px!important}}
+}
