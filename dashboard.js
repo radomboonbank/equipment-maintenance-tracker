@@ -1,5 +1,5 @@
 import {recordHistoryHtml,historyNote} from './record-history.js?v=20261115-no-work-status';
-import {editIconHtml,editIconStyles} from './edit-icons.js?v=20261106';
+import {editIconHtml,editIconStyles} from './edit-icons.js?v=20261115-dashboard-actions';
 export function inventoryTableHtml(){
  const rows=[['สถานีไฟฟ้า',[16,20,28,'–']],['คาปาซิเตอร์แบงค์',['–',12,18,16]],['สายส่งไฟฟ้า',[16,20,28,28]],['จุดจ่ายไฟ',['–',20,28,28]]];
  const cells=values=>{const max=Math.max(...values.filter(v=>typeof v==="number"));return values.map(v=>`<td${typeof v==="number"&&v===max?' class="inventory-max"':""}>${v}</td>`).join("");};
