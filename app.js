@@ -8,7 +8,7 @@ import {installStandbyBridge} from './standby-bridge.js?v=20261113-work-group';
 import {installThaiDateTime} from './thai-datetime.js?v=20261114-no-short-weekday';
 installThaiDateTime(window);
 import {saveEquipmentWithTelegram,queueEquipmentNotification} from './telegram-settings.js?v=20261112-independent-save';
-import {openGenDispatchReference} from './gen-dispatch-reference.js?v=20261115-dashboard-actions';
+import {openGenDispatchReference} from './gen-dispatch-reference.js?v=20261115-kv-pictures';
 import {encodeSeverityRecord,decodeSeverityRecord} from './severity-record.js?v=20261104-legacy-levels';
 import {createIdleSession} from './idle-session.js?v=20261107-king-admin';
 import {createConstructionStore} from './construction-store.js?v=20261112-highlight-access';
