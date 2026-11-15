@@ -249,8 +249,7 @@ function dateControl(name,value=''){
 function formDate(f,name){try{return readDate(f.get(name+'-day'),f.get(name+'-month'),f.get(name+'-year'))}catch(error){const label=name==='repair-expected'?'วันที่คาดว่าจะแก้ไขเสร็จ':name.startsWith('follow-')?'วันที่ติดตามครั้ง '+(Number(name.slice(7))+1):fields[name]||name;throw Error(label+': '+error.message)}}
 function eventTypeControl(value='') {
  if(value==='Power Flow Control')value='ข้อจำกัด ระบบส่ง';
- const choices=eventTypes.filter(label=>!['Abnormal Alarm','Winding Temp Alarm','โครงการก่อสร้าง'].includes(label));
- if(['Abnormal Alarm','Winding Temp Alarm','โครงการก่อสร้าง'].includes(value))return `<input type="hidden" name="eventType" value="${esc(value)}"><p class="wide">ประเภทเหตุการณ์เดิม: ${esc(value)}</p>`;
+ const choices=eventTypes;
  return `<fieldset class="event-type-field wide"><legend>ประเภทเหตุการณ์</legend><div class="event-type-options">${choices.map(label=>`<label><input type="radio" name="eventType" value="${esc(label)}" ${value===label?'checked':''}><span>${esc(label)}</span></label>`).join('')}</div></fieldset>`;
 }
 function categoryControl(value='') {
