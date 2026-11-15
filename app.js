@@ -1,6 +1,6 @@
 import {historyNote} from './record-history.js?v=20261115-no-work-status';
 import {eventClassificationHtml,setupEventClassification,serializeEventClassification} from './event-classification.js?v=20261115-breaker-thai';
-import {recordEditorDocument,hasRecordEditorTab,focusRecordEditorTab,openRecordEditorTab} from './record-editor-tab.js?v=20261115-fault-labels';
+import {recordEditorDocument,hasRecordEditorTab,focusRecordEditorTab,openRecordEditorTab} from './record-editor-tab.js?v=20261115-create-from-table';
 import {createWebBoard} from './webboard.js?v=20261114-board-sub';
 import './page-actions.js?v=20261115-compact-records';
 import {seedGroups} from './standby-seed.js';
@@ -543,8 +543,10 @@ $('#dashboard').addEventListener('click',e=>{
  }));
  page.document.getElementById('add-table-record')?.addEventListener('click',()=>{
   if(!canEdit()){page.alert('กรุณาเข้าสู่ระบบด้วยบัญชีที่มีสิทธิ์เพิ่มข้อมูล');return;}
-  $('#add').click();
-  window.focus();page.close();
+  try {
+   const result=openRecordEditorTab({dialog:document.querySelector('#editor'),prepare:()=>edit(null,false),enhance:installThaiDateTime,onActivity:()=>idleSession.activity(),title:'แจ้ง เพิ่ม อุปกรณ์ชำรุด/ไม่พร้อมใช้งาน',openWindow:()=>page});
+   if(result==='blocked')page.alert('เปิดฟอร์มไม่สำเร็จ กรุณาลองอีกครั้ง');
+  }catch(error){console.error('Cannot open equipment form',error);page.alert('เปิดฟอร์มไม่สำเร็จ: '+error.message);}
  });
  page.document.getElementById('add-table-alarm')?.addEventListener('click',()=>openAbnormalReport(page));
  page.document.getElementById('close-table-page').addEventListener('click',()=>page.close());
