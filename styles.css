@@ -526,3 +526,26 @@ body .edit-action-button,body .edit-text-action,body [data-board-edit]{color:#02
  body .last-logins ol{row-gap:8px}
  @media(pointer:coarse){body table td button:not([role="switch"]){min-height:44px!important}}
 }
+
+/* Repair plan: equal step headings and balanced two-column fields. */
+#editor .repair-plan-field{padding:16px 18px}
+#editor .repair-plan-field>.form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 22px;align-items:start}
+#editor .repair-plan-field>.form-grid>label,
+#editor .repair-plan-field .repair-operator>legend,
+#editor .repair-plan-field .repair-expected>label:first-child{
+ font-family:inherit;font-size:clamp(13px,.9vw,17px);font-weight:500;color:#193743;line-height:1.5;letter-spacing:normal
+}
+#editor .repair-plan-field>.form-grid>label{display:block;margin:0}
+#editor .repair-plan-field textarea{display:block;margin-top:7px;min-height:90px;height:calc(3lh + 20px)}
+#editor .repair-plan-field .repair-operator{padding:0;margin:0;border:0;min-width:0;background:transparent}
+#editor .repair-plan-field .repair-operator>legend{float:none;width:100%;padding:0;margin:0 0 7px}
+#editor .repair-operator-row{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:start}
+#editor .repair-operator-row label{margin:0;line-height:1.5}
+#editor .repair-operator-row input{margin-top:5px}
+#editor .repair-expected .be-calendar{margin-top:7px}
+#editor .repair-unknown{margin-top:10px;line-height:1.5}
+@media(max-width:720px){
+ #editor .repair-plan-field>.form-grid{grid-template-columns:minmax(0,1fr);gap:16px}
+ #editor .repair-plan-field{padding:14px}
+}
+@media(max-width:440px){#editor .repair-operator-row{grid-template-columns:minmax(0,1fr);gap:10px}}
