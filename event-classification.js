@@ -31,14 +31,15 @@ export function serializeEventClassification(primary,secondary,previous={}){
 const radioHtml=(primary,selected='',disabled=false)=>(eventGroups[primary]||[]).map(label=>`<label><input type="radio" name="eventSecondary" value="${esc(label)}" required ${label===selected?'checked':''} ${disabled?'disabled':''}><span>${esc(label)}</span></label>`).join('');
 export function eventClassificationHtml(record={}){
  const {primary,secondary}=readEventClassification(record);
- return `<div class="event-classification wide" data-event-classification><fieldset class="event-type-field"><legend>เหตุการณ์หลัก</legend><select name="eventPrimary" aria-label="เหตุการณ์หลัก" required><option value="">เลือกเหตุการณ์หลัก</option>${Object.keys(eventGroups).map(label=>`<option value="${esc(label)}" ${label===primary?'selected':''}>${esc(label)}</option>`).join('')}</select></fieldset><fieldset class="event-type-field"><legend>เหตุการณ์ย่อย</legend><div class="event-type-options" role="radiogroup" aria-label="เหตุการณ์ย่อย" data-event-secondary>${primary?radioHtml(primary,secondary):'<p class="event-choice-hint">เลือกเหตุการณ์หลักเพื่อแสดงเหตุการณ์ย่อย</p>'}</div></fieldset><input type="hidden" name="eventType" value="${esc(eventTypeFor(primary,secondary))}"></div>`;
+ return `<div class="event-classification wide" data-event-classification><fieldset class="event-type-field"><legend>เหตุการณ์หลัก</legend><div class="event-type-options" role="radiogroup" aria-label="เหตุการณ์หลัก" data-event-primary>${Object.keys(eventGroups).map(label=>`<label><input type="radio" name="eventPrimary" value="${esc(label)}" required ${label===primary?'checked':''}><span>${esc(label)}</span></label>`).join('')}</div></fieldset><fieldset class="event-type-field"><legend>เหตุการณ์ย่อย</legend><div class="event-type-options" role="radiogroup" aria-label="เหตุการณ์ย่อย" data-event-secondary>${primary?radioHtml(primary,secondary):'<p class="event-choice-hint">เลือกเหตุการณ์หลักเพื่อแสดงเหตุการณ์ย่อย</p>'}</div></fieldset><input type="hidden" name="eventType" value="${esc(eventTypeFor(primary,secondary))}"></div>`;
 }
 export function setupEventClassification(root,{editable=true,onSubChange=()=>{}}={}){
  if(!root)return;
- const primary=root.querySelector('[name="eventPrimary"]'),choices=root.querySelector('[data-event-secondary]'),legacy=root.querySelector('[name="eventType"]');
- const sync=()=>{const sub=choices.querySelector('[name="eventSecondary"]:checked')?.value||'';legacy.value=eventTypeFor(primary.value,sub);if(sub)onSubChange(sub);};
- primary.addEventListener('change',()=>{choices.innerHTML=primary.value?radioHtml(primary.value,'',!editable):'<p class="event-choice-hint">เลือกเหตุการณ์หลักเพื่อแสดงเหตุการณ์ย่อย</p>';sync();});
+ const primary=root.querySelector('[data-event-primary]'),choices=root.querySelector('[data-event-secondary]'),legacy=root.querySelector('[name="eventType"]');
+ const primaryValue=()=>primary.querySelector('[name="eventPrimary"]:checked')?.value||'';
+ const sync=()=>{const sub=choices.querySelector('[name="eventSecondary"]:checked')?.value||'';legacy.value=eventTypeFor(primaryValue(),sub);if(sub)onSubChange(sub);};
+ primary.addEventListener('change',()=>{choices.innerHTML=primaryValue()?radioHtml(primaryValue(),'',!editable):'<p class="event-choice-hint">เลือกเหตุการณ์หลักเพื่อแสดงเหตุการณ์ย่อย</p>';sync();});
  choices.addEventListener('change',sync);
- primary.disabled=!editable;
+ primary.querySelectorAll('input').forEach(el=>el.disabled=!editable);
  choices.querySelectorAll('input').forEach(el=>el.disabled=!editable);
 }
