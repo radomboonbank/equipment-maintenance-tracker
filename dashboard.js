@@ -15,7 +15,7 @@ export function dashboardSummary(records,now=new Date()){
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const mainTypes=['หม้อแปลงไฟฟ้า','สายส่งไฟฟ้า','Breaker และ DS','อุปกรณ์เฝ้าระวังพิเศษ','คาปาซิเตอร์แบงค์','รีเลย์ระบบป้องกัน','โรงไฟฟ้า ใน อปก.'];
 const colors=['#ef6474','#f4a640','#38c99a','#57a7f5','#a68bf2','#e789c4','#51cbd0','#a6ce60','#f5c65b','#7f9ff6','#dc9371','#84bac5'];
-const mainType=r=>{const type=String(r.category||'').split(' · ')[0];return type==='Breaker และ DS'?'เซอร์กิตเบรกเกอร์':type;};
+const mainType=r=>{const type=String(r.eventSecondary||r.category||'').split(' · ')[0];return ['Breaker และ DS','Breaker'].includes(type)?'เซอร์กิตเบรกเกอร์':type;};
 const faultMainType=r=>['เซอร์กิตเบรกเกอร์','Disconnecting SW'].includes(mainType(r))?'Breaker และ DS':mainType(r);
 export const equipmentEventTypes=['อุปกรณ์ขัดข้อง','งานบำรุงรักษาเกินกำหนด','ข้อจำกัด ระบบส่ง','งาน Switching Order'];
 export function sixPanelSummary(records){
