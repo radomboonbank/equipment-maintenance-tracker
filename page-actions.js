@@ -1,6 +1,6 @@
 import './brand-icons.js?v=20261115-orange-favicon';
 import './record-history.js?v=20261114-record-history';
-const responsiveStylesUrl = new URL('./responsive.css?v=20261115-full-tabs', import.meta.url).href;
+const responsiveStylesUrl = new URL('./responsive.css?v=20261115-compact-records', import.meta.url).href;
 const closeStyle = 'background:#087f83;color:#fff;border:1px solid #087f83;border-radius:10px;padding:10px 16px;font:inherit;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap;cursor:pointer';
 const actionSelector = '.dialog-actions,.work-action-buttons,.alarm-section-save,.actions,.work-draft-actions';
 
@@ -16,6 +16,23 @@ export function installPageActions(win = window, popup = false) {
   }
   const style = doc.createElement('style');
   style.textContent = `
+/* Compact record rows across dashboard tables and separate report tabs. */
+@media screen {
+ body table th,body table td{padding-top:6px!important;padding-bottom:6px!important;line-height:1.5!important;vertical-align:middle}
+ body table tr{height:auto!important}
+ body table td>p:first-child{margin-top:0}
+ body table td>p:last-child{margin-bottom:0}
+ body table td small,body table td time{margin-top:2px}
+ body table td button:not([role="switch"]){padding-top:4px!important;padding-bottom:4px!important;min-height:32px!important;height:auto!important;line-height:1.4}
+ body .board-row{padding-top:6px!important;padding-bottom:6px!important}
+ body .board-row .board-topic{padding-top:3px;padding-bottom:3px}
+ body .board-reply{padding-top:10px;padding-bottom:10px}
+ body .board-reply .board-body{line-height:1.6;margin-top:4px;margin-bottom:4px}
+ body .history-item{padding-top:5px;padding-bottom:5px;line-height:1.5}
+ body .last-logins ol{row-gap:8px}
+ @media(pointer:coarse){body table td button:not([role="switch"]){min-height:44px!important}}
+}
+
    .edit-text-action{color:#0284c7!important;font-weight:700!important;width:auto!important;max-width:none!important;min-width:60px!important;height:auto!important;min-height:38px;padding:8px 12px!important;white-space:nowrap!important}
    .page-action-footer{display:flex!important;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap;width:100%;margin:18px 0 0!important;padding:16px!important;border:1px solid #cce5e5;border-radius:12px;background:#f4fafb;box-sizing:border-box}
    .page-action-footer>.danger,.page-action-footer>.delete-record,.page-action-footer>[data-delete],.page-action-footer>[id^="delete"]{margin-right:auto}
