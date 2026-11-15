@@ -432,3 +432,11 @@ aside .brand-logo{width:100%;height:auto;aspect-ratio:2.55;object-fit:cover;obje
 #recent-updates .recent-updates-table th:last-child{width:35%}
 #recent-updates .recent-updates-table strong{font-size:13px;white-space:normal;overflow-wrap:anywhere}
 #recent-updates .recent-updates-table time{font-size:11px;white-space:normal;line-height:1.5;margin-top:4px}
+
+#recent-updates .recent-updates-table{font-size:13px}
+#recent-updates .recent-updates-table th{font-size:12px}
+#recent-updates .recent-updates-table strong{font-size:14px}
+#recent-updates .recent-updates-table time{font-size:12px}
+#recent-updates .recent-record-link{display:block;max-width:100%;min-width:0;padding:0;border:0;border-radius:3px;background:none;color:inherit;text-align:left;font:inherit;white-space:normal;overflow-wrap:anywhere;cursor:pointer}
+#recent-updates .recent-record-link:hover{color:#087f83;text-decoration:underline}
+#recent-updates .recent-record-link:focus-visible{outline:2px solid #087f83;outline-offset:3px}

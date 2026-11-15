@@ -1,3 +1,4 @@
+import {recordEditorDocument,hasRecordEditorTab,focusRecordEditorTab,openRecordEditorTab} from './record-editor-tab.js?v=20261115-recent-edit';
 import {createWebBoard} from './webboard.js?v=20261114-board-sub';
 import './page-actions.js?v=20261115-orange-favicon';
 import {seedGroups} from './standby-seed.js';
@@ -14,12 +15,12 @@ import {createLoginGuard,createPresence} from './presence.js?v=20261112-single-l
 import {createMembersPage} from './members.js?v=20261114-record-history';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261105-circuit';
-import {equipmentEventTypes,genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261115-recent-fit';
+import {equipmentEventTypes,genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261115-recent-edit';
 import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261115-breaker-ds';
 import {rotateLogins,loginEntries,loginTime,publicLoginTime,nextLoginStat,rotatePublicLogins} from './login-history.js?v=20261115-logins20';
 'use strict';
 import {dateParts,dateText,stamp,credential,loginEmail,readDate,normalizeTime,mergedEquipment} from './utils.js?v=20261027-merged';
-const $=s=>document.querySelector(s), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $=s=>recordEditorDocument(document).querySelector(s)||document.querySelector(s), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const statuses={unreviewed:'รอตรวจสอบ',pending:'รอดำเนินการ',repairing:'กำลังซ่อม',resolved:'ซ่อมแล้ว'}, priorities={normal:'ปกติ',urgent:'เร่งด่วน',critical:'วิกฤต'};
 const eventTypes=['อุปกรณ์ขัดข้อง','Abnormal Alarm','Winding Temp Alarm','โครงการก่อสร้าง','งานบำรุงรักษาเกินกำหนด','ข้อจำกัด ระบบส่ง','งาน Switching Order'];
 const fields={code:'รหัสอุปกรณ์ชำรุด',date:'วันที่ได้รับแจ้งอุปกรณ์ชำรุด (พ.ศ.)',time:'เวลาที่ได้รับแจ้งอุปกรณ์ชำรุด',station:'สถานีไฟฟ้าแรงสูง',eventType:'ประเภทเหตุการณ์',category:'ชนิดอุปกรณ์',equipment:'อุปกรณ์ที่ชำรุด (อุปกรณ์ที่ OFF)',cause:'สาเหตุ ที่ ปลด (OFF)',criticality:'ระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า',owner:'ผู้รับผิดชอบแก้ไข',reporter:'ผู้แจ้ง',receiver:'พนักงานศูนย์ ผู้รับเรื่อง',due:'คาดการณ์กำหนดการแก้ไข (พ.ศ.)',status:'สถานะ',priority:'ความเร่งด่วน'};
@@ -292,11 +293,11 @@ function assessmentControl(value={}) {
 function setupAssessment() {
  const update=()=>{
   const required=false;
-  document.querySelectorAll('[name^="assessment-"]').forEach(el=>el.required=required);
+  recordEditorDocument(document).querySelectorAll('[name^="assessment-"]').forEach(el=>el.required=required);
   $('.assessment-field').classList.toggle('requires-assessment',required);
   $('#assessment-requirement').textContent=required?'ระดับสูง: ต้องกรอกผลประเมินให้ครบทั้ง 4 ข้อ':'กรอกผลประเมินเพิ่มเติมได้ตามข้อมูลที่มี';
  };
- document.querySelectorAll('#fields [name="criticality"]').forEach(el=>el.addEventListener('change',update));update();
+ recordEditorDocument(document).querySelectorAll('#fields [name="criticality"]').forEach(el=>el.addEventListener('change',update));update();
 }
 function repairPlanControl(record={}) {
  const plan=record.repairPlan||{};
@@ -306,10 +307,11 @@ function repairPlanControl(record={}) {
 }
 function setupRepairPlan(){
  const unknown=$('[name="repair-unknown"]');
- const update=()=>document.querySelectorAll('[name^="repair-expected-"]').forEach(el=>el.disabled=!canEdit()||unknown.checked);
+ const update=()=>recordEditorDocument(document).querySelectorAll('[name^="repair-expected-"]').forEach(el=>el.disabled=!canEdit()||unknown.checked);
  unknown.addEventListener('change',update);update();
 }
-function edit(r){
+function edit(r,show=true){
+ if(show&&hasRecordEditorTab()){focusRecordEditorTab();toast('กรุณาปิดหน้าแก้ไขเดิมก่อนเปิดรายการอื่น');return;}
  if(!cloudReady)return toast('รอโหลดข้อมูลก่อน');if(!r&&!canEdit())return;
  editing=r?structuredClone(r):null;
  const current=dateParts();
@@ -332,12 +334,12 @@ function edit(r){
  $('#followups').innerHTML=Array.from({length:3},(_,i)=>{const v=r?.followups?.[i]||{};return `<tr><td><span class="followup-number">ครั้งที่ ${i+1}</span><button type="button" class="followup-now" data-followup-now="${i}" aria-label="เติมเวลาปัจจุบัน ครั้ง ${i+1}">เวลาปัจจุบัน</button></td><td><div class="followup-when">${dateControl('follow-'+i,v.date)}<input type="time" step="60" name="follow-${i}-time" aria-label="เวลาติดตาม ครั้ง ${i+1}" value="${esc(v.time)}"></div></td>`+['informant','mobile','details'].map((k,j)=>`<td>${k==='details'?`<textarea name="follow-${i}-${k}" maxlength="4000" aria-label="${['ชื่อผู้ให้ข้อมูล','เบอร์มือถือผู้ให้ข้อมูล','รายละเอียด'][j]} ครั้ง ${i+1}">${esc(v[k])}</textarea>`:`<input name="follow-${i}-${k}" ${k==='mobile'?'type="tel" inputmode="tel"':''} maxlength="250" aria-label="${['ชื่อผู้ให้ข้อมูล','เบอร์มือถือผู้ให้ข้อมูล','รายละเอียด'][j]} ครั้ง ${i+1}" value="${esc(v[k])}">`}</td>`).join('')+'</tr>'}).join('');
  const authors = historyNames(data);
  $('#history').innerHTML=(r?.history||[]).slice().reverse().map(h=>`<div class="history-item">${esc(String(h.note||'').replace(/แก้ปีวันที่ตามผู้ดูแล: 19\d{2}-\d{2}-\d{2} → พ.ศ. (25\d{2})-(\d{2})-(\d{2}) \(คงวันและเดือนเดิม\)/,'ตรวจแก้ปีวันที่เป็น $3/$2/$1 พ.ศ. (เก็บค่าต้นฉบับไว้แล้ว)'))}<small><time class="thai-date-display">${esc(dateText(h.at?.toDate?.()?.toISOString() || h.at))}</time> · ${esc(historyAuthor(h,authors))}</small></div>`).join('');
- document.querySelectorAll('#fields input,#fields textarea,#fields select,#followups input,#followups textarea,#followups select').forEach(el=>el.disabled=!canEdit());
+ recordEditorDocument(document).querySelectorAll('#fields input,#fields textarea,#fields select,#followups input,#followups textarea,#followups select').forEach(el=>el.disabled=!canEdit());
  $('#fields [name="highlight"]').disabled=!canEdit()||!canHighlight();
  setupStation($('#fields .station-control'),canEdit());
  setupRepairPlan();
  $('#save').hidden=!canEdit();$('#delete').hidden=role!=='admin'||!['super admin','king admin'].includes(memberDuty)||!r;
- $('#editor').showModal();
+ if(show)$('#editor').showModal();
 }
 $('#add').onclick=()=>edit();
 $('#add-abnormal').onclick=()=>{if(!canEdit())return;if(window.openAbnormalDraft)window.openAbnormalDraft();else toast('โหลดฟอร์มไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ')};
@@ -532,4 +534,24 @@ $('#dashboard').addEventListener('click',e=>{
  });
  page.document.getElementById('add-table-alarm')?.addEventListener('click',()=>{if(!canEdit())return;$('#add-abnormal').click();window.focus();page.close();});
  page.document.getElementById('close-table-page').addEventListener('click',()=>page.close());
+});
+
+document.querySelector('#recent-updates').addEventListener('click',event=>{
+ const link=event.target.closest('[data-recent-record]');if(!link||!cloudReady)return;
+ const key=link.dataset.recentRecord,stored=key.startsWith('alarm:');
+ const record=(stored?alarmData:data).find(r=>r.id===(stored?key.slice(6):key));
+ if(!record){toast('ไม่พบรายการ กรุณาโหลดหน้าใหม่');return;}
+ if(busy){toast('กำลังบันทึกข้อมูล กรุณารอสักครู่');return;}
+ if(stored){
+  const tab=window.open('','_blank');if(!tab){toast('กรุณาอนุญาตให้เปิดแท็บใหม่');return;}
+  tab.document.write('<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>แก้ไข Abnormal Alarm</title><link rel="stylesheet" href="'+new URL('./styles.css?v=20261115-recent-edit',location.href).href+'"><style>dialog[open]{width:100%;max-width:1400px;max-height:96vh}</style></head><body></body></html>');tab.document.close();tab.opener=null;
+  installThaiDateTime(tab);window.openAbnormalDraft(record,tab.document);
+  for(const file of ['date-pickers.js?v=20261114-no-short-weekday','time-pickers.js?v=20261102-24h']){const script=tab.document.createElement('script');script.src=new URL(file,location.href).href;tab.document.body.append(script);}
+  tab.document.querySelector('dialog')?.addEventListener('close',()=>tab.close(),{once:true});tab.focus();return;
+ }
+ try{
+  const result=openRecordEditorTab({dialog:document.querySelector('#editor'),prepare:()=>edit(record,false),enhance:installThaiDateTime,onActivity:()=>idleSession.activity(),title:'แก้ไขข้อมูล #'+record.code});
+  if(result==='blocked')toast('กรุณาอนุญาตให้เปิดแท็บใหม่');
+  if(result==='existing')toast('กรุณาปิดหน้าแก้ไขเดิมก่อนเปิดรายการอื่น');
+ }catch(error){toast('เปิดหน้าแก้ไขไม่สำเร็จ: '+error.message);}
 });
