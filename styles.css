@@ -456,3 +456,13 @@ aside .brand-logo{width:100%;height:auto;aspect-ratio:2.55;object-fit:cover;obje
 @media(max-width:600px){
  .public-logins .login-entry{grid-template-columns:minmax(0,1fr);gap:0}
 }
+
+/* Main event and its dependent radio choices share the existing editor controls. */
+.event-classification{display:grid;gap:16px;min-width:0}
+.event-classification>.event-type-field{margin:0;min-width:0}
+.event-classification .event-type-options{grid-template-columns:repeat(3,minmax(0,1fr))}
+.event-classification .event-type-options label{min-width:0;margin:0;align-items:center}
+.event-classification .event-type-options span{min-width:0;overflow-wrap:break-word}
+.event-classification .event-choice-hint{grid-column:1/-1;margin:0;color:#627c8c}
+@media(max-width:850px){.event-classification .event-type-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.event-classification .event-type-options{grid-template-columns:minmax(0,1fr)}}
