@@ -26,7 +26,7 @@ export function installBrandIcons(win = window) {
     link.href = href;
     doc.head.append(link);
    }
-   const logoUrl = new URL('./crod-grid-care-transparent-512.png?v=20261115-transparent-all', import.meta.url).href;
+   const logoUrl = new URL('./crod-grid-care-white-tower.svg?v=20261115-white-tower', import.meta.url).href;
    for (const logo of doc.querySelectorAll('img.brand-logo')) {
     if (logo.src !== logoUrl) logo.src = logoUrl;
     if (!logo.alt) logo.alt = 'CROD GRID CARE';
