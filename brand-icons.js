@@ -1,6 +1,6 @@
 const brandAssets = [
- {rel:'icon', type:'image/x-icon', file:'crod-grid-care-transparent.ico'},
- {rel:'icon', type:'image/png', sizes:'192x192', file:'crod-grid-care-transparent-192.png'},
+ {rel:'icon', type:'image/x-icon', file:'favicon-orange.ico'},
+ {rel:'icon', type:'image/png', sizes:'64x64', file:'favicon-orange-64.png'},
  {rel:'apple-touch-icon', file:'crod-grid-care-transparent-192.png'},
  {rel:'manifest', file:'site.webmanifest'}
 ];
