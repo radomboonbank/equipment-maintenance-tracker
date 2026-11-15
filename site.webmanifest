@@ -8,13 +8,13 @@
   "theme_color": "#087f83",
   "icons": [
     {
-      "src": "crod-grid-care-transparent-192.png?v=20261115-transparent-all",
+      "src": "crod-grid-care-transparent-192.png?v=20261115-approved-v4",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "crod-grid-care-transparent-512.png?v=20261115-transparent-all",
+      "src": "crod-grid-care-transparent-512.png?v=20261115-approved-v4",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"

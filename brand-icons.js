@@ -12,12 +12,12 @@ export function installBrandIcons(win = window) {
   doc.__gridBrandHead = doc.head;
   function update() {
    const expected = new Set(brandAssets.map(asset =>
-    new URL('./' + asset.file + '?v=20261115-transparent-all', import.meta.url).href));
+    new URL('./' + asset.file + '?v=20261115-approved-v4', import.meta.url).href));
    for (const link of doc.head.querySelectorAll('link[rel]')) {
     if (['icon','shortcut icon','apple-touch-icon','manifest'].includes(link.rel) && !expected.has(link.href)) link.remove();
    }
    for (const asset of brandAssets) {
-    const href = new URL('./' + asset.file + '?v=20261115-transparent-all', import.meta.url).href;
+    const href = new URL('./' + asset.file + '?v=20261115-approved-v4', import.meta.url).href;
     if ([...doc.head.querySelectorAll('link')].some(link => link.rel === asset.rel && link.href === href)) continue;
     const link = doc.createElement('link');
     link.rel = asset.rel;
@@ -26,7 +26,7 @@ export function installBrandIcons(win = window) {
     link.href = href;
     doc.head.append(link);
    }
-   const logoUrl = new URL('./crod-grid-care-white-tower.svg?v=20261115-white-tower', import.meta.url).href;
+   const logoUrl = new URL('./crod-grid-care-white-tower.svg?v=20261115-approved-v4', import.meta.url).href;
    for (const logo of doc.querySelectorAll('img.brand-logo')) {
     if (logo.src !== logoUrl) logo.src = logoUrl;
     if (!logo.alt) logo.alt = 'CROD GRID CARE';
