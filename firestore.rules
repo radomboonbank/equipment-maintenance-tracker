@@ -376,7 +376,7 @@ service cloud.firestore {
    return d.keys().hasAll(['schemaVersion','title','body','category','createdBy','createdByName','createdAt','updatedBy','updatedAt','revision','hidden'])
     && d.keys().hasOnly(['schemaVersion','title','body','category','createdBy','createdByName','createdAt','updatedBy','updatedAt','revision','hidden'])
     && d.schemaVersion==1 && d.title is string && d.title.size()>0 && d.title.size()<=120
-    && d.body is string && d.body.size()>0 && d.body.size()<=10000
+    && d.body is string && d.body.size()<=10000
     && d.category in ['ทั่วไป','งานระบบไฟฟ้า','แจ้งปัญหา / ข้อเสนอแนะ']
     && d.createdBy is string && d.createdByName is string && d.createdAt is timestamp
     && d.updatedBy==request.auth.uid && d.updatedAt==request.time
