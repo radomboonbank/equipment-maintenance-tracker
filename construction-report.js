@@ -47,7 +47,7 @@ function sortValue(data, key) {
 }
 
 export function matchesJobPrefix(projectId, prefix) {
- return !prefix || String(projectId ?? '').trim().toUpperCase().split(/[-\\s]/, 1)[0] === prefix;
+ return !prefix || String(projectId ?? '').trim().toUpperCase().split(/[-\s]/, 1)[0] === prefix;
 }
 
 export function showConstructionRows(doc, records, openEditor) {
