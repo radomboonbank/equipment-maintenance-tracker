@@ -1,7 +1,7 @@
 const brandAssets = [
- {rel:'icon', type:'image/x-icon', file:'CROD-Grid-Care.ico'},
- {rel:'icon', type:'image/png', sizes:'192x192', file:'icon-192.png'},
- {rel:'apple-touch-icon', file:'icon-192.png'},
+ {rel:'icon', type:'image/x-icon', file:'crod-grid-care-transparent.ico'},
+ {rel:'icon', type:'image/png', sizes:'192x192', file:'crod-grid-care-transparent-192.png'},
+ {rel:'apple-touch-icon', file:'crod-grid-care-transparent-192.png'},
  {rel:'manifest', file:'site.webmanifest'}
 ];
 
@@ -11,8 +11,13 @@ export function installBrandIcons(win = window) {
   if (!doc.head || doc.__gridBrandHead === doc.head) return;
   doc.__gridBrandHead = doc.head;
   function update() {
+   const expected = new Set(brandAssets.map(asset =>
+    new URL('./' + asset.file + '?v=20261115-transparent-all', import.meta.url).href));
+   for (const link of doc.head.querySelectorAll('link[rel]')) {
+    if (['icon','shortcut icon','apple-touch-icon','manifest'].includes(link.rel) && !expected.has(link.href)) link.remove();
+   }
    for (const asset of brandAssets) {
-    const href = new URL('./' + asset.file + '?v=20261115-transparent', import.meta.url).href;
+    const href = new URL('./' + asset.file + '?v=20261115-transparent-all', import.meta.url).href;
     if ([...doc.head.querySelectorAll('link')].some(link => link.rel === asset.rel && link.href === href)) continue;
     const link = doc.createElement('link');
     link.rel = asset.rel;
@@ -20,6 +25,11 @@ export function installBrandIcons(win = window) {
     if (asset.sizes) link.sizes = asset.sizes;
     link.href = href;
     doc.head.append(link);
+   }
+   const logoUrl = new URL('./crod-grid-care-transparent-512.png?v=20261115-transparent-all', import.meta.url).href;
+   for (const logo of doc.querySelectorAll('img.brand-logo')) {
+    if (logo.src !== logoUrl) logo.src = logoUrl;
+    if (!logo.alt) logo.alt = 'CROD GRID CARE';
    }
   }
   update();
