@@ -1,3 +1,4 @@
+import './project-abbreviations.js?v=20261115-table-actions';
 import {mountRecordHistory} from './record-history.js?v=20261114-record-history';
 export async function readConstructionReport(keyText){
  const bytes=value=>Uint8Array.from(atob(value.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
