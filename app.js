@@ -1,5 +1,5 @@
 import {historyNote} from './record-history.js?v=20261115-no-work-status';
-import {eventClassificationHtml,setupEventClassification,serializeEventClassification} from './event-classification.js?v=20261115-main-radio';
+import {eventClassificationHtml,setupEventClassification,serializeEventClassification} from './event-classification.js?v=20261115-fault-only';
 import {recordEditorDocument,hasRecordEditorTab,focusRecordEditorTab,openRecordEditorTab} from './record-editor-tab.js?v=20261115-no-work-status';
 import {createWebBoard} from './webboard.js?v=20261114-board-sub';
 import './page-actions.js?v=20261115-full-tabs';
@@ -249,7 +249,7 @@ function dateControl(name,value=''){
  return `<div class="date-control"><select name="${name}-day" aria-label="วัน ${name}">${opts(Array.from({length:31},(_,i)=>[i+1,i+1]),d)}</select><select name="${name}-month" aria-label="เดือน ${name}">${opts(['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'].map((v,i)=>[i+1,v]),m)}</select><select name="${name}-year" aria-label="ปี พ.ศ. ${name}">${opts(years.map(v=>[v,v]),y+543)}</select></div>`;
 }
 function formDate(f,name){try{return readDate(f.get(name+'-day'),f.get(name+'-month'),f.get(name+'-year'))}catch(error){const label=name==='repair-expected'?'วันที่คาดว่าจะแก้ไขเสร็จ':name.startsWith('follow-')?'วันที่ติดตามครั้ง '+(Number(name.slice(7))+1):fields[name]||name;throw Error(label+': '+error.message)}}
-function eventTypeControl(record={}){return eventClassificationHtml(record);}
+function eventTypeControl(record={},newRecord=false){return eventClassificationHtml(record,{faultOnly:newRecord});}
 function categoryControl(value='') {
  const current=parseEquipmentCategory(value);
  const choices=equipmentTypes.map(type=>[type.name,type.name]);
@@ -318,7 +318,7 @@ function edit(r,show=true){
  $('#fields').innerHTML=Object.entries(fields).filter(([key])=>!retiredRecordFields.has(key)).map(([k,l])=>{
   const val=(k==='equipment'?mergedEquipment(r||{}):(r?.[k]??defaults[k]))||(k==='priority'?'normal':'');
   if(k==='station')return stationControl(r||{});
-  if(k==='eventType')return eventTypeControl(r||{eventType:'อุปกรณ์ขัดข้อง'});
+  if(k==='eventType')return eventTypeControl(r||{eventType:'อุปกรณ์ขัดข้อง'},!r);
   if(k==='category')return categoryControl(val);
   if(k==='criticality')return criticalityControl(val)+assessmentControl(r?.criticalityAssessment)+repairPlanControl(r||{});
   const long=['equipment','cause'].includes(k);
@@ -357,6 +357,7 @@ $('#record-form').onsubmit=async e=>{
  try{
   const f=new FormData(e.target),r=Object.fromEntries(Object.keys(fields).map(k=>[k,retiredRecordFields.has(k)?(editing?.[k]??(k==='status'?'pending':k==='priority'?'normal':'')):['date','due'].includes(k)?formDate(f,k):String(f.get(k)||(k==='criticality'?editing?.criticality:'')||'').trim()]));
   Object.assign(r,readStation(f),serializeEventClassification(String(f.get('eventPrimary')||''),String(f.get('eventSecondary')||''),editing||{}));
+  if(!editing&&r.eventPrimary!=='อุปกรณ์ชำรุด/ไม่พร้อมใช้งาน')throw Error('หน้าแจ้งอุปกรณ์ชำรุดใช้เหตุการณ์หลัก อุปกรณ์ชำรุด/ไม่พร้อมใช้งาน เท่านั้น');
   if(r.eventType&&!eventTypes.includes(r.eventType))throw Error('กรุณาเลือกประเภทเหตุการณ์');
   if(r.criticality&&!Object.hasOwn(criticalities,r.criticality)&&!Object.hasOwn(legacyCriticalities,r.criticality))throw Error('กรุณาเลือกระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า');
   const criticalityAssessment=Object.fromEntries(Object.keys(assessmentFields).map(key=>[key,String(key==='effect'?(f.get('assessment-effect')||''):(editing?.criticalityAssessment?.[key]||'')).trim()]));
