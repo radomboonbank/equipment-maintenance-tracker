@@ -18,7 +18,7 @@ export function openRecordEditorTab({dialog,prepare,enhance,title='แก้ไ�
  };
  try{
   prepare();
-  tab.document.write(`<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(title)} · CROD GRID CARE</title><link rel="stylesheet" href="${asset('styles.css?v=20261115-recent-edit')}"><link rel="stylesheet" href="${asset('responsive.css?v=20261115-full-tabs')}"><style>html,body{margin:0;background:white}dialog#editor[open]{position:relative;inset:auto;width:100%;max-width:none;max-height:none;margin:0 auto;border:0;border-radius:0;box-shadow:none;padding:clamp(18px,3vw,40px)}dialog::backdrop{background:white}</style></head><body></body></html>`);
+  tab.document.write(`<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(title)} · CROD GRID CARE</title><link rel="stylesheet" href="${asset('styles.css?v=20261115-event-fields')}"><link rel="stylesheet" href="${asset('responsive.css?v=20261115-full-tabs')}"><style>html,body{margin:0;background:white}dialog#editor[open]{position:relative;inset:auto;width:100%;max-width:none;max-height:none;margin:0 auto;border:0;border-radius:0;box-shadow:none;padding:clamp(18px,3vw,40px)}dialog::backdrop{background:white}</style></head><body></body></html>`);
   tab.document.close();tab.opener=null;
   tab.document.body.append(dialog);activeTab=tab;
   enhance?.(tab);
