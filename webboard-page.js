@@ -1,4 +1,4 @@
-import {createWebBoard} from './webboard.js?v=20261114-board-sub';
+import {createWebBoard} from './webboard.js?v=20261115-board-save';
 const source=window.opener;
 function session(){
  try{
