@@ -1,5 +1,5 @@
 import {historyNote} from './record-history.js?v=20261115-no-work-status';
-import {eventClassificationHtml,setupEventClassification,serializeEventClassification} from './event-classification.js?v=20261115-no-work-status';
+import {eventClassificationHtml,setupEventClassification,serializeEventClassification} from './event-classification.js?v=20261115-main-radio';
 import {recordEditorDocument,hasRecordEditorTab,focusRecordEditorTab,openRecordEditorTab} from './record-editor-tab.js?v=20261115-no-work-status';
 import {createWebBoard} from './webboard.js?v=20261114-board-sub';
 import './page-actions.js?v=20261115-full-tabs';
