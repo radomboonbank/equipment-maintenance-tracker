@@ -1,6 +1,6 @@
 import {mountRecordHistory} from './record-history.js?v=20261114-record-history';
 import {setupMemberBackup} from './member-backup.js?v=20261107';
-import {editIconHtml} from './edit-icons.js?v=20261106';
+import {editIconHtml} from './edit-icons.js?v=20261115-dashboard-actions';
 import {setupTelegramControl} from './telegram-settings.js?v=20261107-backup';
 import {credential} from './utils.js';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
