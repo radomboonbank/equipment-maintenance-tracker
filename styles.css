@@ -477,3 +477,35 @@ body .edit-action-button,body .edit-text-action,body [data-board-edit]{color:#02
 .heading>.work-action-buttons{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
 .heading>.work-action-buttons button{white-space:nowrap}
 @media(max-width:900px){.heading>.work-action-buttons{width:100%;justify-content:flex-start}}
+
+/* Alarm report: consistent two-column fields and aligned date/time controls. */
+.alarm-report-layout{padding:clamp(16px,2vw,30px);width:min(1440px,98vw)}
+.alarm-report-layout .work-draft-form{padding:0}
+.alarm-report-layout .work-draft-title{align-items:flex-start;margin-bottom:8px}
+.alarm-report-layout .work-draft-title h2{margin:6px 0;font-size:clamp(24px,2vw,30px);line-height:1.4}
+.alarm-report-layout .work-draft-title+p{margin:0 0 24px}
+.alarm-report-layout .construction-section{padding:20px;margin:22px 0}
+.alarm-report-layout .construction-grid{gap:18px 24px;align-items:start}
+.alarm-report-layout .construction-grid>label{display:grid;gap:8px;margin:0;min-width:0;line-height:1.5}
+.alarm-report-layout .construction-grid>label>input,.alarm-report-layout .construction-grid>label>select,.alarm-report-layout .construction-grid>label>textarea{margin:0}
+.alarm-report-layout .construction-grid>.fixed-event-type{grid-column:1}
+.alarm-report-layout .construction-grid>.highlight-control{grid-column:2;display:flex!important;align-self:end;align-items:center;gap:10px;min-height:48px;padding:10px 14px;border:1px solid #cde2e5;border-radius:9px;background:#fff;width:max-content;max-width:100%}
+.alarm-report-layout .highlight-control input{width:18px;height:18px;margin:0;accent-color:#087f83}
+.alarm-report-layout .thai-date-summary{display:none!important}
+.alarm-report-layout .be-calendar,.alarm-report-layout .time-picker-24,.alarm-report-layout .thai-time-controls{margin:0!important}
+.alarm-report-layout .be-calendar-display,.alarm-report-layout .time-picker-24 select,.alarm-report-layout .construction-grid>label>input:not([type=checkbox]),.alarm-report-layout .construction-grid>label>select{min-height:48px}
+.alarm-report-layout .bess-event{padding:20px}
+.alarm-report-layout .alarm-reset-status{padding:14px 16px;background:#f3fafa;border-color:#c8e4e8}
+.alarm-report-layout .alarm-reset-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:600px}
+.alarm-report-layout .alarm-reset-options .bess-trip-check{margin:0;padding:12px 14px;border:1px solid #d8e5e9;border-radius:9px;background:#fff;cursor:pointer;min-height:48px}
+.alarm-report-layout .alarm-reset-options label:has(input:checked){background:#e4f5f3;border-color:#00858c}
+.alarm-report-layout [data-reset-fields]:not([hidden]){margin-top:18px;margin-bottom:24px}
+.alarm-report-layout .bess-event h4{margin:24px 0 12px}
+.alarm-report-layout .alarm-section-reporter{padding-top:18px;margin-top:6px;gap:18px 24px}
+.alarm-report-layout .alarm-section-save{margin-top:22px;padding-top:18px;gap:12px}
+@media(max-width:720px){
+ .alarm-report-layout .construction-grid{grid-template-columns:minmax(0,1fr);gap:16px}
+ .alarm-report-layout .construction-grid>.fixed-event-type,.alarm-report-layout .construction-grid>.highlight-control{grid-column:1}
+ .alarm-report-layout .construction-section,.alarm-report-layout .bess-event{padding:16px}
+}
+@media(max-width:420px){.alarm-report-layout .alarm-reset-options{grid-template-columns:minmax(0,1fr)}}
