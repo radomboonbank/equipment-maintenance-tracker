@@ -409,3 +409,16 @@ aside .brand-caption{flex:1;font-size:11px;font-weight:400;line-height:1.65;colo
 
 .login-story .brand-logo{width:min(340px,100%);height:130px;object-fit:cover;object-position:center 52%}
 @media(max-width:720px){.login-story .brand-logo{width:260px;height:100px}}
+
+/* Full-width sidebar branding and compact public login statistics. */
+aside .brand{width:100%;margin:0 0 24px;justify-content:center}
+aside .brand-logo{width:100%;height:auto;aspect-ratio:2.55;object-fit:cover;object-position:center 52%}
+.login-story .brand-lockup{width:min(340px,100%)}
+.login-story .brand-lockup .brand{justify-content:center}
+.login-story .brand-motto{text-align:center;width:100%;white-space:nowrap}
+.public-logins ol{gap:9px}
+.public-logins .login-entry{font-size:12px;line-height:1.7}
+.public-logins .login-entry strong{display:inline;font-size:inherit}
+.public-logins .login-entry time{display:inline;font-size:11px;margin:0 0 0 6px;white-space:nowrap}
+@media(max-width:1050px) and (min-width:721px){aside .brand{width:100%;margin-inline:0}aside .brand-logo{width:100%;height:auto}}
+@media(max-width:720px){aside .brand{width:min(220px,65%);margin-bottom:0}aside .brand-logo{width:100%;height:auto}.login-story .brand-lockup{width:min(260px,100%)}}

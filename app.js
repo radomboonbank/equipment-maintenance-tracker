@@ -16,7 +16,7 @@ import {matchesListFilters,compareEventDates} from './table-filters.js?v=2026102
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261105-circuit';
 import {equipmentEventTypes,genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261115-brand-category';
 import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261115-brand-category';
-import {rotateLogins,loginEntries,loginTime,nextLoginStat,rotatePublicLogins} from './login-history.js?v=20261104-stats';
+import {rotateLogins,loginEntries,loginTime,publicLoginTime,nextLoginStat,rotatePublicLogins} from './login-history.js?v=20261115-logins20';
 'use strict';
 import {dateParts,dateText,stamp,credential,loginEmail,readDate,normalizeTime,mergedEquipment} from './utils.js?v=20261027-merged';
 const $=s=>document.querySelector(s), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -85,11 +85,11 @@ async function recordLogin() {
 
 function watchPublicLogins(){
  const list=$('#public-logins-list');
- const query=cloud.query(cloud.collection(cloud.db,'publicLoginStats'),cloud.orderBy('lastLoginAt','desc'),cloud.limit(10));
+ const query=cloud.query(cloud.collection(cloud.db,'publicLoginStats'),cloud.orderBy('lastLoginAt','desc'),cloud.limit(20));
  cloud.onSnapshot(query,snapshot=>{
   snapshot.docs.forEach(doc=>rememberLogin(doc.id,doc.data()));updateLoginSession();
   const entries=snapshot.docs.map(doc=>doc.data());
-  list.innerHTML=entries.length?entries.map((entry,i)=>`<li><span class="login-rank">${String(i+1).padStart(2,'0')}</span><div class="login-entry"><strong>${esc(entry.displayName)} (${esc(entry.count)} ครั้ง)</strong><time>${esc(loginTime(entry.lastLoginAt))}</time></div></li>`).join(''):'<li class="login-empty">ยังไม่มีสถิติการเข้าสู่ระบบ</li>';
+  list.innerHTML=entries.length?entries.map((entry,i)=>`<li><span class="login-rank">${String(i+1).padStart(2,'0')}</span><div class="login-entry"><strong>${esc(entry.displayName)} (${esc(entry.count)} ครั้ง)</strong><time class="event-date">${esc(publicLoginTime(entry.lastLoginAt))}</time></div></li>`).join(''):'<li class="login-empty">ยังไม่มีสถิติการเข้าสู่ระบบ</li>';
  },error=>{list.innerHTML='<li class="login-empty">ยังโหลดสถิติไม่ได้ กรุณาลองใหม่ภายหลัง</li>';console.warn('Public login statistics unavailable:',error.code)});
 }
 function watchLogins() {

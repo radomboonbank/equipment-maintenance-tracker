@@ -14,3 +14,9 @@ export function rotatePublicLogins(previous,entry){return Object.fromEntries(pub
 export function nextLoginStat(previous,displayName,now){
  return {displayName,count:(previous?.count||0)+1,firstLoginAt:previous?.firstLoginAt||now,lastLoginAt:now};
 }
+
+export function publicLoginTime(value){
+ const date=value?.toDate?.() || (value instanceof Date?value:null);
+ if(!date || Number.isNaN(date.getTime()))return '';
+ return new Intl.DateTimeFormat('th-TH-u-ca-buddhist',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(date);
+}
