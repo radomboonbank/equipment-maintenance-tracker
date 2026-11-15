@@ -12,7 +12,7 @@ export function installBrandIcons(win = window) {
   doc.__gridBrandHead = doc.head;
   function update() {
    for (const asset of brandAssets) {
-    const href = new URL('./' + asset.file + '?v=20261115', import.meta.url).href;
+    const href = new URL('./' + asset.file + '?v=20261115-transparent', import.meta.url).href;
     if ([...doc.head.querySelectorAll('link')].some(link => link.rel === asset.rel && link.href === href)) continue;
     const link = doc.createElement('link');
     link.rel = asset.rel;
