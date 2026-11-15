@@ -348,7 +348,7 @@ $('#add-abnormal').onclick=()=>{
  if(!canEdit())return;
  if(!window.openAbnormalDraft){toast('โหลดฟอร์มไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ');return;}
  const tab=window.open('','_blank');if(!tab){toast('กรุณาอนุญาตให้เปิดแท็บใหม่');return;}
- tab.document.write('<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>แจ้ง Abnormal Alarm</title><link rel="stylesheet" href="'+new URL('./styles.css?v=20261115-dashboard-actions',location.href).href+'"><link rel="stylesheet" href="'+new URL('./responsive.css?v=20261115-full-tabs',location.href).href+'"></head><body></body></html>');
+ tab.document.write('<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>แจ้ง Abnormal Alarm</title><link rel="stylesheet" href="'+new URL('./styles.css?v=20261115-alarm-layout',location.href).href+'"><link rel="stylesheet" href="'+new URL('./responsive.css?v=20261115-full-tabs',location.href).href+'"></head><body></body></html>');
  tab.document.close();tab.opener=null;installThaiDateTime(tab);window.openAbnormalDraft(null,tab.document);
  for(const file of ['date-pickers.js?v=20261114-no-short-weekday','time-pickers.js?v=20261102-24h']){const script=tab.document.createElement('script');script.src=new URL(file,location.href).href;tab.document.body.append(script);}
  tab.document.querySelector('dialog')?.addEventListener('close',()=>tab.close(),{once:true});tab.focus();
@@ -532,7 +532,7 @@ $('#dashboard').addEventListener('click',e=>{
   if(stored){
    try{
     if(!page.document.querySelector('[data-alarm-editor-assets]')){
-     const style=page.document.createElement('link');style.rel='stylesheet';style.href=new URL('./styles.css',location.href).href;style.dataset.alarmEditorAssets='true';page.document.head.append(style);
+     const style=page.document.createElement('link');style.rel='stylesheet';style.href=new URL('./styles.css?v=20261115-alarm-layout',location.href).href;style.dataset.alarmEditorAssets='true';page.document.head.append(style);
      for(const file of ['date-pickers.js?v=20261114-no-short-weekday','time-pickers.js']){const script=page.document.createElement('script');script.src=new URL(file,location.href).href;page.document.head.append(script)}
     }
     window.openAbnormalDraft(record,page.document);page.focus();
@@ -556,7 +556,7 @@ document.querySelector('#recent-updates').addEventListener('click',event=>{
  if(busy){toast('กำลังบันทึกข้อมูล กรุณารอสักครู่');return;}
  if(stored){
   const tab=window.open('','_blank');if(!tab){toast('กรุณาอนุญาตให้เปิดแท็บใหม่');return;}
-  tab.document.write('<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>แก้ไข Abnormal Alarm</title><link rel="stylesheet" href="'+new URL('./styles.css?v=20261115-recent-edit',location.href).href+'"><style>dialog[open]{width:100%;max-width:1400px;max-height:96vh}</style></head><body></body></html>');tab.document.close();tab.opener=null;
+  tab.document.write('<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>แก้ไข Abnormal Alarm</title><link rel="stylesheet" href="'+new URL('./styles.css?v=20261115-alarm-layout',location.href).href+'"><style>dialog[open]{width:100%;max-width:1400px;max-height:96vh}</style></head><body></body></html>');tab.document.close();tab.opener=null;
   installThaiDateTime(tab);window.openAbnormalDraft(record,tab.document);
   for(const file of ['date-pickers.js?v=20261114-no-short-weekday','time-pickers.js?v=20261102-24h']){const script=tab.document.createElement('script');script.src=new URL(file,location.href).href;tab.document.body.append(script);}
   tab.document.querySelector('dialog')?.addEventListener('close',()=>tab.close(),{once:true});tab.focus();return;
