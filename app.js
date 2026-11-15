@@ -344,15 +344,17 @@ function edit(r,show=true){
 }
 $('#add').onclick=()=>{if(!canEdit())return;const result=openRecordEditorTab({dialog:document.querySelector('#editor'),prepare:()=>edit(null,false),enhance:installThaiDateTime,onActivity:()=>idleSession.activity(),title:'แจ้ง เพิ่ม อุปกรณ์ชำรุด/ไม่พร้อมใช้งาน'});if(result==='blocked')toast('กรุณาอนุญาตให้เปิดแท็บใหม่');};
 if($('#add-construction'))$('#add-construction').onclick=()=>showAllConstruction();
-$('#add-abnormal').onclick=()=>{
+function openAbnormalReport(existingTab=null){
  if(!canEdit())return;
  if(!window.openAbnormalDraft){toast('โหลดฟอร์มไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ');return;}
- const tab=window.open('','_blank');if(!tab){toast('กรุณาอนุญาตให้เปิดแท็บใหม่');return;}
+ const tab=existingTab||window.open('','_blank');if(!tab){toast('กรุณาอนุญาตให้เปิดแท็บใหม่');return;}
+ tab.document.open();
  tab.document.write('<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>แจ้ง Abnormal Alarm</title><link rel="stylesheet" href="'+new URL('./styles.css?v=20261115-alarm-layout',location.href).href+'"><link rel="stylesheet" href="'+new URL('./responsive.css?v=20261115-full-tabs',location.href).href+'"></head><body></body></html>');
  tab.document.close();tab.opener=null;installThaiDateTime(tab);window.openAbnormalDraft(null,tab.document);
  for(const file of ['date-pickers.js?v=20261114-no-short-weekday','time-pickers.js?v=20261102-24h']){const script=tab.document.createElement('script');script.src=new URL(file,location.href).href;tab.document.body.append(script);}
  tab.document.querySelector('dialog')?.addEventListener('close',()=>tab.close(),{once:true});tab.focus();
-};
+}
+$('#add-abnormal').onclick=()=>openAbnormalReport();
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$('#'+b.dataset.close).close());
 function showSaveError(message){const box=$('#save-error');box.textContent=message;box.hidden=false;box.focus();}
 $('#record-form').noValidate=true;
@@ -544,7 +546,7 @@ $('#dashboard').addEventListener('click',e=>{
   $('#add').click();
   window.focus();page.close();
  });
- page.document.getElementById('add-table-alarm')?.addEventListener('click',()=>{if(!canEdit())return;$('#add-abnormal').click();window.focus();page.close();});
+ page.document.getElementById('add-table-alarm')?.addEventListener('click',()=>openAbnormalReport(page));
  page.document.getElementById('close-table-page').addEventListener('click',()=>page.close());
 });
 
