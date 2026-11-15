@@ -16,6 +16,7 @@ export function installPageActions(win = window, popup = false) {
   }
   const style = doc.createElement('style');
   style.textContent = `
+   .edit-text-action{color:#0284c7!important;font-weight:700!important;width:auto!important;max-width:none!important;min-width:60px!important;height:auto!important;min-height:38px;padding:8px 12px!important;white-space:nowrap!important}
    .page-action-footer{display:flex!important;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap;width:100%;margin:18px 0 0!important;padding:16px!important;border:1px solid #cce5e5;border-radius:12px;background:#f4fafb;box-sizing:border-box}
    .page-action-footer>.danger,.page-action-footer>.delete-record,.page-action-footer>[data-delete],.page-action-footer>[id^="delete"]{margin-right:auto}
    .page-action-footer>[role="status"]:empty{display:none}
@@ -34,6 +35,13 @@ export function installPageActions(win = window, popup = false) {
   let queued = false;
   function refresh() {
    queued = false;
+   for(const button of doc.querySelectorAll('button')){
+    const text=button.textContent.trim(),aria=button.getAttribute('aria-label')||'';
+    if(/^แก้ไข/.test(text)||/^แก้ไข/.test(aria)||button.matches('.edit-action-button,.dispatch-edit-icon-button')){
+     if(!button.classList.contains('edit-text-action'))button.classList.add('edit-text-action');
+     if(button.querySelector('img,svg'))button.textContent='แก้ไข';
+    }
+   }
    const roots = popup ? [doc.body] : [...doc.querySelectorAll('dialog')];
    for (const root of roots) {
     // Only explicit close controls qualify. Keep save, cancel and delete behavior intact.
