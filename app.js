@@ -1,4 +1,5 @@
-import {recordEditorDocument,hasRecordEditorTab,focusRecordEditorTab,openRecordEditorTab} from './record-editor-tab.js?v=20261115-full-tabs';
+import {eventClassificationHtml,setupEventClassification,serializeEventClassification} from './event-classification.js?v=20261115-event-fields';
+import {recordEditorDocument,hasRecordEditorTab,focusRecordEditorTab,openRecordEditorTab} from './record-editor-tab.js?v=20261115-event-fields';
 import {createWebBoard} from './webboard.js?v=20261114-board-sub';
 import './page-actions.js?v=20261115-full-tabs';
 import {seedGroups} from './standby-seed.js';
@@ -15,7 +16,7 @@ import {createLoginGuard,createPresence} from './presence.js?v=20261112-single-l
 import {createMembersPage} from './members.js?v=20261114-record-history';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261105-circuit';
-import {equipmentEventTypes,genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261115-add-label';
+import {equipmentEventTypes,genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage} from './dashboard.js?v=20261115-event-fields';
 import {equipmentTypes,parseEquipmentCategory,formatEquipmentCategory} from './equipment-types.js?v=20261115-breaker-ds';
 import {rotateLogins,loginEntries,loginTime,publicLoginTime,nextLoginStat,rotatePublicLogins} from './login-history.js?v=20261115-logins20';
 'use strict';
@@ -204,7 +205,7 @@ document.querySelectorAll('[data-sort]').forEach(button=>button.addEventListener
  });
  page=1;render();
 }));
-function filtered(){const q=$('#search').value.toLowerCase().trim();return data.filter(r=>(view==='all'||(view==='open'?r.status!=='resolved':r.status==='resolved'))&&matchesListFilters(r,{eventType:$('#event-filter').value,equipmentType:$('#equipment-filter').value,station:$('#station').value})&&(!q||Object.keys(fields).some(k=>String(k==='equipment'?mergedEquipment(r):r[k]||'').toLowerCase().includes(q)))).sort(compareTableRows)}
+function filtered(){const q=$('#search').value.toLowerCase().trim();return data.filter(r=>(view==='all'||(view==='open'?r.status!=='resolved':r.status==='resolved'))&&matchesListFilters(r,{eventType:$('#event-filter').value,equipmentType:$('#equipment-filter').value,station:$('#station').value})&&(!q||[...Object.keys(fields),'eventPrimary','eventSecondary'].some(k=>String(k==='equipment'?mergedEquipment(r):r[k]||'').toLowerCase().includes(q)))).sort(compareTableRows)}
 function render(){ $('#dashboard').innerHTML=cloudReady?dashboardHtml(data,null,new Date(),constructionData,constructionState,alarmData,alarmState):'<p>กำลังโหลดข้อมูล Dashboard…</p>';$('#export-pdf').disabled=!cloudReady||!data.length;$('#add').hidden=true;$('#add-abnormal').hidden=true;document.querySelectorAll('[data-work-draft]').forEach(b=>b.hidden=!canEdit());const station=$('#station').value;$('#station').innerHTML='<option value="">ทุกสถานี</option>'+[...new Set(data.map(r=>r.station).filter(Boolean))].sort().map(s=>`<option ${s===station?'selected':''}>${esc(s)}</option>`).join('');const counts=Object.fromEntries(Object.keys(statuses).map(k=>[k,data.filter(r=>r.status===k).length]));const open=data.filter(r=>r.status!=='resolved');$('#stats').innerHTML=[['อุปกรณ์ทั้งหมด',data.length,'รายการในทะเบียน'],['งานที่ยังไม่ปิด',open.length,'รวมรายการรอตรวจสอบ'],['งานเร่งด่วน / วิกฤต',open.filter(r=>r.priority!=='normal').length,'เฉพาะรายการที่ยังไม่ปิด'],['ซ่อมแล้ว',counts.resolved,'รายการที่ยืนยันการแก้ไข']].map(([l,n,s])=>`<article class="stat"><div class="label">${l}</div><strong>${n.toLocaleString('th-TH')}</strong><small>${s}</small></article>`).join('');const bars=(entries,total)=>entries.map(([l,n])=>`<div class="bar-row"><span>${esc(l)}</span><div class="bar-bg"><div class="bar-fill" style="width:${total?n/total*100:0}%"></div></div><b>${n}</b></div>`).join('');const damaged=open.filter(r=>equipmentEventTypes.includes(r.eventType));const groups={};damaged.forEach(r=>{const station=r.station||'ไม่ระบุ';groups[station]=(groups[station]||0)+1});$('#station-bars').innerHTML=bars(Object.entries(groups).sort((a,b)=>b[1]-a[1]).slice(0,5),damaged.length)||'<p>ยังไม่มีรายการอุปกรณ์ชำรุดที่ยังไม่ปิดงาน</p>';$('#recent-updates').innerHTML=latestUpdatesHtml([...data,...storedAlarmRecords(alarmData)]);const rows=filtered();page=Math.max(1,Math.min(page,Math.ceil(rows.length/12)||1));$('#count').textContent=rows.length;$('#rows').innerHTML=rows.slice((page-1)*12,page*12).map(r=>`<tr><td><span class="event-date ${r.dateNeedsReview?'warning':''}">${esc(listDateLabel(r))}</span></td><td><strong>${esc(mergedEquipment(r))}</strong><small title="${esc(r.cause)}">${esc(r.cause||r.category||'—')}</small></td><td><span class="station-tag">${esc(r.station||'—')}</span></td><td>${criticalityBadge(r.criticality)}</td><td><button data-edit="${esc(r.id)}" aria-label="เปิดรายการ ${esc(r.code)}">เปิด →</button></td></tr>`).join('');$('#empty').hidden=rows.length>0;$('#range').textContent=rows.length?`${(page-1)*12+1}–${Math.min(page*12,rows.length)} จาก ${rows.length} รายการ`:'0 รายการ';$('#prev').disabled=page<=1;$('#next').disabled=page*12>=rows.length;
 if(cloud&&!cloudReady){document.querySelectorAll('.stat strong').forEach(el=>el.textContent='—');$('#empty').innerHTML='<strong>ยังไม่สามารถแสดงข้อมูลจาก Firebase</strong><p>กำลังเชื่อมต่อ หรือยังไม่ได้รับสิทธิ์เข้าถึงข้อมูล</p>';}else{$('#empty').innerHTML='<strong>ยังไม่มีรายการในมุมมองนี้</strong><p>ยังไม่มีข้อมูลที่ตรงกับตัวกรอง</p>';}}
 
@@ -247,11 +248,7 @@ function dateControl(name,value=''){
  return `<div class="date-control"><select name="${name}-day" aria-label="วัน ${name}">${opts(Array.from({length:31},(_,i)=>[i+1,i+1]),d)}</select><select name="${name}-month" aria-label="เดือน ${name}">${opts(['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'].map((v,i)=>[i+1,v]),m)}</select><select name="${name}-year" aria-label="ปี พ.ศ. ${name}">${opts(years.map(v=>[v,v]),y+543)}</select></div>`;
 }
 function formDate(f,name){try{return readDate(f.get(name+'-day'),f.get(name+'-month'),f.get(name+'-year'))}catch(error){const label=name==='repair-expected'?'วันที่คาดว่าจะแก้ไขเสร็จ':name.startsWith('follow-')?'วันที่ติดตามครั้ง '+(Number(name.slice(7))+1):fields[name]||name;throw Error(label+': '+error.message)}}
-function eventTypeControl(value='') {
- if(value==='Power Flow Control')value='ข้อจำกัด ระบบส่ง';
- const choices=eventTypes;
- return `<fieldset class="event-type-field wide"><legend>ประเภทเหตุการณ์</legend><div class="event-type-options">${choices.map(label=>`<label><input type="radio" name="eventType" value="${esc(label)}" ${value===label?'checked':''}><span>${esc(label)}</span></label>`).join('')}</div></fieldset>`;
-}
+function eventTypeControl(record={}){return eventClassificationHtml(record);}
 function categoryControl(value='') {
  const current=parseEquipmentCategory(value);
  const choices=equipmentTypes.map(type=>[type.name,type.name]);
@@ -320,7 +317,7 @@ function edit(r,show=true){
  $('#fields').innerHTML=Object.entries(fields).filter(([key])=>!retiredRecordFields.has(key)).map(([k,l])=>{
   const val=(k==='equipment'?mergedEquipment(r||{}):(r?.[k]??defaults[k]))||(k==='status'?'pending':k==='priority'?'normal':'');
   if(k==='station')return stationControl(r||{});
-  if(k==='eventType')return eventTypeControl(val);
+  if(k==='eventType')return eventTypeControl(r||{eventType:'อุปกรณ์ขัดข้อง'});
   if(k==='category')return categoryControl(val);
   if(k==='criticality')return criticalityControl(val)+assessmentControl(r?.criticalityAssessment)+repairPlanControl(r||{});
   const long=['equipment','cause'].includes(k);
@@ -328,6 +325,10 @@ function edit(r,show=true){
   return `<label data-field="${k}" class="${long?'wide':''}">${l}${input}</label>`;
  }).join('')+`<label class="wide highlight-control"><input type="checkbox" name="highlight" ${r?.highlight===true?'checked':''}> highlight</label>`;
  setupCategory(r?.category||'');
+ setupEventClassification($('[data-event-classification]'),{editable:canEdit(),onSubChange:secondary=>{
+  const main=$('#equipment-type'),name=secondary==='Breaker'?'Breaker และ DS':secondary;
+  if(equipmentTypes.some(type=>type.name===name)&&main.value!==name){main.value=name;main.onchange?.();}
+ }});
  setupAssessment();
  $('#legacy-tracking').textContent=r?.tracking?'ข้อมูลติดตามเดิม: '+r.tracking:'';
  $('#followups').innerHTML=Array.from({length:3},(_,i)=>{const v=r?.followups?.[i]||{};return `<tr><td><span class="followup-number">ครั้งที่ ${i+1}</span><button type="button" class="followup-now" data-followup-now="${i}" aria-label="เติมเวลาปัจจุบัน ครั้ง ${i+1}">เวลาปัจจุบัน</button></td><td><div class="followup-when">${dateControl('follow-'+i,v.date)}<input type="time" step="60" name="follow-${i}-time" aria-label="เวลาติดตาม ครั้ง ${i+1}" value="${esc(v.time)}"></div></td>`+['informant','mobile','details'].map((k,j)=>`<td>${k==='details'?`<textarea name="follow-${i}-${k}" maxlength="4000" aria-label="${['ชื่อผู้ให้ข้อมูล','เบอร์มือถือผู้ให้ข้อมูล','รายละเอียด'][j]} ครั้ง ${i+1}">${esc(v[k])}</textarea>`:`<input name="follow-${i}-${k}" ${k==='mobile'?'type="tel" inputmode="tel"':''} maxlength="250" aria-label="${['ชื่อผู้ให้ข้อมูล','เบอร์มือถือผู้ให้ข้อมูล','รายละเอียด'][j]} ครั้ง ${i+1}" value="${esc(v[k])}">`}</td>`).join('')+'</tr>'}).join('');
@@ -354,7 +355,7 @@ $('#record-form').onsubmit=async e=>{
  if(invalid){const label=invalid.getAttribute('aria-label')||invalid.closest('label')?.textContent?.trim().slice(0,120)||invalid.name||'ช่องข้อมูล';showSaveError('กรุณาตรวจสอบ '+label+' — '+invalid.validationMessage);invalid.scrollIntoView({block:'center'});invalid.focus();invalid.reportValidity();return}
  try{
   const f=new FormData(e.target),r=Object.fromEntries(Object.keys(fields).map(k=>[k,retiredRecordFields.has(k)?(editing?.[k]??(k==='status'?'pending':k==='priority'?'normal':'')):['date','due'].includes(k)?formDate(f,k):String(f.get(k)||(k==='criticality'?editing?.criticality:'')||'').trim()]));
-  Object.assign(r,readStation(f));
+  Object.assign(r,readStation(f),serializeEventClassification(String(f.get('eventPrimary')||''),String(f.get('eventSecondary')||''),editing||{}));
   if(r.eventType&&!eventTypes.includes(r.eventType))throw Error('กรุณาเลือกประเภทเหตุการณ์');
   if(r.criticality&&!Object.hasOwn(criticalities,r.criticality)&&!Object.hasOwn(legacyCriticalities,r.criticality))throw Error('กรุณาเลือกระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า');
   const criticalityAssessment=Object.fromEntries(Object.keys(assessmentFields).map(key=>[key,String(key==='effect'?(f.get('assessment-effect')||''):(editing?.criticalityAssessment?.[key]||'')).trim()]));
