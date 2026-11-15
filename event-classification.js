@@ -28,7 +28,7 @@ export function serializeEventClassification(primary,secondary,previous={}){
  const eventType=eventTypeFor(primary,secondary);
  return {eventPrimary:primary,eventSecondary:secondary,eventType,...(previous.eventType&&previous.eventType!==eventType&&!previous.originalEventType?{originalEventType:previous.eventType}:{})};
 }
-const radioHtml=(primary,selected='',disabled=false)=>(eventGroups[primary]||[]).map(label=>`<label><input type="radio" name="eventSecondary" value="${esc(label)}" required ${label===selected?'checked':''} ${disabled?'disabled':''}><span>${esc(label)}</span></label>`).join('');
+const radioHtml=(primary,selected='',disabled=false)=>(eventGroups[primary]||[]).map(label=>`<label><input type="radio" name="eventSecondary" value="${esc(label)}" required ${label===selected?'checked':''} ${disabled?'disabled':''}><span>${esc(label==='Breaker และ DS'?'เบรคเกอร์ หรือ ใบมีด':label)}</span></label>`).join('');
 export function eventClassificationHtml(record={}, {faultOnly=false}={}){
  const current=readEventClassification(record);
  const primary=faultOnly?'อุปกรณ์ชำรุด/ไม่พร้อมใช้งาน':current.primary;
