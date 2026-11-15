@@ -399,3 +399,10 @@ svg.members-menu-icon{width:20px;height:24px;flex:0 0 20px;background:transparen
 .highlight-meta,.highlight-meta .highlight-date-with-severity{align-items:center;line-height:1.5}
 .highlight-meta>span,.highlight-meta time,.highlight-meta .highlight-last-editor{line-height:1.5}
 .highlight-meta .highlight-last-editor{min-width:0;overflow-wrap:anywhere}
+
+/* Keep the sidebar logo and its caption on the same center line. */
+aside .brand{gap:10px;align-items:center;letter-spacing:0;margin-bottom:24px}
+aside .brand-logo{width:110px;height:48px;object-fit:cover;object-position:center 52%;flex:none}
+aside .brand-caption{font-size:11px;font-weight:400;line-height:1.65;color:#9fbcc8}
+@media(max-width:1050px) and (min-width:721px){aside .brand{gap:7px}aside .brand-logo{width:90px;height:40px}aside .brand-caption{font-size:10px}}
+@media(max-width:720px){aside .brand{margin-bottom:0}aside .brand-logo{width:120px;height:50px}aside .brand-caption{font-size:11px}}

@@ -5,7 +5,7 @@ export const equipmentTypes = [
  {name:'Disconnecting SW',subtypes:['ใบมีด','ใบมีด Ground','Power Fuse'],voltages:['500 kV','230 kV','115 kV','69 kV','22 kV']},
  {name:'คาปาซิเตอร์แบงค์',subtypes:[],voltages:['230 kV','115 kV','69 kV','22 kV']},
  {name:'รีเลย์ระบบป้องกัน',subtypes:[],voltages:[]},
- {name:'ระบบสื่อสาร',subtypes:['สถานีไฟฟ้า','ศูนย์นนทบุรี'],voltages:[]},
+ {name:'โรงไฟฟ้า ใน อปก.',subtypes:[],voltages:[]},
  {name:'อุปกรณ์ อื่นๆๆ',subtypes:[],voltages:[]},
 ];
 const separator=' · ';

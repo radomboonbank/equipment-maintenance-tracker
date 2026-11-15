@@ -13,7 +13,7 @@ export function dashboardSummary(records,now=new Date()){
  return {open:open.length,high:open.filter(r=>r.criticality==='high').length,unassessed:open.filter(r=>!['extreme','severe','moderate','minor'].includes(r.criticality)).length,overdue:open.filter(r=>repairDue(r)&&repairDue(r)<today),undated:open.filter(r=>!repairDue(r)),today};
 }
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const mainTypes=['หม้อแปลงไฟฟ้า','สายส่งไฟฟ้า','เซอร์กิตเบรกเกอร์','Disconnecting SW','คาปาซิเตอร์แบงค์','รีเลย์ระบบป้องกัน','ระบบสื่อสาร'];
+const mainTypes=['หม้อแปลงไฟฟ้า','สายส่งไฟฟ้า','เซอร์กิตเบรกเกอร์','Disconnecting SW','คาปาซิเตอร์แบงค์','รีเลย์ระบบป้องกัน','โรงไฟฟ้า ใน อปก.'];
 const colors=['#ef6474','#f4a640','#38c99a','#57a7f5','#a68bf2','#e789c4','#51cbd0','#a6ce60','#f5c65b','#7f9ff6','#dc9371','#84bac5'];
 const mainType=r=>String(r.category||'').split(' · ')[0];
 export const equipmentEventTypes=['อุปกรณ์ขัดข้อง','งานบำรุงรักษาเกินกำหนด','ข้อจำกัด ระบบส่ง','งาน Switching Order'];
