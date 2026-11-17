@@ -345,7 +345,7 @@ function edit(r,show=true){
  if(show)$('#editor').showModal();
 }
 $('#add').onclick=()=>{if(!canEdit())return;const result=openRecordEditorTab({dialog:document.querySelector('#editor'),prepare:()=>edit(null,false),enhance:installThaiDateTime,onActivity:()=>idleSession.activity(),title:'แจ้ง เพิ่ม อุปกรณ์ชำรุด/ไม่พร้อมใช้งาน'});if(result==='blocked')toast('กรุณาอนุญาตให้เปิดแท็บใหม่');};
-if($('#add-construction'))$('#add-construction').onclick=()=>showAllConstruction();
+if($('#add-construction'))$('#add-construction').onclick=()=>{if(!canEdit())return;if(!window.openConstructionDraft){toast('โหลดฟอร์มไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ');return;}window.openConstructionDraft(null);};
 function openAbnormalReport(existingTab=null){
  if(!canEdit())return;
  if(!window.openAbnormalDraft){toast('โหลดฟอร์มไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ');return;}
