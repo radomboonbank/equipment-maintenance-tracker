@@ -569,3 +569,5 @@ body .edit-action-button,body .edit-text-action,body [data-board-edit]{color:#02
 #editor .followup-table .followup-number{margin-bottom:6px}
 #editor .followup-table .followup-now{margin:0 auto}
 @media(max-width:720px){#editor .followup-table{min-width:760px}#editor .followup-table th:nth-child(2){width:276px}#editor .followup-table th:nth-child(3){width:160px}}
+
+.system-risk-reference{display:flex;justify-content:flex-end;margin:10px 0 18px}.system-risk-reference a:hover{text-decoration:underline!important}.system-risk-reference a:focus-visible{outline:3px solid #33c6bf;outline-offset:4px;border-radius:3px}
