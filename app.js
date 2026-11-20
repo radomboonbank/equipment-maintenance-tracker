@@ -1,6 +1,6 @@
 import {historyNote} from './record-history.js?v=20261115-no-work-status';
 import {eventClassificationHtml,setupEventClassification,serializeEventClassification} from './event-classification.js?v=20261115-breaker-thai';
-import {recordEditorDocument,hasRecordEditorTab,focusRecordEditorTab,openRecordEditorTab} from './record-editor-tab.js?v=20261115-create-from-table';
+import {recordEditorDocument,hasRecordEditorTab,focusRecordEditorTab,openRecordEditorTab} from './record-editor-tab.js?v=20261120-followup-layout';
 import {createWebBoard} from './webboard.js?v=20261115-board-save';
 import './page-actions.js?v=20261115-compact-records';
 import {seedGroups} from './standby-seed.js';
@@ -334,7 +334,7 @@ function edit(r,show=true){
  }});
  setupAssessment();
  $('#legacy-tracking').textContent=r?.tracking?'ข้อมูลติดตามเดิม: '+r.tracking:'';
- $('#followups').innerHTML=Array.from({length:3},(_,i)=>{const v=r?.followups?.[i]||{};return `<tr><td><span class="followup-number">ครั้งที่ ${i+1}</span><button type="button" class="followup-now" data-followup-now="${i}" aria-label="เติมเวลาปัจจุบัน ครั้ง ${i+1}">เวลาปัจจุบัน</button></td><td><div class="followup-when">${dateControl('follow-'+i,v.date)}<input type="time" step="60" name="follow-${i}-time" aria-label="เวลาติดตาม ครั้ง ${i+1}" value="${esc(v.time)}"></div></td>`+['informant','mobile','details'].map((k,j)=>`<td>${k==='details'?`<textarea name="follow-${i}-${k}" maxlength="4000" aria-label="${['ชื่อผู้ให้ข้อมูล','เบอร์มือถือผู้ให้ข้อมูล','รายละเอียด'][j]} ครั้ง ${i+1}">${esc(v[k])}</textarea>`:`<input name="follow-${i}-${k}" ${k==='mobile'?'type="tel" inputmode="tel"':''} maxlength="250" aria-label="${['ชื่อผู้ให้ข้อมูล','เบอร์มือถือผู้ให้ข้อมูล','รายละเอียด'][j]} ครั้ง ${i+1}" value="${esc(v[k])}">`}</td>`).join('')+'</tr>'}).join('');
+ $('#followups').innerHTML=Array.from({length:3},(_,i)=>{const v=r?.followups?.[i]||{};return `<tr><td><span class="followup-number">ครั้งที่ ${i+1}</span><button type="button" class="followup-now" data-followup-now="${i}" aria-label="เติมเวลาปัจจุบัน ครั้ง ${i+1}">เวลาปัจจุบัน</button></td><td><div class="followup-when">${dateControl('follow-'+i,v.date)}<input type="time" step="60" name="follow-${i}-time" aria-label="เวลาติดตาม ครั้ง ${i+1}" value="${esc(v.time)}"></div></td>`+['informant','details'].map((k,j)=>`<td>${k==='details'?`<textarea name="follow-${i}-${k}" maxlength="4000" aria-label="${['ชื่อผู้ให้ข้อมูล','รายละเอียด'][j]} ครั้ง ${i+1}">${esc(v[k])}</textarea>`:`<input name="follow-${i}-${k}" ${k==='mobile'?'type="tel" inputmode="tel"':''} maxlength="250" aria-label="${['ชื่อผู้ให้ข้อมูล','รายละเอียด'][j]} ครั้ง ${i+1}" value="${esc(v[k])}">`}</td>`).join('')+'</tr>'}).join('');
  const authors = historyNames(data);
  $('#history').innerHTML=(r?.history||[]).slice().reverse().map(h=>`<div class="history-item">${esc(historyNote(h.note).replace(/แก้ปีวันที่ตามผู้ดูแล: 19\d{2}-\d{2}-\d{2} → พ.ศ. (25\d{2})-(\d{2})-(\d{2}) \(คงวันและเดือนเดิม\)/,'ตรวจแก้ปีวันที่เป็น $3/$2/$1 พ.ศ. (เก็บค่าต้นฉบับไว้แล้ว)'))}<small><time class="thai-date-display">${esc(dateText(h.at?.toDate?.()?.toISOString() || h.at))}</time> · ${esc(historyAuthor(h,authors))}</small></div>`).join('');
  recordEditorDocument(document).querySelectorAll('#fields input,#fields textarea,#fields select,#followups input,#followups textarea,#followups select').forEach(el=>el.disabled=!canEdit());
@@ -351,7 +351,7 @@ function openAbnormalReport(existingTab=null){
  if(!window.openAbnormalDraft){toast('โหลดฟอร์มไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ');return;}
  const tab=existingTab||window.open('','_blank');if(!tab){toast('กรุณาอนุญาตให้เปิดแท็บใหม่');return;}
  tab.document.open();
- tab.document.write('<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>แจ้ง Abnormal Alarm</title><link rel="stylesheet" href="'+new URL('./styles.css?v=20261115-repair-layout',location.href).href+'"><link rel="stylesheet" href="'+new URL('./responsive.css?v=20261115-compact-records',location.href).href+'"></head><body></body></html>');
+ tab.document.write('<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>แจ้ง Abnormal Alarm</title><link rel="stylesheet" href="'+new URL('./styles.css?v=20261120-followup-layout',location.href).href+'"><link rel="stylesheet" href="'+new URL('./responsive.css?v=20261115-compact-records',location.href).href+'"></head><body></body></html>');
  tab.document.close();tab.opener=null;installThaiDateTime(tab);window.openAbnormalDraft(null,tab.document);
  for(const file of ['date-pickers.js?v=20261114-no-short-weekday','time-pickers.js?v=20261102-24h']){const script=tab.document.createElement('script');script.src=new URL(file,location.href).href;tab.document.body.append(script);}
  tab.document.querySelector('dialog')?.addEventListener('close',()=>tab.close(),{once:true});tab.focus();
@@ -377,7 +377,7 @@ $('#record-form').onsubmit=async e=>{
   if(Object.values(criticalityAssessment).some(value=>value.length>4000))throw Error('ผลประเมินแต่ละข้อยาวได้ไม่เกิน 4,000 ตัวอักษร');
   const repairPlan={...Object.fromEntries(['approach','responsible','operatorName','operatorId','operatorMobile'].map(key=>[key,String(f.get('repair-'+key)||'').trim()])),schedule:editing?.repairPlan?.schedule||'',expectedDateUnknown:f.has('repair-unknown'),expectedDate:f.has('repair-unknown')?'':formDate(f,'repair-expected')};
   if(repairPlan.approach.length>8000||['responsible','schedule'].some(key=>repairPlan[key].length>4000)||['operatorName','operatorId','operatorMobile'].some(key=>repairPlan[key].length>250))throw Error('ข้อความแผนงานซ่อมแซมยาวเกินขนาดที่กำหนด');
-  const followups=Array.from({length:3},(_,i)=>({date:formDate(f,'follow-'+i),...Object.fromEntries(['time','informant','mobile','details','follower'].map(k=>[k,String(k==='follower'?(editing?.followups?.[i]?.follower||''):(f.get('follow-'+i+'-'+k)||'')).trim()]))}));
+  const followups=Array.from({length:3},(_,i)=>({date:formDate(f,'follow-'+i),...Object.fromEntries(['time','informant','mobile','details','follower'].map(k=>[k,String(k==='mobile'?(editing?.followups?.[i]?.mobile||''):k==='follower'?(editing?.followups?.[i]?.follower||''):(f.get('follow-'+i+'-'+k)||'')).trim()]))}));
   // Retain historical closure data; closing work is no longer an input or save condition.
   const closure=editing?.closure||{date:'',time:'',reporter:'',mobile:'',details:'',follower:''};
   const now=new Date(),at=now.toISOString(),code=editing?.code||stamp(now);
@@ -537,7 +537,7 @@ $('#dashboard').addEventListener('click',e=>{
   if(stored){
    try{
     if(!page.document.querySelector('[data-alarm-editor-assets]')){
-     const style=page.document.createElement('link');style.rel='stylesheet';style.href=new URL('./styles.css?v=20261115-repair-layout',location.href).href;style.dataset.alarmEditorAssets='true';page.document.head.append(style);
+     const style=page.document.createElement('link');style.rel='stylesheet';style.href=new URL('./styles.css?v=20261120-followup-layout',location.href).href;style.dataset.alarmEditorAssets='true';page.document.head.append(style);
      for(const file of ['date-pickers.js?v=20261114-no-short-weekday','time-pickers.js']){const script=page.document.createElement('script');script.src=new URL(file,location.href).href;page.document.head.append(script)}
     }
     window.openAbnormalDraft(record,page.document);page.focus();
@@ -563,7 +563,7 @@ document.querySelector('#recent-updates').addEventListener('click',event=>{
  if(busy){toast('กำลังบันทึกข้อมูล กรุณารอสักครู่');return;}
  if(stored){
   const tab=window.open('','_blank');if(!tab){toast('กรุณาอนุญาตให้เปิดแท็บใหม่');return;}
-  tab.document.write('<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>แก้ไข Abnormal Alarm</title><link rel="stylesheet" href="'+new URL('./styles.css?v=20261115-repair-layout',location.href).href+'"><style>dialog[open]{width:100%;max-width:1400px;max-height:96vh}</style></head><body></body></html>');tab.document.close();tab.opener=null;
+  tab.document.write('<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>แก้ไข Abnormal Alarm</title><link rel="stylesheet" href="'+new URL('./styles.css?v=20261120-followup-layout',location.href).href+'"><style>dialog[open]{width:100%;max-width:1400px;max-height:96vh}</style></head><body></body></html>');tab.document.close();tab.opener=null;
   installThaiDateTime(tab);window.openAbnormalDraft(record,tab.document);
   for(const file of ['date-pickers.js?v=20261114-no-short-weekday','time-pickers.js?v=20261102-24h']){const script=tab.document.createElement('script');script.src=new URL(file,location.href).href;tab.document.body.append(script);}
   tab.document.querySelector('dialog')?.addEventListener('close',()=>tab.close(),{once:true});tab.focus();return;
