@@ -1,4 +1,4 @@
-import {createWebBoard} from './webboard.js?v=20261115-board-save';
+import {createWebBoard} from './webboard.js?v=20261120-access-policy';
 const source=window.opener;
 function session(){
  try{

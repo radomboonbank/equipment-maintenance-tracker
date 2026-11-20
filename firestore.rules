@@ -3,7 +3,7 @@ service cloud.firestore {
  match /databases/{database}/documents {
   match /StandbyContacts/{id} {
    allow read: if true;
-   allow create: if superAdmin() && standbyValid(id) && request.resource.data.revision == 1
+   allow create: if editor() && standbyValid(id) && request.resource.data.revision == 1
     && !exists(/databases/$(database)/documents/StandbyDeleted/$(id));
    allow update: if superAdmin() && standbyValid(id) && request.resource.data.revision == resource.data.revision + 1;
    allow delete: if superAdmin() && existsAfter(/databases/$(database)/documents/StandbyDeleted/$(id));
@@ -33,7 +33,7 @@ service cloud.firestore {
 
   function account() { return request.auth != null && exists(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)); }
   function role() { return get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.role; }
-  function editor() { return account() && role() in ['admin', 'editor']; }
+  function editor() { return superAdmin() || (account() && role() == 'editor' && get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.get('duty', '') == 'cac term'); }
   function admin() { return account() && role() == 'admin'; }
   function superAdmin() { return admin() && get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.get('duty', '') in ['super admin','king admin']; }
   function kingAdmin() { return admin() && get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.get('duty', '') == 'king admin'; }
@@ -116,7 +116,7 @@ service cloud.firestore {
    allow read: if account() && role() in ['admin','editor','viewer'];
    allow create: if editor() && alarmValid() && highlightCreate(request.resource.data.data) && request.resource.data.createdBy == request.auth.uid
     && request.resource.data.createdAt == request.time && request.resource.data.revision == 1;
-   allow update: if editor() && alarmValid() && highlightUpdate(request.resource.data.data,resource.data.data)
+   allow update: if superAdmin() && alarmValid() && highlightUpdate(request.resource.data.data,resource.data.data)
     && request.resource.data.section == resource.data.section
     && request.resource.data.createdBy == resource.data.createdBy
     && request.resource.data.createdAt == resource.data.createdAt
@@ -140,7 +140,7 @@ service cloud.firestore {
    allow read: if account() && role() in ['admin','editor','viewer'];
    allow create: if editor() && constructionValid() && highlightCreate(request.resource.data.data) && request.resource.data.createdBy == request.auth.uid
     && request.resource.data.createdAt == request.time && request.resource.data.revision == 1;
-   allow update: if editor() && constructionValid() && highlightUpdate(request.resource.data.data,resource.data.data)
+   allow update: if superAdmin() && constructionValid() && highlightUpdate(request.resource.data.data,resource.data.data)
     && request.resource.data.createdBy == resource.data.createdBy
     && request.resource.data.createdAt == resource.data.createdAt
     && request.resource.data.revision == resource.data.revision + 1;
@@ -161,7 +161,7 @@ service cloud.firestore {
   match /equipment/{id} {
    allow read: if true;
    allow create: if editor() && valid() && highlightCreate(request.resource.data) && request.resource.data.id == id && request.resource.data.revision == 1;
-   allow update: if editor() && valid() && highlightUpdate(request.resource.data,resource.data) && request.resource.data.id == resource.data.id && request.resource.data.code == resource.data.code && request.resource.data.revision == resource.data.revision + 1;
+   allow update: if superAdmin() && valid() && highlightUpdate(request.resource.data,resource.data) && request.resource.data.id == resource.data.id && request.resource.data.code == resource.data.code && request.resource.data.revision == resource.data.revision + 1;
    allow delete: if superAdmin();
   }
   match /DatabaseLogin/{uid} {
@@ -283,7 +283,7 @@ service cloud.firestore {
     || (id != '_schema' && editor() && genDispatchEventValid()
      && request.resource.data.createdBy == request.auth.uid && request.resource.data.createdAt == request.time
      && request.resource.data.revision == 1);
-   allow update: if id != '_schema' && editor() && genDispatchEventValid()
+   allow update: if id != '_schema' && superAdmin() && genDispatchEventValid()
     && (!('subEvents' in resource.data.data) || 'subEvents' in request.resource.data.data)
     && request.resource.data.createdBy == resource.data.createdBy
     && request.resource.data.createdAt == resource.data.createdAt
@@ -330,7 +330,7 @@ service cloud.firestore {
 
   match /GenDispatch/{id} {
    allow read: if true;
-   allow create: if superAdmin() && genDispatchReferenceValid()
+   allow create: if editor() && genDispatchReferenceValid()
     && request.resource.data.createdBy == request.auth.uid
     && request.resource.data.createdAt == request.time && request.resource.data.revision == 1;
    allow update: if superAdmin() && genDispatchReferenceValid()
@@ -389,19 +389,18 @@ service cloud.firestore {
     && request.resource.data.title is string && request.resource.data.schemaVersion==1 && request.resource.data.enabled is bool;
    allow delete: if false;
   }
-  function boardKing() { return admin() && get(/databases/$(database)/documents/DatabaseLogin/$(request.auth.uid)).data.get('duty','')=='king admin'; }
   match /WebBoardThreads/{threadId} {
    allow read: if boardMember();
    allow create: if editor() && boardThreadValid() && request.resource.data.createdBy==request.auth.uid
     && request.resource.data.createdByName==boardName() && request.resource.data.createdAt==request.time
     && request.resource.data.revision==1 && request.resource.data.hidden==false;
-   allow update: if boardKing() && boardThreadValid()
+   allow update: if superAdmin() && boardThreadValid()
     && request.resource.data.createdBy==resource.data.createdBy
     && request.resource.data.createdByName==resource.data.createdByName
     && request.resource.data.createdAt==resource.data.createdAt
     && request.resource.data.revision==resource.data.revision+1
-    && boardKing();
-   allow delete: if boardKing();
+    && ((resource.data.createdBy==request.auth.uid && request.resource.data.hidden==resource.data.hidden) || superAdmin());
+   allow delete: if false;
    match /replies/{replyId} {
     allow read: if boardMember();
     allow create: if editor()
@@ -414,11 +413,19 @@ service cloud.firestore {
      && request.resource.data.createdBy==request.auth.uid && request.resource.data.createdByName==boardName()
      && request.resource.data.createdAt==request.time && request.resource.data.updatedAt==request.time
      && request.resource.data.updatedBy==request.auth.uid && request.resource.data.hidden==false;
-    allow update: if boardKing() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hidden','updatedBy','updatedAt'])
+    allow update: if superAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hidden','updatedBy','updatedAt'])
      && request.resource.data.hidden is bool && request.resource.data.updatedBy==request.auth.uid && request.resource.data.updatedAt==request.time;
-    allow delete: if boardKing();
+    allow delete: if false;
    }
   }
 
- }
+ 
+  // King Admin may permanently remove board threads and their replies.
+  match /WebBoardThreads/{threadId} {
+    allow delete: if superAdmin();
+    match /replies/{replyId} {
+      allow delete: if superAdmin();
+    }
+  }
+}
 }

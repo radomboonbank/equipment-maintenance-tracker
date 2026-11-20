@@ -23,7 +23,7 @@ export function createWebBoard(session, {page=false,threadId=null}={}){
  const boardUrl=id=>`webboard.html${id?'?thread='+encodeURIComponent(id):''}`;
  const readable=()=>{const c=context();return !!c.cloud&&!!c.user&&['admin','editor','viewer'].includes(c.role)};
  const writable=()=>readable()&&['admin','editor'].includes(context().role);
- const moderator=()=>readable()&&context().role==='admin'&&context().duty==='king admin';
+ const moderator=()=>readable()&&context().role==='admin'&&['super admin','king admin'].includes(context().duty);
  const $=selector=>dialog.querySelector(selector);
  const status=(text,error=false)=>{const e=$('[data-board-status]');e.textContent=text;e.classList.toggle('board-error',error)};
  const editable=record=>moderator();

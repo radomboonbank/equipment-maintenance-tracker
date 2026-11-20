@@ -4,7 +4,7 @@ import {editIconHtml} from './edit-icons.js?v=20261115-dashboard-actions';
 import {setupTelegramControl} from './telegram-settings.js?v=20261107-backup';
 import {credential} from './utils.js';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const duties={'king admin':'จัดการระบบทั้งหมด ไม่ออกจากระบบอัตโนมัติ และเปิด/ปิด Telegram','super admin':'เพิ่ม / แก้ไข / ลบ และจัดการสมาชิก','cac term':'เพิ่ม / แก้ไข','user':'ดูอย่างเดียว'};
+const duties={'king admin':'จัดการระบบทั้งหมด ไม่ออกจากระบบอัตโนมัติ และเปิด/ปิด Telegram','super admin':'เพิ่ม / แก้ไข / ลบ และจัดการสมาชิก','cac term':'เพิ่มอย่างเดียว','user':'ดูอย่างเดียว'};
 export function createMembersPage({session,endpoint}) {
  const root=document.querySelector('#members-page'),nav=document.querySelector('#members-nav'),equipment=document.querySelector('#equipment-page');
  let members=[],selected=null,working=false,epoch=0,allowed=false;

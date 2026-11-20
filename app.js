@@ -1,7 +1,7 @@
 import {historyNote} from './record-history.js?v=20261115-no-work-status';
 import {eventClassificationHtml,setupEventClassification,serializeEventClassification} from './event-classification.js?v=20261115-breaker-thai';
 import {recordEditorDocument,hasRecordEditorTab,focusRecordEditorTab,openRecordEditorTab} from './record-editor-tab.js?v=20261120-followup-layout';
-import {createWebBoard} from './webboard.js?v=20261115-board-save';
+import {createWebBoard} from './webboard.js?v=20261120-access-policy';
 import './page-actions.js?v=20261115-compact-records';
 import {seedGroups} from './standby-seed.js';
 import {installStandbyBridge} from './standby-bridge.js?v=20261113-work-group';
@@ -14,7 +14,7 @@ import {createIdleSession} from './idle-session.js?v=20261107-king-admin';
 import {createConstructionStore} from './construction-store.js?v=20261112-highlight-access';
 import {createAlarmStore} from './alarm-store.js?v=20261112-highlight-access';
 import {createLoginGuard,createPresence} from './presence.js?v=20261112-single-login';
-import {createMembersPage} from './members.js?v=20261115-dashboard-actions';
+import {createMembersPage} from './members.js?v=20261120-access-policy';
 import {matchesListFilters,compareEventDates} from './table-filters.js?v=20261029-date-order';
 import {stationControl,setupStation,readStation} from './station-control.js?v=20261105-circuit';
 import {sixPanelSummary,equipmentEventTypes,genDispatchTablePage,dashboardHtml,constructionRecordsForType,assessmentRecordsForType,storedAlarmRecords,latestUpdatesHtml,alarmRecordsForType,faultRecordsForType,faultTablePage,constraintRecordsForType} from './dashboard.js?v=20261120-risk-month-label';
