@@ -571,3 +571,11 @@ body .edit-action-button,body .edit-text-action,body [data-board-edit]{color:#02
 @media(max-width:720px){#editor .followup-table{min-width:760px}#editor .followup-table th:nth-child(2){width:276px}#editor .followup-table th:nth-child(3){width:160px}}
 
 .system-risk-reference{display:flex;justify-content:flex-end;margin:10px 0 18px}.system-risk-reference a:hover{text-decoration:underline!important}.system-risk-reference a:focus-visible{outline:3px solid #33c6bf;outline-offset:4px;border-radius:3px}
+
+/* Winding Temp transformer rating and load calculation */
+.winding-capacity{min-width:0;margin:0;padding:0;border:0;align-self:end}
+.winding-capacity legend{font-size:inherit;font-weight:400;color:inherit;margin-bottom:8px;padding:0}
+.winding-capacity-options{display:flex;flex-wrap:wrap;gap:8px;min-height:44px;align-items:center}
+.winding-capacity-options label{display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid #cedee5;border-radius:8px;background:white;cursor:pointer;white-space:nowrap}
+.winding-capacity-options label:has(:checked){background:#e2f5f3;border-color:#009ba4;color:#087f85}
+.winding-capacity-options input{width:16px;height:16px;margin:0;accent-color:#008e95}

@@ -209,17 +209,22 @@ function bessTransferRecord(p,raw){
    const id=++windingSequence,prefix='winding-'+id+'-';const row=document.createElement('div');row.className='bess-event';
    const numeric=(key,label)=>`<label>${label}<input type="number" step="any" name="${prefix}${key}" ${['mva','loadPercent'].includes(key)?'readonly placeholder="คำนวณอัตโนมัติ"':key==='kv'?'placeholder="เช่น 22.4 หรือไม่ทราบให้ว่าง"':'placeholder="ไม่ทราบให้เว้นว่าง"'}></label>`;
    row.innerHTML=`<fieldset class="bess-pb-field alarm-reset-status"><legend>สถานะ Reset Alarm</legend><div class="alarm-reset-options"><label class="bess-trip-check"><input type="radio" name="${prefix}resetState" value="pending" checked>รอ Reset Alarm</label><label class="bess-trip-check"><input type="radio" name="${prefix}resetState" value="reset">Reset Alarm</label></div></fieldset><div data-reset-fields class="construction-grid" hidden></div>`+
-    '<h4>Load ขณะเกิดเหตุ</h4><div class="winding-values-grid">'+numeric('mw','กำลังจริง (MW)')+numeric('mvar','กำลังรีแอคทีฟ (MVAr)')+numeric('mva','กำลังปรากฏ (MVA)')+numeric('loadPercent','โหลด (%)')+numeric('kv','ระดับแรงดันไฟฟ้า 22 kV อ่านได้ (kV)')+'</div>'+
+    '<h4>Load ขณะเกิดเหตุ</h4><div class="winding-values-grid">'+numeric('mw','กำลังจริง (MW)')+numeric('mvar','กำลังรีแอคทีฟ (MVAr)')+numeric('mva','กำลังปรากฏ (MVA)')+`<fieldset class="winding-capacity"><legend>พิกัดสำหรับคำนวณโหลด (MVA)</legend><div class="winding-capacity-options">${[50,200,300,1000].map(value=>`<label><input type="checkbox" name="${prefix}ratedMva" value="${value}" ${value===50?'checked':''}>${value.toLocaleString('en-US')}</label>`).join('')}</div></fieldset>`+numeric('loadPercent','โหลด (%)')+numeric('kv','ระดับแรงดันไฟฟ้า 22 kV อ่านได้ (kV)')+'</div>'+
     '<h4>อุณหภูมิ (°C)</h4><div class="winding-values-grid">'+numeric('ot','OT — อุณหภูมิน้ำมัน')+numeric('wtHv','Wt.(HV / HS) — ขดลวดแรงสูง')+numeric('wtLv','Wt.(LV / LS) — ขดลวดแรงต่ำ')+numeric('at','AT — อุณหภูมิแวดล้อม')+'</div>';
    const inputFor=key=>row.querySelector(`[name="${prefix}${key}"]`);
    const calculateLoad=()=>{
     const mw=inputFor('mw'),mvar=inputFor('mvar'),mva=inputFor('mva'),load=inputFor('loadPercent');
     if(mw.value.trim()===''||mvar.value.trim()===''||!Number.isFinite(mw.valueAsNumber)||!Number.isFinite(mvar.valueAsNumber)){mva.value='';load.value='';return}
-    const apparent=Math.hypot(mw.valueAsNumber,mvar.valueAsNumber),percent=apparent/50*100;
+    const apparent=Math.hypot(mw.valueAsNumber,mvar.valueAsNumber),percent=apparent/Number(row.querySelector(`[name="${prefix}ratedMva"]:checked`).value)*100;
     mva.value=Number.isFinite(apparent)?apparent.toFixed(2):'';
     load.value=Number.isFinite(percent)?percent.toFixed(2):'';
    };
    inputFor('mw').addEventListener('input',calculateLoad);inputFor('mvar').addEventListener('input',calculateLoad);
+   const capacities=[...row.querySelectorAll(`[name="${prefix}ratedMva"]`)];
+   capacities.forEach(option=>option.addEventListener('change',()=>{
+    capacities.forEach(other=>other.checked=other===option);
+    calculateLoad();
+   }));
    const resetFields=row.querySelector('[data-reset-fields]');
    row.querySelectorAll(`[name="${prefix}resetState"]`).forEach(radio=>radio.addEventListener('change',()=>{
     const active=row.querySelector(`[name="${prefix}resetState"]:checked`).value==='reset';
@@ -249,6 +254,11 @@ function bessTransferRecord(p,raw){
    populate();
    d.querySelectorAll('[data-breaker-trip],input[name$="resetState"]:checked').forEach(el=>el.dispatchEvent(new Event('change',{bubbles:true})));
    populate();
+   d.querySelectorAll('[data-winding-events] .bess-event').forEach(row=>{
+    const capacities=[...row.querySelectorAll('input[name$="ratedMva"]')];
+    const selected=capacities.find(option=>option.checked)||capacities[0];
+    if(selected)selected.dispatchEvent(new Event('change',{bubbles:true}));
+   });
   }
   window.GRID_RECORD_HISTORY?.mount(form,existing);
   d.showModal();
