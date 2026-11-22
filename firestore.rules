@@ -26,7 +26,7 @@ service cloud.firestore {
     && r is list && r.size() == 7
     && standbyText(r[0]) && standbyText(r[1]) && standbyText(r[2])
     && standbyText(r[3]) && standbyText(r[4]) && standbyText(r[5]) && standbyText(r[6])
-    && r[2].size() > 0 && (r[6] == '' || r[6] == '-' || r[6].matches('0[0-9]{9}') || r[2] == 'ว่าง')
+    && (r[1].size() > 0 || r[2].size() > 0 || r[3].size() > 0 || r[4].size() > 0 || r[5].size() > 0 || r[6].size() > 0) && (r[6] == '' || r[6] == '-' || r[6].matches('0[0-9]{9}') || r[2] == 'ว่าง')
     && d.revision is int && d.revision > 0
     && d.updatedBy == request.auth.uid && d.updatedAt == request.time;
   }

@@ -15,7 +15,7 @@ export function installStandbyBridge(session) {
    if(m.action==='create'){
     if(!canCreate(c))throw Error('บัญชีนี้ไม่มีสิทธิ์เพิ่มเบอร์ติดต่อ');
     const {row,groupIndex,workGroup=''}=m.payload||{};
-    if(!Number.isInteger(groupIndex)||groupIndex<0||groupIndex>5||!Array.isArray(row)||row.length!==7||row.some(v=>typeof v!=='string'||v.length>2000)||!row[2].trim())throw Error('กรุณาตรวจชื่อและกลุ่มรายชื่อ');
+    if(!Number.isInteger(groupIndex)||groupIndex<0||groupIndex>5||!Array.isArray(row)||row.length!==7||row.some(v=>typeof v!=='string'||v.length>2000)||!row.slice(1).some(v=>v.trim()))throw Error('กรุณากรอกอย่างน้อย 1 ช่อง และเลือกกลุ่มรายชื่อ');
     if(!['','ผู้บริหาร','บสส.','Operatorสฟ.','ว.แผนก+Planner'].includes(workGroup))throw Error('กลุ่มงานไม่ถูกต้อง');
     if(row[6]&&row[6]!=='-'&&!/^0\d{9}$/.test(row[6]))throw Error('กรุณากรอกเบอร์มือถือ 10 หลัก');
     const f=c.cloud,uid=c.user.uid;
@@ -43,7 +43,7 @@ export function installStandbyBridge(session) {
    if(workGroup!==undefined && !['',...workGroups].includes(workGroup))throw Error('กลุ่มงานไม่ถูกต้อง');
    const deleting=m.action==='delete';
    if (!/^g[0-5]-[0-9]{1,3}$/.test(key) || !Number.isInteger(revision) || revision<(deleting?1:0)) throw Error('ข้อมูลไม่ถูกต้อง');
-   if (!deleting && (!Array.isArray(row) || row.length !== 7 || row.some(v=>typeof v !== 'string' || v.length>2000) || !row[2].trim() )) throw Error('ข้อมูลไม่ถูกต้อง');
+   if (!deleting && (!Array.isArray(row) || row.length !== 7 || row.some(v=>typeof v !== 'string' || v.length>2000) || !row.slice(1).some(v=>v.trim()) )) throw Error('ข้อมูลไม่ถูกต้อง');
    if (!deleting && row[6] && row[6] !== '-' && row[2] !== 'ว่าง' && !/^0\d{9}$/.test(row[6])) throw Error('กรุณากรอกเบอร์มือถือ 10 หลัก');
    const f=c.cloud, ref=f.doc(f.db,'StandbyContacts',key),uid=c.user.uid;
    const marker=f.doc(f.db,'StandbyDeleted',key);

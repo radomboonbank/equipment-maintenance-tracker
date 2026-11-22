@@ -4,7 +4,7 @@ import {recordEditorDocument,hasRecordEditorTab,focusRecordEditorTab,openRecordE
 import {createWebBoard} from './webboard.js?v=20261120-access-policy';
 import './page-actions.js?v=20261115-compact-records';
 import {seedGroups} from './standby-seed.js';
-import {installStandbyBridge} from './standby-bridge.js?v=20261122-standby-create';
+import {installStandbyBridge} from './standby-bridge.js?v=20261122-contact-optional';
 import {installThaiDateTime} from './thai-datetime.js?v=20261114-no-short-weekday';
 installThaiDateTime(window);
 import {saveEquipmentWithTelegram,queueEquipmentNotification} from './telegram-settings.js?v=20261112-independent-save';
