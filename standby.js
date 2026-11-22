@@ -346,6 +346,11 @@ $('standby-add').onclick=()=>{
  tab.document.body.style.fontFamily=sourceFont.fontFamily;tab.document.body.style.fontSize=sourceFont.fontSize;
  const contactHeading=tab.document.querySelector('h1');contactHeading.style.fontFamily=sourceHeading.fontFamily;contactHeading.style.fontSize=sourceHeading.fontSize;contactHeading.style.fontWeight=sourceHeading.fontWeight;
  const f=tab.document.querySelector('form'),message=tab.document.getElementById('message');let working=false;
+ f.elements.workGroup.addEventListener('change',()=>{
+  if(f.elements.workGroup.value!=='Operatorสฟ.')return;
+  f.elements.field4.value='กถก-ส.';
+  f.elements.groupIndex.value=String(groups.indexOf('กถก-ส'));
+ });
  const close=()=>{if(!working)tab.close()};tab.document.getElementById('close').onclick=close;tab.document.getElementById('cancel').onclick=close;
  f.onsubmit=async event=>{
   event.preventDefault();if(working||!f.reportValidity())return;
