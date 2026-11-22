@@ -4,13 +4,13 @@ import {recordEditorDocument,hasRecordEditorTab,focusRecordEditorTab,openRecordE
 import {createWebBoard} from './webboard.js?v=20261120-access-policy';
 import './page-actions.js?v=20261115-compact-records';
 import {seedGroups} from './standby-seed.js';
-import {installStandbyBridge} from './standby-bridge.js?v=20261113-work-group';
+import {installStandbyBridge} from './standby-bridge.js?v=20261122-standby-create';
 import {installThaiDateTime} from './thai-datetime.js?v=20261114-no-short-weekday';
 installThaiDateTime(window);
 import {saveEquipmentWithTelegram,queueEquipmentNotification} from './telegram-settings.js?v=20261112-independent-save';
 import {openGenDispatchReference} from './gen-dispatch-reference.js?v=20261115-kv-pictures';
 import {encodeSeverityRecord,decodeSeverityRecord} from './severity-record.js?v=20261104-legacy-levels';
-import {createIdleSession} from './idle-session.js?v=20261107-king-admin';
+import {createIdleSession} from './idle-session.js?v=20261122-standby-create';
 import {createConstructionStore} from './construction-store.js?v=20261112-highlight-access';
 import {createAlarmStore} from './alarm-store.js?v=20261112-highlight-access';
 import {createLoginGuard,createPresence} from './presence.js?v=20261112-single-login';
@@ -446,13 +446,14 @@ $('#login').onsubmit=async e=>{
 };
 $('#guest').onclick=async()=>{if(!cloud||busy)return;try{await cloud.signOut(cloud.auth);resetSession();user=null;username='ผู้ชมทั่วไป';showWorkspace()}catch(err){toast(err.message)}};
 async function logoutSession(expired=false){
+ const idleMinutes=memberDuty==='super admin'?45:15;
  const stopping=Promise.all([presence.stop(),loginGuard.release()]);resetSession();user=null;$('#password').value='';
- if(expired)$('#login-status').textContent='ออกจากระบบเนื่องจากไม่มีการใช้งาน 15 นาที กรุณาเข้าสู่ระบบใหม่';
+ if(expired)$('#login-status').textContent='ออกจากระบบเนื่องจากไม่มีการใช้งาน '+idleMinutes+' นาที กรุณาเข้าสู่ระบบใหม่';
  await Promise.race([stopping,new Promise(resolve=>setTimeout(resolve,5000))]);
  try{await cloud.signOut(cloud.auth)}catch(err){toast(err.message)}
 }
 const loginGuard=createLoginGuard({onLost:async message=>{await logoutSession();$('#login-status').textContent=message}});
-const idleSession=createIdleSession({isExempt:()=>role==='admin'&&memberDuty==='king admin',onExpire:()=>{void logoutSession(true)}});
+const idleSession=createIdleSession({timeout:()=>memberDuty==='super admin'?45*60*1000:15*60*1000,isExempt:()=>role==='admin'&&memberDuty==='king admin',onExpire:()=>{void logoutSession(true)}});
 for(const event of ['pointerdown','pointermove','keydown','input','scroll','touchstart'])document.addEventListener(event,e=>{if(e.isTrusted)idleSession.activity()},{capture:true,passive:true});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)idleSession.check()});
 window.addEventListener('focus',()=>idleSession.check());

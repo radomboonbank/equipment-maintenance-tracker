@@ -3,7 +3,7 @@
 const groups=['ผู้บริหาร อปก','กคก-ส','กถก-ส','กสก-ส','กรก-ส','กบหก'];
 const channel=new BroadcastChannel('grid-standby-v1'),client=crypto.randomUUID(),pending=new Map();
 const overrides=new Map();
-let group='ทั้งหมด',mayEdit=false,mayUpload=false,server='',ready=false,editing=null,saving=false,importing=false,importAttempted=false;
+let group='ทั้งหมด',mayEdit=false,mayCreate=false,mayUpload=false,server='',ready=false,editing=null,saving=false,importing=false,importAttempted=false;
 const $=id=>document.getElementById(id),search=$('standby-search'),body=$('standby-rows');
 const buttons=[...document.querySelectorAll('[data-group]')],dialog=$('standby-editor'),form=$('standby-edit-form');
 const labels=['ลำดับที่','รหัสพนักงาน','ชื่อ - สกุล','ตำแหน่ง','สังกัด','รายละเอียด','โทรศัพท์มือถือ'];
@@ -24,13 +24,13 @@ function request(action,payload,timeout=5000) {
 channel.onmessage=({data:m})=>{
  if(m?.kind!=='response'||m.client!==client)return;
  const p=pending.get(m.id);if(!p)return;
- if(p.action==='session'&&!m.result?.canEdit)return;
+ if(p.action==='session'&&!(m.result?.canEdit||m.result?.canCreate))return;
  if(p.action!=='session'&&m.server!==p.server)return;
  clearTimeout(p.timer);pending.delete(m.id);
  if(m.error)p.reject(Error(m.error));else{if(p.action==='session')server=m.server;p.resolve(m.result);}
 };
 async function refreshAccess(){
- try{const r=await request('session');mayEdit=!!r.canEdit;mayUpload=r.canUpload===true;}catch{mayEdit=false;mayUpload=false;server='';}
+ try{const r=await request('session');mayEdit=!!r.canEdit;mayCreate=!!r.canCreate;mayUpload=r.canUpload===true;}catch{mayEdit=false;mayCreate=false;mayUpload=false;server='';}
  if(!mayEdit&&dialog.open&&!saving)dialog.close();
  render();
  void ensureImported();
@@ -84,13 +84,15 @@ async function ensureImported(){
     }
    }));
   }
-  $('standby-status').textContent='ข้อมูล Standby ทั้งหมดจัดเก็บบน Firebase แล้ว';
+  $('standby-status').textContent='';
   render();
  }catch(error){
   $('standby-status').textContent='นำเข้ายังไม่ครบ: '+error.message+' · เปิดหน้านี้ใหม่เพื่อลองต่อจากรายการที่เหลือ';
  }finally{importing=false;render();}
 }
 function render(){
+ $('standby-add').hidden=!mayCreate;
+ $('standby-add').disabled=!ready||importing;
  $('standby-upload').hidden=!mayUpload;
  $('sync-web').hidden=!mayUpload;
  $('sync-web').disabled=!ready||importing;
@@ -335,6 +337,26 @@ fileInput.addEventListener('change',async()=>{
   status.textContent='อัปเดตไม่สำเร็จ · Firebase ยืนยันแล้ว '+saved+' รายการ · '+error.message;
  }finally{importing=false;render();}
 });
+$('standby-add').onclick=()=>{
+ if(!mayCreate||!ready||importing)return;
+ const tab=window.open('','_blank');if(!tab){$('standby-status').textContent='กรุณาอนุญาตให้เปิดแท็บใหม่';return;}
+ const fields=[[1,'รหัสพนักงาน'],[2,'ชื่อ - สกุล'],[3,'ตำแหน่ง'],[4,'สังกัด'],[6,'เบอร์มือถือ']];
+ tab.document.open();tab.document.write('<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>เพิ่มเบอร์ติดต่อ Standby</title><style>*{box-sizing:border-box}body{margin:0;background:#f3f7fa;color:#193c50;font:16px/1.6 Tahoma,sans-serif}main{max-width:960px;margin:32px auto;padding:24px;background:white;border:1px solid #dce7ec;border-radius:14px}header{display:flex;justify-content:space-between;align-items:center;gap:16px}h1{font-size:26px}form{display:grid;grid-template-columns:1fr 1fr;gap:18px}label{display:block}input,select,textarea{display:block;width:100%;font:inherit;color:inherit;margin-top:6px;border:1px solid #cbdde5;border-radius:8px;padding:10px}textarea{min-height:100px}.wide{grid-column:1/-1}button{font:inherit;padding:10px 18px;border:1px solid #b8cfd1;border-radius:9px;background:white;color:#087f83;cursor:pointer}.primary{background:#087f83;color:white;border-color:#087f83}.actions{display:flex;justify-content:flex-end;gap:10px}#message{color:#087f83;white-space:pre-wrap}@media(max-width:640px){main{margin:0;border:0;border-radius:0;padding:20px}form{grid-template-columns:1fr}.wide{grid-column:1}}</style></head><body><main><header><h1>เพิ่มเบอร์ติดต่อ Standby</h1><button type="button" id="close">ปิด ×</button></header><form>'+fields.map(([i,label])=>'<label>'+label+'<input name="field'+i+'" maxlength="2000" '+(i===2?'required':i===6?'type="tel" inputmode="tel"':'')+'></label>').join('')+'<label>กลุ่มรายชื่อ<select name="groupIndex">'+groups.map((g,i)=>'<option value="'+i+'" '+(g===group?'selected':'')+'>'+g+'</option>').join('')+'</select></label><label>กลุ่มงาน<select name="workGroup"><option value="">ยังไม่ระบุ</option>'+workGroups.map(g=>'<option>'+g+'</option>').join('')+'</select></label><label class="wide">รายละเอียด<textarea name="field5" maxlength="2000"></textarea></label><p id="message" class="wide" role="status"></p><div class="actions wide"><button type="button" id="cancel">ยกเลิก</button><button type="submit" class="primary">บันทึกเบอร์ติดต่อ</button></div></form></main></body></html>');tab.document.close();tab.opener=null;
+ const f=tab.document.querySelector('form'),message=tab.document.getElementById('message');let working=false;
+ const close=()=>{if(!working)tab.close()};tab.document.getElementById('close').onclick=close;tab.document.getElementById('cancel').onclick=close;
+ f.onsubmit=async event=>{
+  event.preventDefault();if(working||!f.reportValidity())return;
+  const values=new tab.FormData(f),row=Array.from({length:7},(_,i)=>String(values.get('field'+i)||'').trim());row[6]=row[6].replace(/[\s()-]/g,'');
+  if(row[6]&&!/^0\d{9}$/.test(row[6])){message.textContent='กรุณากรอกเบอร์มือถือ 10 หลัก หรือเว้นว่าง';return;}
+  working=true;f.querySelectorAll('button').forEach(b=>b.disabled=true);message.textContent='กำลังบันทึกลง Firebase…';
+  try{
+   const access=await request('session');if(!access.canCreate)throw Error('บัญชีนี้ไม่มีสิทธิ์เพิ่มเบอร์ติดต่อ');
+   const saved=await request('create',{row,groupIndex:Number(values.get('groupIndex')),workGroup:String(values.get('workGroup')||'')},30000);
+   overrides.set(saved.key,saved);render();f.reset();message.textContent='บันทึกเบอร์ติดต่อใน Firebase สำเร็จแล้ว';
+  }catch(error){message.textContent=error.message||'บันทึกไม่สำเร็จ';}
+  finally{working=false;f.querySelectorAll('button').forEach(b=>b.disabled=false);}
+ };tab.focus();
+};
 function openEditor(entry){
  if(!mayEdit||!ready||importing)return;
  editing={...entry,group};$('standby-edit-title').textContent='แก้ไขข้อมูล · '+groups[Number(entry.key.slice(1).split('-')[0])];

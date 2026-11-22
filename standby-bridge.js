@@ -1,16 +1,40 @@
 export function installStandbyBridge(session) {
+ const canCreate=c=>!!c.user&&(c.role==='admin'&&['king admin','super admin'].includes(c.duty)||c.role==='editor'&&c.duty==='cac term');
  const channel = new BroadcastChannel('grid-standby-v1');
  const server = crypto.randomUUID();
  const canEdit = c => !!c.user && c.role === 'admin' && ['king admin','super admin'].includes(c.duty);
  channel.onmessage = async ({data:m}) => {
   if (!m || m.kind !== 'request' || m.server && m.server !== server) return;
-  if (!['session','save','delete','upload'].includes(m.action)) return;
+  if (!['session','create','save','delete','upload'].includes(m.action)) return;
   const c = session();
   if (m.action === 'session') {
-   channel.postMessage({kind:'response',id:m.id,client:m.client,server,result:{canEdit:canEdit(c),canDelete:canEdit(c),canUpload:canEdit(c)&&c.duty==='king admin'}});
+   channel.postMessage({kind:'response',id:m.id,client:m.client,server,result:{canCreate:canCreate(c),canEdit:canEdit(c),canDelete:canEdit(c),canUpload:canEdit(c)&&c.duty==='king admin'}});
    return;
   }
   try {
+   if(m.action==='create'){
+    if(!canCreate(c))throw Error('บัญชีนี้ไม่มีสิทธิ์เพิ่มเบอร์ติดต่อ');
+    const {row,groupIndex,workGroup=''}=m.payload||{};
+    if(!Number.isInteger(groupIndex)||groupIndex<0||groupIndex>5||!Array.isArray(row)||row.length!==7||row.some(v=>typeof v!=='string'||v.length>2000)||!row[2].trim())throw Error('กรุณาตรวจชื่อและกลุ่มรายชื่อ');
+    if(!['','ผู้บริหาร','บสส.','Operatorสฟ.','ว.แผนก+Planner'].includes(workGroup))throw Error('กลุ่มงานไม่ถูกต้อง');
+    if(row[6]&&row[6]!=='-'&&!/^0\d{9}$/.test(row[6]))throw Error('กรุณากรอกเบอร์มือถือ 10 หลัก');
+    const f=c.cloud,uid=c.user.uid;
+    let result=null;
+    for(let attempt=0;attempt<30&&!result;attempt++){
+     const slot=300+Math.floor(Math.random()*700),key='g'+groupIndex+'-'+slot;
+     result=await f.runTransaction(f.db,async tx=>{
+      const ref=f.doc(f.db,'StandbyContacts',key),marker=f.doc(f.db,'StandbyDeleted',key);
+      const existing=await tx.get(ref),deleted=await tx.get(marker),member=await tx.get(f.doc(f.db,'DatabaseLogin',uid));
+      if(!member.exists()||session().user?.uid!==uid||!canCreate(session())||!canCreate({user:{uid},...member.data()}))throw Error('บัญชีหรือสิทธิ์เปลี่ยนแปลง');
+      if(existing.exists()||deleted.exists())return null;
+      const savedRow=[...row];savedRow[0]=String(slot+1);
+      tx.set(ref,{row:savedRow,workGroup,revision:1,updatedBy:uid,updatedAt:f.serverTimestamp()});
+      return {key,row:savedRow,workGroup,revision:1};
+     });
+    }
+    if(!result)throw Error('ยังจัดสรรรายการใหม่ไม่ได้ กรุณาลองอีกครั้ง');
+    channel.postMessage({kind:'response',id:m.id,client:m.client,server,result});return;
+   }
    if (!canEdit(c)) throw Error('บัญชีนี้ไม่มีสิทธิ์แก้ไข หรือออกจากระบบแล้ว');
    const uploading=m.action==='upload';
    if(uploading && c.duty!=='king admin')throw Error('เฉพาะ King Admin เท่านั้นที่อัปโหลด Excel ได้');
