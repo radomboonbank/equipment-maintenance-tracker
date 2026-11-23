@@ -57,12 +57,14 @@ function bessTransferRecord(p,raw){
  const section=(n,title,content)=>`<fieldset class="construction-section" data-alarm-section="${n}"><legend>${n}. ${title}</legend><div class="construction-grid"><label class="wide fixed-event-type">ประเภทเหตุการณ์<input value="${n===3?'Winding Temp Alarm':'Abnormal Alarm'}" readonly aria-readonly="true"></label><label class="wide highlight-control"><input type="checkbox" name="highlight" data-highlight> highlight</label>${content}</div><div class="alarm-section-save"><p role="status" data-section-status></p><button type="button" data-close style="background:#087f83;color:#fff;border-color:#087f83;display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap">ปิด <span aria-hidden="true">×</span></button><button type="button" class="primary" data-save-section="${n}">บันทึกข้อมูล</button></div></fieldset>`;
  window.openAbnormalDraft=(existing=null,targetDocument=document)=>{
   const document=targetDocument, Event=document.defaultView.Event, dialogWindow=document.defaultView;
+  const editingSection=existing?.section===1&&existing.data?.alarmGroup==='Fire Alarm'?4:existing?.section;
   const offlinePreview=location.protocol==='file:'&&!window.GRID_ALARM_STORE;
   const d=document.createElement('dialog');d.className='work-draft-dialog alarm-report-layout';
   d.innerHTML=`<form class="work-draft-form"><div class="work-draft-title"><div><small style="color:#087f85">ALARM REPORT</small><h2>แจ้ง Abnormal Alarm</h2></div><button type="button" data-close aria-label="ปิดหน้าต่าง">✕</button></div><p>ทุกช่องเว้นว่างได้ · บันทึกแยกแต่ละข้อ</p>`+
-  section(1,'ข้อมูลรับแจ้งและรายละเอียด Alarm',field('receivedDate','วันที่ได้รับแจ้ง (พ.ศ.)','วว/ดด/พ.ศ.')+'<label>เวลาที่ได้รับแจ้ง<input type="time" name="receivedTime"></label>'+field('station','สถานีไฟฟ้าแรงสูง','เช่น PTG')+field('equipment','ชื่อ / รหัสอุปกรณ์','เช่น TX1 หรือ Bkr. 80212')+select('alarmGroup','กลุ่ม Alarm',['หม้อแปลง','เบรคเกอร์','ระบบสื่อสาร','รีเลย์','อุปกรณ์ สฟ.','BESS ทริป','Winding Temp','อื่น ๆ'])+select('alarmState','สถานะ Alarm',['ยังปรากฏอยู่','เกิดเป็นครั้งคราว','หายแล้ว รอตรวจสอบ'])+field('alarmText','ข้อความ Alarm ที่ปรากฏ','ข้อความตามหน้าจอหรืออุปกรณ์',true)+field('symptoms','อาการและรายละเอียด','สิ่งที่ตรวจพบ และลำดับเหตุการณ์',true)+field('stationReporterName','แจ้ง พนักงานประจำ สฟ. ชื่อ','ชื่อพนักงาน')+'<label>เบอร์มือถือ<input type="tel" name="reporterPhone" maxlength="50" placeholder="เบอร์มือถือ"></label>')+
+  section(1,'ข้อมูลรับแจ้งและรายละเอียด Alarm',field('receivedDate','วันที่ได้รับแจ้ง (พ.ศ.)','วว/ดด/พ.ศ.')+'<label>เวลาที่ได้รับแจ้ง<input type="time" name="receivedTime"></label>'+field('station','สถานีไฟฟ้าแรงสูง','เช่น PTG')+field('equipment','ชื่อ / รหัสอุปกรณ์','เช่น TX1 หรือ Bkr. 80212')+select('alarmGroup','กลุ่ม Alarm',['หม้อแปลง','เบรคเกอร์','ระบบสื่อสาร','รีเลย์','อุปกรณ์ สฟ.','BESS ทริป','Winding Temp','Fire Alarm','อื่น ๆ'])+select('alarmState','สถานะ Alarm',['ยังปรากฏอยู่','เกิดเป็นครั้งคราว','หายแล้ว รอตรวจสอบ'])+field('alarmText','ข้อความ Alarm ที่ปรากฏ','ข้อความตามหน้าจอหรืออุปกรณ์',true)+field('symptoms','อาการและรายละเอียด','สิ่งที่ตรวจพบ และลำดับเหตุการณ์',true)+field('stationReporterName','แจ้ง พนักงานประจำ สฟ. ชื่อ','ชื่อพนักงาน')+'<label>เบอร์มือถือ<input type="tel" name="reporterPhone" maxlength="50" placeholder="เบอร์มือถือ"></label>')+
   section(2,'ข้อมูล BESS ทริป','<div class="bess-full"><p>บันทึกการทริปแต่ละชุดแยกแถว · เลือก PB ได้หลายหมายเลข · ทุกช่องเว้นว่างได้</p><div data-bess-events></div>'+reporterFields('bess')+'</div>')+
   section(3,'ข้อมูล Winding Temp Alarm','<div class="bess-full"><div class="construction-grid">'+field('windingDate','วันที่เกิด Alarm','วว/ดด/พ.ศ.')+'<label>เวลา<input type="time" name="windingTime" step="60"></label>'+field('windingStation','สถานีไฟฟ้าแรงสูง','เช่น RY2, BL, SR1')+`<fieldset class="bess-pb-field"><legend>ชื่อ หม้อแปลงไฟฟ้า</legend><div style="display:flex;flex-wrap:wrap;gap:16px">${['1A','2A','3A','4A','5A'].map(v=>`<label class="bess-trip-check"><input type="radio" name="windingTransformer" value="${v}">${v}</label>`).join('')}</div></fieldset>`+field('windingCause','สาเหตุ / หมายเหตุ','เช่น PEA ย้าย Load มาฝาก หรือมีงาน De-energize หม้อแปลงอีกชุด',true)+`<fieldset class="bess-pb-field"><legend>Annunciator Show (เลือกได้ 1 รายการ)</legend>${['Winding Temp. Alarm Stage 1','Winding Temp. Alarm Stage 2','Oil Temperature Alarm'].map(v=>`<label class="bess-trip-check"><input type="radio" name="windingAnnunciator" value="${v}">${v}</label>`).join('')}</fieldset>`+'</div><p>เพิ่มลำดับสำหรับ Alarm และ Reset แต่ละครั้ง แยกวันที่เมื่อข้ามวัน · ค่าที่ไม่ทราบให้เว้นว่าง · เก็บตัวเลขตามที่ได้รับแจ้ง</p><div data-winding-events></div>'+reporterFields('winding')+'</div>')+
+  section(4,'ข้อมูล Fire Alarm',field('receivedDate','วันที่เกิด Fire Alarm (พ.ศ.)','วว/ดด/พ.ศ.')+'<label>เวลา<input type="time" name="receivedTime"></label>'+field('station','สถานีไฟฟ้าแรงสูง','เช่น PTG')+field('equipment','อุปกรณ์ / พื้นที่ที่เกิด Fire Alarm','เช่น อาคารควบคุม หรือ Fire Alarm Panel')+'<input type="hidden" name="alarmGroup" value="Fire Alarm">'+select('alarmState','สถานะ Alarm',['ยังปรากฏอยู่','เกิดเป็นครั้งคราว','หายแล้ว รอตรวจสอบ'])+field('alarmText','ข้อความ Fire Alarm ที่ปรากฏ','ข้อความตามหน้าจอหรืออุปกรณ์',true)+field('symptoms','สาเหตุ / รายละเอียด / การดำเนินการ','รายละเอียดที่ตรวจพบและการแก้ไข',true)+field('stationReporterName','ผู้ให้ข้อมูล','ชื่อพนักงาน')+'<label>เบอร์มือถือ<input type="tel" name="reporterPhone" maxlength="50"></label>')+
   '</form>';
   document.body.append(d);d.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>d.close());d.addEventListener('close',()=>d.remove(),{once:true});
   const form=d.querySelector('form');
@@ -72,9 +74,9 @@ function bessTransferRecord(p,raw){
    d.querySelectorAll('[data-save-section]').forEach(button=>button.textContent='บันทึกฉบับร่างในเครื่อง');
   }
   const sectionIds=new Map();
-  if(existing?.id)sectionIds.set(existing.section,existing.id);
+  if(existing?.id)sectionIds.set(editingSection,existing.id);
   if(existing?.id&&window.GRID_ALARM_STORE?.canDelete?.()){
-   const actions=d.querySelector(`[data-alarm-section="${existing.section}"] .alarm-section-save`);
+   const actions=d.querySelector(`[data-alarm-section="${editingSection}"] .alarm-section-save`);
    const remove=document.createElement('button');remove.type='button';remove.className='danger delete-record';remove.textContent='ลบรายการ';
    actions.prepend(remove);
    remove.onclick=async()=>{
@@ -107,7 +109,7 @@ function bessTransferRecord(p,raw){
     });
     const section=Number(button.dataset.saveSection);
     if(window.GRID_ALARM_STORE){
-     const id=await window.GRID_ALARM_STORE.save(section,values,sectionIds.get(section));
+     const id=await window.GRID_ALARM_STORE.save(section===4?1:section,values,sectionIds.get(section));
      sectionIds.set(section,id);message.textContent=`บันทึกข้อมูลข้อ ${section} ใน Firebase สำเร็จ`;
     }else{
      if(!offlinePreview)throw Error('ระบบเชื่อมต่อ Firebase ยังไม่พร้อม กรุณาโหลดหน้าใหม่แล้วเข้าสู่ระบบอีกครั้ง');
@@ -127,8 +129,8 @@ function bessTransferRecord(p,raw){
 
   const now=new Date();
   const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB-u-ca-buddhist-nu-latn',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(now).map(p=>[p.type,p.value]));
-  form.elements.receivedDate.value=`${parts.day}/${parts.month}/${parts.year}`;
-  form.elements.receivedTime.value=`${parts.hour}:${parts.minute}`;
+  form.querySelectorAll('[name=receivedDate]').forEach(el=>el.value=`${parts.day}/${parts.month}/${parts.year}`);
+  form.querySelectorAll('[name=receivedTime]').forEach(el=>el.value=`${parts.hour}:${parts.minute}`);
   form.elements.windingDate.value=`${parts.day}/${parts.month}/${parts.year}`;
   form.elements.windingTime.value=`${parts.hour}:${parts.minute}`;
 
@@ -242,8 +244,8 @@ function bessTransferRecord(p,raw){
   addWinding();
   form.onsubmit=e=>e.preventDefault();
   if(existing?.data){
-   d.querySelectorAll('[data-alarm-section]').forEach(block=>block.hidden=Number(block.dataset.alarmSection)!==existing.section);
-   d.querySelector('h2').textContent='แก้ไข '+({1:'Abnormal Alarm',2:'BESS ทริป',3:'Winding Temp Alarm'}[existing.section]);
+   d.querySelectorAll('[data-alarm-section]').forEach(block=>block.hidden=Number(block.dataset.alarmSection)!==editingSection);
+   d.querySelector('h2').textContent='แก้ไข '+({1:'Abnormal Alarm',2:'BESS ทริป',3:'Winding Temp Alarm',4:'Fire Alarm'}[editingSection]);
    const populate=()=>d.querySelectorAll('input,select,textarea').forEach(el=>{
     if(!el.name||!Object.prototype.hasOwnProperty.call(existing.data,el.name))return;
     const value=existing.data[el.name];
