@@ -354,7 +354,7 @@ $('#one-page').onclick=async()=>{
   const value=name=>{const items=Array.from(doc.getElementsByName(name));const el=items.find(x=>!['radio','checkbox'].includes(x.type)||x.checked);return el?.value||'';};
   const date=name=>['day','month','year'].map(part=>{const el=doc.getElementsByName(name+'-'+part)[0];return el?.value?(part==='month'?el.selectedOptions[0].textContent:el.value):'';}).filter(Boolean).join(' ');
   const sections=Object.entries(fields).filter(([k])=>!retiredRecordFields.has(k)).map(([k,title])=>({title,text:k==='date'?date(k):k==='criticality'?(criticalities[value(k)]||legacyCriticalities[value(k)]||'ยังไม่ประเมิน'):value(k)}));
-  sections.push({title:'ประเมินผลกระทบต่อระบบไฟฟ้า',text:value('assessment-effect')});
+  sections.push({title:'เหตุการณ์หลัก / เหตุการณ์ย่อย',text:[value('eventPrimary'),value('eventSecondary')].filter(Boolean).join(' / ')},{title:'ประเมินผลกระทบต่อระบบไฟฟ้า',text:value('assessment-effect')});
   for(const [key,[title]] of Object.entries(assessmentFields))if(key!=='effect'&&editing?.criticalityAssessment?.[key])sections.push({title,text:editing.criticalityAssessment[key]});
   sections.push({title:'แนวทางการแก้ไข',text:value('repair-approach')},{title:'ผู้รับผิดชอบการแก้ไข',text:value('repair-responsible')},{title:'Operator สฟ.',text:['operatorName','operatorId','operatorMobile'].map(k=>value('repair-'+k)).filter(Boolean).join(' · ')},{title:'วันที่คาดว่าจะแก้ไขเสร็จ',text:doc.getElementsByName('repair-unknown')[0]?.checked?'ยังไม่ทราบกำหนดการแก้ไข':date('repair-expected')},{title:'Highlight',text:doc.getElementsByName('highlight')[0]?.checked?'ใช่':'ไม่ใช่'});
   if(editing?.tracking)sections.push({title:'ข้อมูลติดตามเดิม',text:editing.tracking});
