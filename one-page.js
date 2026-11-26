@@ -71,10 +71,11 @@ export async function exportOnePage({title,code,sections,criticality='',document
    let y=column===0?top:chartY+chartH+85;
    for(const section of columns[column]){
    for(const [content,bold] of [[section.title,true],[section.text||'—',false]]){
-    ctx.font=`${bold?'700':'400'} ${size}px "Noto Sans Thai"`;
+    const fontSize=bold?size*1.25:size;
+    ctx.font=`${bold?'800':'400'} ${fontSize}px "Noto Sans Thai"`;
     for(const line of wrapText(ctx,content,colWidth)){
-     if(y+size*1.45>bottom)return null;
-     lines.push({x:margin+column*(colWidth+gap),y,text:line,bold});y+=size*1.45;
+     if(y+fontSize*1.45>bottom)return null;
+     lines.push({x:margin+column*(colWidth+gap),y,text:line,bold,fontSize});y+=fontSize*1.45;
     }
    }y+=size*.55;
   }}return lines;
@@ -97,7 +98,7 @@ export async function exportOnePage({title,code,sections,criticality='',document
  ctx.font='700 46px "Noto Sans Thai"';ctx.fillText('ตารางประเมินเหตุการณ์นี้ · '+({extreme:'รุนแรงมาก',severe:'รุนแรง',moderate:'ปานกลาง',minor:'เล็กน้อย'}[criticality]||'ยังไม่ประเมิน'),chartX,95);
  assessmentTable(ctx,chartX,chartY,Math.min(colWidth,2700),criticality,true);
  ctx.textBaseline='top';
- for(const line of lines){ctx.fillStyle=line.bold?'#087f83':'#193f50';ctx.font=`${line.bold?'700':'400'} ${size}px "Noto Sans Thai"`;ctx.fillText(line.text,line.x,line.y);}
+ for(const line of lines){ctx.fillStyle=line.bold?'#c62828':'#193f50';ctx.font=`${line.bold?'800':'400'} ${line.fontSize}px "Noto Sans Thai"`;ctx.fillText(line.text,line.x,line.y);}
  ctx.font='32px "Noto Sans Thai"';ctx.fillStyle='#333';ctx.textAlign='right';
  ctx.fillText('สร้างเมื่อ '+new Date().toLocaleString('th-TH',{timeZone:'Asia/Bangkok'}),canvas.width-margin,canvas.height-90);
  const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.96));
