@@ -1,3 +1,4 @@
+import {exportOnePage} from './one-page.js?v=20261126';
 import {historyNote} from './record-history.js?v=20261115-no-work-status';
 import {eventClassificationHtml,setupEventClassification,serializeEventClassification} from './event-classification.js?v=20261115-breaker-thai';
 import {recordEditorDocument,hasRecordEditorTab,focusRecordEditorTab,openRecordEditorTab} from './record-editor-tab.js?v=20261120-followup-layout';
@@ -346,6 +347,23 @@ function edit(r,show=true){
 }
 $('#add').onclick=()=>{if(!canEdit())return;const result=openRecordEditorTab({dialog:document.querySelector('#editor'),prepare:()=>edit(null,false),enhance:installThaiDateTime,onActivity:()=>idleSession.activity(),title:'แจ้ง เพิ่ม อุปกรณ์ชำรุด/ไม่พร้อมใช้งาน'});if(result==='blocked')toast('กรุณาอนุญาตให้เปิดแท็บใหม่');};
 if($('#add-construction'))$('#add-construction').onclick=()=>{if(!canEdit())return;if(!window.openConstructionDraft){toast('โหลดฟอร์มไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ');return;}window.openConstructionDraft(null);};
+$('#one-page').onclick=async()=>{
+ const doc=recordEditorDocument(document),button=$('#one-page');
+ button.disabled=true;button.textContent='กำลังสร้าง JPG…';
+ try{
+  const value=name=>{const items=Array.from(doc.getElementsByName(name));const el=items.find(x=>!['radio','checkbox'].includes(x.type)||x.checked);return el?.value||'';};
+  const date=name=>['day','month','year'].map(part=>{const el=doc.getElementsByName(name+'-'+part)[0];return el?.value?(part==='month'?el.selectedOptions[0].textContent:el.value):'';}).filter(Boolean).join(' ');
+  const sections=Object.entries(fields).filter(([k])=>!retiredRecordFields.has(k)).map(([k,title])=>({title,text:k==='date'?date(k):k==='criticality'?(criticalities[value(k)]||legacyCriticalities[value(k)]||'ยังไม่ประเมิน'):value(k)}));
+  sections.push({title:'ประเมินผลกระทบต่อระบบไฟฟ้า',text:value('assessment-effect')});
+  for(const [key,[title]] of Object.entries(assessmentFields))if(key!=='effect'&&editing?.criticalityAssessment?.[key])sections.push({title,text:editing.criticalityAssessment[key]});
+  sections.push({title:'แนวทางการแก้ไข',text:value('repair-approach')},{title:'ผู้รับผิดชอบการแก้ไข',text:value('repair-responsible')},{title:'Operator สฟ.',text:['operatorName','operatorId','operatorMobile'].map(k=>value('repair-'+k)).filter(Boolean).join(' · ')},{title:'วันที่คาดว่าจะแก้ไขเสร็จ',text:doc.getElementsByName('repair-unknown')[0]?.checked?'ยังไม่ทราบกำหนดการแก้ไข':date('repair-expected')},{title:'Highlight',text:doc.getElementsByName('highlight')[0]?.checked?'ใช่':'ไม่ใช่'});
+  if(editing?.tracking)sections.push({title:'ข้อมูลติดตามเดิม',text:editing.tracking});
+  for(let i=0;i<3;i++)sections.push({title:'ติดตามข้อมูล ครั้งที่ '+(i+1),text:[date('follow-'+i),value('follow-'+i+'-time'),value('follow-'+i+'-informant'),value('follow-'+i+'-details')].filter(Boolean).join('\n')});
+  if(editing?.history?.length)sections.push({title:'ประวัติรายการ',text:$('#history').innerText});
+  await exportOnePage({document:doc,title:'รายงานอุปกรณ์ชำรุด/ไม่พร้อมใช้งาน',code:value('code'),sections});
+  toast('ดาวน์โหลด one page JPG แล้ว');
+ }catch(error){toast('ส่งออกไม่สำเร็จ: '+error.message);}finally{button.disabled=false;button.textContent='one page';}
+};
 function openAbnormalReport(existingTab=null){
  if(!canEdit())return;
  if(!window.openAbnormalDraft){toast('โหลดฟอร์มไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ');return;}
