@@ -1,5 +1,6 @@
 const templateUrl=new URL('./assets/one-page-template.png',import.meta.url).href;
 const fontUrl=new URL('./assets/NotoSansThai.ttf',import.meta.url).href;
+const fontDocuments=new WeakSet();
 const levels=['extreme','severe','moderate','minor'];
 export const canExportOnePage=(role,duty)=>role==='admin'&&duty==='king admin';
 export function assessmentTable(ctx,x,y,width,selected,draw=false){
@@ -48,8 +49,9 @@ export function wrapText(ctx,text,width){
 
 export async function exportOnePage({title,code,sections,criticality='',document:doc=document}){
  const background=await loadImage(templateUrl);
- if(!Array.from(doc.fonts).some(face=>face.family==='Noto Sans Thai')){
+ if(!fontDocuments.has(doc)){
   const face=new FontFace('Noto Sans Thai',`url("${fontUrl}")`,{weight:'100 900'});await face.load();doc.fonts.add(face);
+  fontDocuments.add(doc);
  }
  await doc.fonts.load('400 52px "Noto Sans Thai"');await doc.fonts.load('700 52px "Noto Sans Thai"');
  sections=sections.filter(s=>String(s.text??'').trim()&&s.text!=='—');
