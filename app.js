@@ -1,4 +1,4 @@
-import {exportOnePage,canExportOnePage} from './one-page.js?v=20261126-assessed';
+import {exportOnePage,canExportOnePage} from './one-page.js?v=20261126-layout2';
 import {historyNote} from './record-history.js?v=20261115-no-work-status';
 import {eventClassificationHtml,setupEventClassification,serializeEventClassification} from './event-classification.js?v=20261115-breaker-thai';
 import {recordEditorDocument,hasRecordEditorTab,focusRecordEditorTab,openRecordEditorTab} from './record-editor-tab.js?v=20261120-followup-layout';

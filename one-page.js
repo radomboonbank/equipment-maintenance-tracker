@@ -11,7 +11,7 @@ export function assessmentTable(ctx,x,y,width,selected,draw=false){
  ['จำนวนพลังงานไฟฟ้าที่หายไป','ไฟดับ > 500 MW\n(อนล., อปก.)','ไฟดับ 100–500 MW\n(อนล., อปก.)','ไฟดับ 30–100 MW\n(อนล., อปก.)','ไฟดับ < 30 MW\n(อนล., อปก.)'],
  ['ไฟดับขณะมีเหตุการณ์สำคัญหรือพิเศษ','การนับคะแนนเลือกตั้งระดับประเทศ\nการจัดงานระดับประเทศ ฯลฯ','การเลือกตั้งระดับประเทศ\nการถ่ายทอดรายการ/เหตุการณ์สำคัญทางโทรทัศน์ ฯลฯ','การเลือกตั้งระดับท้องถิ่น\nการจัดงานเทศกาลที่สำคัญของจังหวัด ฯลฯ','—']
  ];
- const size=width/51,lineHeight=size*1.45,pad=width/100;
+ const size=width/48,lineHeight=size*1.4,pad=width/100;
  const widths=[width*.22,...Array(4).fill(width*.195)];let cy=y;
  rows.forEach((row,ri)=>{
   ctx.font=`${ri===0?'700':'400'} ${size}px "Noto Sans Thai"`;
@@ -61,26 +61,28 @@ export async function exportOnePage({title,code,sections,criticality='',document
  const ctx=canvas.getContext('2d');if(!ctx)throw Error('เบราว์เซอร์นี้ไม่รองรับการสร้างภาพ');
  const margin=100,top=470,gap=90;
  let bottom,colWidth,chartX,chartY,chartH;
- const geometry=()=>{bottom=canvas.height-150;colWidth=(canvas.width-margin*2-gap)/2;chartX=margin+colWidth+gap;chartY=top+65;chartH=assessmentTable(ctx,chartX,chartY,colWidth,criticality);};
+ const geometry=()=>{bottom=canvas.height-150;colWidth=(canvas.width-margin*2-gap)/2;chartX=margin+colWidth+gap;chartY=150;chartH=assessmentTable(ctx,chartX,chartY,Math.min(colWidth,2700),criticality);};
  geometry();
  function layout(size){
-  const lines=[];let column=0,y=top;
-  const starts=[top,chartY+chartH+65];
-  for(const section of sections){
+  const lines=[];
+  const split=sections.findIndex(s=>s.title==='ระดับความสำคัญของอุปกรณ์นี้ต่อระบบไฟฟ้า'||s.title==='ระดับความสำคัญ');
+  const columns=split<0?[sections,[]]:[sections.slice(0,split),sections.slice(split)];
+  for(let column=0;column<2;column++){
+   let y=column===0?top:chartY+chartH+85;
+   for(const section of columns[column]){
    for(const [content,bold] of [[section.title,true],[section.text||'—',false]]){
     ctx.font=`${bold?'700':'400'} ${size}px "Noto Sans Thai"`;
     for(const line of wrapText(ctx,content,colWidth)){
-     if(y+size*1.55>bottom){column++;y=starts[column];}
-     if(column>1)return null;
-     lines.push({x:margin+column*(colWidth+gap),y,text:line,bold});y+=size*1.55;
+     if(y+size*1.45>bottom)return null;
+     lines.push({x:margin+column*(colWidth+gap),y,text:line,bold});y+=size*1.45;
     }
-   }y+=size*.7;
-  }return lines;
+   }y+=size*.55;
+  }}return lines;
  }
  let size,lines;
- for(const width of [5000,6500,8000]){
+ for(const width of [5000,6500,8000,10000]){
   canvas.width=width;canvas.height=Math.round(width*19.05/27.517);geometry();
-  for(size=56;size>=30;size--){lines=layout(size);if(lines)break;}
+  for(size=70;size>=36;size--){lines=layout(size);if(lines)break;}
   if(lines)break;
  }
  if(!lines)throw Error('ข้อมูลยาวเกินขนาดภาพหนึ่งหน้า กรุณาลดข้อความก่อนส่งออก');
@@ -88,12 +90,12 @@ export async function exportOnePage({title,code,sections,criticality='',document
  ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
  ctx.drawImage(background,0,0,4000,4000*background.height/background.width);
  ctx.fillRect(0,440,canvas.width,canvas.height-440);
- ctx.fillStyle='#193f50';ctx.font='700 72px "Noto Sans Thai"';
- const heading=wrapText(ctx,title,canvas.width-650);
+ ctx.fillStyle='#193f50';ctx.font='700 78px "Noto Sans Thai"';
+ const heading=wrapText(ctx,title,colWidth-500);
  heading.forEach((line,i)=>ctx.fillText(line,550,170+i*85));
  ctx.font='400 40px "Noto Sans Thai"';ctx.fillText('รายละเอียด #'+(code||'รายการใหม่')+' · ข้อมูลตามฟอร์มขณะส่งออก',550,370);
- ctx.font='700 42px "Noto Sans Thai"';ctx.fillText('ตารางประเมินเหตุการณ์นี้ · '+({extreme:'รุนแรงมาก',severe:'รุนแรง',moderate:'ปานกลาง',minor:'เล็กน้อย'}[criticality]||'ยังไม่ประเมิน'),chartX,top+25);
- assessmentTable(ctx,chartX,chartY,colWidth,criticality,true);
+ ctx.font='700 46px "Noto Sans Thai"';ctx.fillText('ตารางประเมินเหตุการณ์นี้ · '+({extreme:'รุนแรงมาก',severe:'รุนแรง',moderate:'ปานกลาง',minor:'เล็กน้อย'}[criticality]||'ยังไม่ประเมิน'),chartX,95);
+ assessmentTable(ctx,chartX,chartY,Math.min(colWidth,2700),criticality,true);
  ctx.textBaseline='top';
  for(const line of lines){ctx.fillStyle=line.bold?'#087f83':'#193f50';ctx.font=`${line.bold?'700':'400'} ${size}px "Noto Sans Thai"`;ctx.fillText(line.text,line.x,line.y);}
  ctx.font='32px "Noto Sans Thai"';ctx.fillStyle='#333';ctx.textAlign='right';
